@@ -1,1 +1,1 @@
-In this fold you will find whitepaper and installation instructions
+In this folder you will find whitepaper and installation instructions
