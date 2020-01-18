@@ -1,6 +1,11 @@
 # Honest-MPA-Price-Feeds
 Honest Price Feeds for Bitshares Market Pegged Assets
 
+I am currently feeding an honest price hourly to 
+
+# HONEST.CNY
+on the Bitshares DEX
+
 # Installation
 
 you should be on a linux box with latest python version installed (3.7 or better)
