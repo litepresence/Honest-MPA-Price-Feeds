@@ -152,7 +152,7 @@ Upon success of these markets, using similiar methology, we will seek to bring y
 FINAL NOTE
 ==================
 
-Our company, HONEST will be maintaining X pricefeed producers.   Pricefeed producers will be chosen from our associate HONEST members through lottery and switched quarterly.   We will seek to use low cost or zero cost hosting services to post our price feeds to the DEX.   We will be updating hour feeds hourly.   A thorough and live accounting our individual streaming feeds will also be made available through jsonbin.io.   Market fees from the markets supported by HONEST MPA's will be split amongst pricefeed producers.   The market volume created by producing HONEST pricefeeds will incentivize hour pricefeed producers to keep their feeds forever HONEST. 
+Our company, HONEST will be maintaining (TBD) pricefeed producers.   Pricefeed producers will be chosen from our associate HONEST members through lottery and switched quarterly.   We will seek to use low cost or zero cost hosting services to post our price feeds to the DEX.   We will be updating hour feeds hourly.   A thorough and live accounting our individual streaming feeds will also be made available through jsonbin.io.   Market fees from the markets supported by HONEST MPA's will be split amongst pricefeed producers.   The market volume created by producing HONEST pricefeeds will incentivize hour pricefeed producers to keep their feeds forever HONEST. 
 
 HONEST CTO and BDFL,
 
