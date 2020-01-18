@@ -14,16 +14,15 @@ Committee MPA Bitassets 1.0 are currently controlled by a plutocratic democracy 
 We envision Private MPA Bitassets 2.0 to be controlled by a meritocratic / noocratic oligarchy - rule by a competent and wise nobility.  Our business model will distribute market fees to feed providers as incentive to keep price feeds legitimate. The selection process of feed producers will be internal to our organization.
 
 
-
 # Our Aim
 
 We are seeking to launch 5 PRIVATE MPA's: 
 
-bitCNY2.0
-bitUSD2.0
-bitEUR2.0
-bitRUB2.0
-bitBTC2.0
+- HONEST.CNY
+- HONEST.USD
+- HONEST.BTC
+- HONEST.EUR
+- HONEST.RUB
 
 and potentially, additional high volume fiat currencies such as:
 
