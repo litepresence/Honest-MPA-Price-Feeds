@@ -34,11 +34,11 @@ then press enter twice to skip jsonbin and publication functionality for now
 
 to set up jsonbin.io functionality
 
-jsonbin.py will need the global constant JSONBIN_SECRET installed to add functionality, you get that at jsonbin.io in the api keys tab.   After installing the secret, run that script once in the terminal 
+jsonbin.py will need the global constant `JSONBIN_SECRET` installed to add functionality, you get that at jsonbin.io in the api keys tab.   After installing the secret, run that script once in the terminal with the command:
 
     python3 jsonbin.py 
     
-it will spit out a BIN_ID you install that in the script... then you can test the jsonbin.io functionality of the pricefeed_final.py script (press y+Enter when prompted at startup) and it will use the jsonbin.py as a module.
+It will print a `BIN_ID`.  You install that in the script where it belongs... then you can test the jsonbin.io functionality of the `pricefeed_final.py` script (press y+Enter when prompted at startup) and it will using the `jsonbin.py` with your `BIN_ID` as a module.
 
 to view your jsonbin, visit:
 
