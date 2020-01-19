@@ -10,6 +10,12 @@ on the Bitshares DEX
 
 you should be on a linux box with latest python version installed (3.7 or better)
 
+perform these commands:
+
+    sudo apt-get update
+    sudo apt-get install pkg-config
+    sudo apt-get install libsecp256k1-dev
+
 you will need to pip3 install the following dependencies manually:
 
 - requests
