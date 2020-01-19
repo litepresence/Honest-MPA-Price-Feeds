@@ -24,11 +24,11 @@ then clone the repo, be sure to include the `/pipe/` folder
 
 then in terminal:
 
-  python3 pricefeed_final.py 
+    python3 pricefeed_final.py 
   
 or maybe on your system:
   
-  python3.8 pricefeed_final.py 
+    python3.8 pricefeed_final.py 
   
 then press enter twice to skip jsonbin and publication functionality for now
 
@@ -42,7 +42,7 @@ it will spit out a BIN_ID you install that in the script... then you can test th
 
 to view your jsonbin, visit:
 
-    https://api.jsonbin.io/b/<<< your bin id >>>/latest
+https://api.jsonbin.io/b/<your_bin_id>/latest
     
 to sign up as a feed producer for HONEST market pegged assets on Bitshares Blockchain find me on telegram, I'm a chat mod in the group:
 
