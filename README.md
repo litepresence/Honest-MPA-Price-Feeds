@@ -10,7 +10,7 @@ on the Bitshares DEX
 
 you should be on a linux box with latest python version installed (3.7 or better)
 
-you will need to pip install the following dependencies manually:
+you will need to pip3 install the following dependencies manually:
 
 - requests
 - cfscrape
