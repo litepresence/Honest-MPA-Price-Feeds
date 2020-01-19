@@ -2,6 +2,5 @@ requests
 cfscrape
 psutil
 websocket-client
-getpass
 ecdsa
 secp256k1
