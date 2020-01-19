@@ -52,4 +52,9 @@ or via email:
 
 finitestate@tutamail.com
 
+We are seeking python competent individuals, with austrian economic mindset, with reliable high speed internet, and reliable linux box.
 
+
+HONEST BDFL,
+
+litepresence2020
