@@ -22,7 +22,6 @@ you will need to pip3 install the following dependencies manually:
 - cfscrape
 - psutil
 - websocket-client
-- getpass
 - ecdsa
 - secp256k1
 
