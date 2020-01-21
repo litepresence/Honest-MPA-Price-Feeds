@@ -24,11 +24,14 @@ import time
 # THIRD PARTY MODULES
 import requests
 
+# HONEST PRICE FEED MODULES
+from api_keys import api_keys
+
 # GLOBAL USER DEFINED CONSTANTS
 # get secret by creating account at jsonbin.io website
-JSONBIN_SECRET = ""
+JSONBIN_SECRET = api_keys()["jsonbin"]["key"]
 # get bin id by running this script
-BIN_ID = ""
+BIN_ID = api_keys()["jsonbin"]["id"]
 # tag your bin, relevent to managing the jsonbin.io UI, must be ALL_CAPS_UNDERSCORES
 BIN_NAME = "HONEST_MPA"
 # These settings work... don't touch
