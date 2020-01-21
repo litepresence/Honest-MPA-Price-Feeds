@@ -598,7 +598,9 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                     print("")
                     for key, val in cex.items():
                         print(
-                            "CEX", key, {k2: v2["last"] for k2, v2 in val["data"].items()}
+                            "CEX",
+                            key,
+                            {k2: v2["last"] for k2, v2 in val["data"].items()},
                         )
                         print("CEX MEDIAN", key, it("cyan", val["median"]))
                     for key, val in forex["medians"].items():
@@ -608,6 +610,12 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                         {k: sigfig(v) for k, v in final["inverse"].items()},
                     )
                     print("FINAL FEED", it("green", final["feed"]))
+                    print("FEED CLOCK", it("yellow", final["time"]))
+                    stale = time() - final["time"]["unix"]
+                    if stale > 4000:
+                        print(
+                            it("red", f"WARNING YOUR FEED IS STALE BY {stale} SECONDS")
+                        )
                 except:
                     pass
 
