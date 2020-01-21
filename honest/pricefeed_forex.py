@@ -28,6 +28,12 @@ from yahoo import yahoo
 from wsj import wsj
 from duckduckgo import duckduckgo
 from bloomberg import bloomberg
+from fscapi import fscapi
+from fixerio import fixerio
+from barchart import barchart
+from fxmarket import fxmarket
+from currencyconverter import currencyconverter
+from openexchangerates import openexchangerates
 
 # ADDITIONAL PROPRIETARY MODULES
 from utilities import process_request, it, sigfig
@@ -54,6 +60,16 @@ def refresh_forex_rates():
     processes["wsj"] = process_request("wsj", wsj)
     processes["duckduckgo"] = process_request("duckduckgo", duckduckgo)
     processes["bloomberg"] = process_request("bloomberg", bloomberg)
+    processes["fscapi"] = process_request("fscapi", fscapi)
+    processes["fixerio"] = process_request("fixerio", fixerio)
+    processes["barchart"] = process_request("barchart", barchart)
+    processes["fxmarket"] = process_request("fxmarket", fxmarket)
+    processes["openexchangerates"] = process_request(
+        "openexchangerates", openexchangerates
+    )
+    processes["currencyconverter"] = process_request(
+        "currencyconverter", currencyconverter
+    )
     # join, timeout, and terminate processes
     for site in processes.keys():
         processes[site].join(TIMEOUT)
