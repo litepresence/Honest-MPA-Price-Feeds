@@ -28,18 +28,19 @@ from getpass import getpass
 from utilities import race_write, race_read_json, sigfig
 from pricefeed_forex import pricefeed_forex
 from pricefeed_cex import pricefeed_cex
-from pricefeed_dex import pricefeed_dex
+from pricefeed_dex import pricefeed_dex, race_append
 from pricefeed_publish import broker
 from jsonbin import update_jsonbin
 
 CER = 2.0  # encourage payment of fees in bts, else 2X profit for HONEST producers
-MCR = 125  # minimum standard declared by FINRA
+MCR = 160  # min declared by FINRA is 125; min recommended by core dev is 160
 MSSR = 200  # liquidate mal investment immediately to as low as 50% below market rate
 REFRESH = 3600  # maintain accurate timely price feeds
 # ######################################################################################
 # TRADEMARK HONEST MPA litepresence2020 - BDFL
 # ######################################################################################
 # ######################################################################################
+BEGIN = int(time.time())
 
 
 def publish_feed(prices, name, wif):
@@ -101,6 +102,7 @@ def gather_data(name, wif, do_feed, do_jsonbin):
     # wait until the first dex pricefeed writes to file
     while dex == {}:
         dex = race_read_json("pricefeed_dex.txt")
+    updates = 1
     while True:
         try:
             # collect forex and cex data
@@ -141,22 +143,33 @@ def gather_data(name, wif, do_feed, do_jsonbin):
                 (k[-3:] + ":" + k[:3]): sigfig(1 / v) for k, v in feed.items()
             }
             # aggregate full price calculation for jsonbin.io
+            current_time = {
+                "unix": int(time.time()),
+                "local": time.ctime() + " " + time.strftime("%Z"),
+                "utc": time.asctime(time.gmtime()) + " UTC",
+                "runtime": int(time.time() - BEGIN),
+                "updates": updates,
+            }
             prices = {
+                "time": current_time,
                 "cex": cex,
                 "dex": dex,
                 "forex": forex,
                 "inverse": inverse_feed,
                 "feed": feed,
             }
-            # update final output on disk
-            race_write(doc="feed.txt", text=feed)
-            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
             # publish feed prices to the blockchain
             if do_feed.lower() == "y":
                 publish_feed(prices, name, wif)
             # publish feed prices and production data to jsonbin.io
             if do_jsonbin.lower() == "y":
                 update_jsonbin(prices)
+            # update final output on disk
+            race_write(doc="feed.txt", text=feed)
+            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
+            appendage = str(int(time.time())) + " " + time.ctime() + " " + str(feed)
+            race_append(doc="feed_append.txt", text=appendage)
+            updates += 1
             time.sleep(REFRESH)
         except Exception as error:
             print(error)
