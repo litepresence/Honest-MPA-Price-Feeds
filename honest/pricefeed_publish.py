@@ -49,13 +49,16 @@ from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
 from ecdsa import util as ecdsa_util  # module
 from ecdsa import der as ecdsa_der  # module
 
+# HONEST PRICE FEED MODULES
+from utilities import race_write
+
 # =======================================================================
 VERSION = "Bitshares Price Feed Publisher 0.00000001"
 # FIXME: it would be pythonic to pass variables as args where needed
 # FIXME: it would be pythonic to move constants to global space
 # FIXME: this script could use a soup-to-nuts once over to pylint standards
 # =======================================================================
-DEV = False  # WARN: will expose your wif in terminal
+DEV = True  # WARN: will expose your wif in terminal
 COLOR = True
 
 
@@ -578,7 +581,7 @@ class Base58(object):
 
     def __init__(self, data, prefix="BTS"):
         print(it("green", "Base58"))
-        print(it("blue", data))
+        print(it("blue", data[:4]))
         self._prefix = prefix
         if all(c in HEXDIGITS for c in data):
             self._hex = data
@@ -703,7 +706,7 @@ def base58CheckDecode(s):
     """
     """
     print(it("green", "base58CheckDecode"))
-    print(s)
+    print(s[:4])
     s = unhexlify(base58decode(s))
     dec = hexlify(s[:-4]).decode("ascii")
     checksum = doublesha256(dec)[:4]
@@ -1393,13 +1396,13 @@ def build_transaction(order):
     for edict in producer_edicts:
         fee = OrderedDict([("amount", fees["producer"]), ("asset_id", "1.3.0")])
         operation = [
-            13,
+            13,  # thirteen means "edit the price feed producer list"
             OrderedDict(
                 [
                     ("fee", fee),
                     ("issuer", account_id),
-                    ("asset_to_update", asset_id),
-                    ("new_feed_producers", [edict["producer_id"]]),
+                    ("asset_to_update", edict["asset_id"]),
+                    ("new_feed_producers", edict["producer_ids"]),
                     ("extensions", []),
                 ]
             ),
@@ -1653,6 +1656,13 @@ def execute(signal, log_in, auth, order):
         if not DEV:
             enablePrint()
         broadcasted_tx = rpc_broadcast_transaction(signed_tx)
+        receipt = {
+            "tx": tx,
+            "message": message,
+            "signed_tx": signed_tx,
+            "broadcasted_tx": broadcasted_tx,
+        }
+        race_write(doc="broadcasted_tx.txt", text=receipt)
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))
