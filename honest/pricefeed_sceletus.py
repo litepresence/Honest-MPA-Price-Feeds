@@ -67,7 +67,7 @@ from dex_meta_node import wss_handshake
 REFRESH = 3600
 # draw a price chart in this matrix of market pairs:
 CURRENCIES = ["CNY", "USD", "BTS", "BTC", "GDEX.BTC"]
-HONEST_ASSETS = ["HONEST.CNY"] #, "HONEST.USD", "HONEST.BTC"]
+HONEST_ASSETS = ["HONEST.CNY"]  # , "HONEST.USD", "HONEST.BTC"]
 HONEST_TO_HONEST = True
 # ######################################################################################
 # ######################################################################################
@@ -166,7 +166,7 @@ def sceletus(prices, agents, do_sceletus):
     update the historic chart on the blockchain using buy/sell broker(order) method
     for each pair to be skeleton'd, for each agent on opposing sides of the book
     """
-    output = [{},{}]
+    output = [{}, {}]
     orders = []
     # calculate skeleton honest-to-honest rates
     usd_cny_btc = create_usd_cny_btc(prices)
@@ -191,9 +191,14 @@ def sceletus(prices, agents, do_sceletus):
             "currency": currency,
         }
         # make rpc for A.B.C id's and precisions
-        asset_id, asset_precision, currency_id, currency_precision = (
-            rpc_lookup_asset_symbols(rpc, pair_dict)
-        )# nonetype is not subscriptable???
+        (
+            asset_id,
+            asset_precision,
+            currency_id,
+            currency_precision,
+        ) = rpc_lookup_asset_symbols(
+            rpc, pair_dict
+        )  # nonetype is not subscriptable???
         # update the header respectively
         header["asset_id"] = asset_id
         header["currency_id"] = currency_id
@@ -208,10 +213,9 @@ def sceletus(prices, agents, do_sceletus):
         # when bitasset is currency skeleton using BTS as the intemediary currency:
         # prce = pricefeed inverse * bitasset rate
 
-        elif currency in ["CNY", "USD", "BTC"]:          
-            price = (
-                float(prices["inverse"][bare_asset + ":" + "BTS"])
-                * float(bitassets["BTS:" + currency])
+        elif currency in ["CNY", "USD", "BTC"]:
+            price = float(prices["inverse"][bare_asset + ":" + "BTS"]) * float(
+                bitassets["BTS:" + currency]
             )
         # determine a dust size amount for this market pair
         amount = 1 / 10 ** (asset_precision - 2)
@@ -248,9 +252,10 @@ def sceletus(prices, agents, do_sceletus):
             orders.append(order)
             if do_sceletus:
                 broker(order)
-                
+
     race_write("orders.txt", orders)
     race_write("output.txt", output)
+
 
 def gather_data(agents, do_sceletus):
     """
