@@ -29,7 +29,7 @@ import requests
 from utilities import race_write, race_read_json
 
 # GLOBAL CONSTANTS
-TIMEOUT = 30
+TIMEOUT = 10
 ATTEMPTS = 10
 DETAIL = False
 BEGIN = int(time.time())
@@ -292,7 +292,6 @@ def aggregate(exchanges):
         "median": median_price,
         "data": data,
     }
-
 
 
 def fetch(exchanges, api):
