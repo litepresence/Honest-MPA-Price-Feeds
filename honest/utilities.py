@@ -156,20 +156,3 @@ def refine_data(data):
     data = {k: sigfig(v) for k, v in data.items()}
     data = {k: v for k, v in data.items() if k in markets}
     return data
-
-
-def process_request(site, method):
-    """
-    initialize an external request process, return process handle
-    """
-    race_write(f"{site}_forex.txt", {})
-    signal = Value("i", 0)
-    i = 0
-    while (i < ATTEMPTS) and not signal.value:
-        if i > 0:
-            time.sleep(1)
-        i += 1
-        child = Process(target=method, args=(signal,))
-        child.daemon = False
-        child.start()
-    return child
