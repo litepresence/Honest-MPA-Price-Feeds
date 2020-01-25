@@ -6,9 +6,9 @@
     MARKET - PEGGED - ASSETS
 +===============================+
 
-live forex rates scraped from 8 sources:
+live forex rates scraped from 9 sources:
 
-liveusd, freeforex, finviz, yahoo, wsj, duckduckgo (xe), wocu, oanda
+liveusd, freeforex, finviz, yahoo, wsj, duckduckgo(xe), wocu, oanda, reuters(refinitiv)
 
 litepresence2020
 """
@@ -23,6 +23,26 @@ import requests
 
 # PRICE FEED MODULES
 from utilities import race_write, refine_data
+
+
+def reuters(site):
+    """
+    live forex rates scraped from reuters.com (refinitiv)
+    """
+    uri = "https://www.reuters.com/companies/api/getFetchQuotes/"
+    symbols = "USDCNY,USDJPY,USDKRW,USDRUB,USDGBP,USDEUR"
+    url = uri + symbols
+    try:
+        raw = requests.get(url, timeout=(15, 15)).json()
+        ret = raw["market_data"]["currencypairs"]
+        data = {}
+        for item in ret:
+            price = (float(item["bid"]) + float(item["ask"])) / 2
+            data[item["symbol"].replace("USD","USD:")] = price
+        data = refine_data(data)
+        race_write(f"{site}_forex.txt", json_dumps(data))
+    except:
+        print(f"{site} failed to load")
 
 
 def liveusd(site):
