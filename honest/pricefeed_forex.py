@@ -21,7 +21,8 @@ from multiprocessing import Process
 # PRICE FEED MODULES
 from forex_api import fixerio, openexchangerates, fscapi
 from forex_api import barchart, currencyconverter, fxmarket
-from forex_scrape import liveusd, freeforex, finviz, yahoo, wsj, duckduckgo, wocu, oanda
+from forex_scrape import liveusd, freeforex, finviz, yahoo, wsj
+from forex_scrape import reuters, duckduckgo, wocu, oanda
 from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire
 from utilities import race_write, ret_markets, race_read_json, it, sigfig
 
@@ -49,6 +50,7 @@ def refresh_forex_rates():
         liveusd,
         oanda,
         openexchangerates,
+        reuters,
         wocu,
         wsj,
         yahoo,
