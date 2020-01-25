@@ -20,7 +20,7 @@ from hashlib import sha256  # message digest algorithm
 from hashlib import new as hashlib_new  # access algorithm library
 from struct import pack  # convert to string representation of C struct
 from struct import unpack, unpack_from  # convert back to PY variable
-from time import time, ctime, mktime, strptime
+from time import time, ctime, mktime, gmtime, asctime, strptime, strftime
 from multiprocessing import Process, Value  # encapsulate processes
 from decimal import Decimal as decimal  # higher precision than float
 from json import dumps as json_dumps  # serialize object to string
@@ -214,8 +214,8 @@ def wss_query(params):
     for i in range(10):
         try:
             # print(it('purple','RPC ' + params[0]), it('cyan',params[1]))
-            # this is the 4 part format of EVERY rpc request
-            # params format is ["location", "object", []]
+            # query is 4 element dict {"method":"", "params":"", "jsonrpc":"", "id":""}
+            # params is 3 element list ["location", "object", []]
             query = json_dumps(
                 {"method": "call", "params": params, "jsonrpc": "2.0", "id": 1,}
             )
@@ -1656,10 +1656,14 @@ def execute(signal, log_in, auth, order):
         if not DEV:
             enablePrint()
         broadcasted_tx = rpc_broadcast_transaction(signed_tx)
+        current_time = {
+            "unix": int(time()),
+            "local": ctime() + " " + strftime("%Z"),
+            "utc": asctime(gmtime()) + " UTC",
+        }
         receipt = {
-            "tx": tx,
+            "time": current_time,
             "message": message,
-            "signed_tx": signed_tx,
             "broadcasted_tx": broadcasted_tx,
         }
         race_write(doc="broadcasted_tx.txt", text=receipt)
