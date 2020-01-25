@@ -200,18 +200,8 @@ def sample_orders():
     # cancel all and place two buy orders
     order1 = {
         "edicts": [
-            {
-                "op": "buy",
-                "amount": 10.0,
-                "price": 0.00000100,
-                "expiration": 0,
-            },
-            {
-                "op": "buy",
-                "amount": 30.0,
-                "price": 0.00000150,
-                "expiration": 0,
-            },
+            {"op": "buy", "amount": 10.0, "price": 0.00000100, "expiration": 0,},
+            {"op": "buy", "amount": 30.0, "price": 0.00000150, "expiration": 0,},
         ],
         "header": {
             "asset_id": "1.3.0",
@@ -302,9 +292,7 @@ def global_constants():
         "limit_order": 7,
     }  # 1.2.x  # 1.3.x  # 1.7.x
     # base58 encoding and decoding; this is alphabet defined:
-    BASE58 = (
-        b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-    )
+    BASE58 = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
     # hex encoding and decoding
     HEXDIGITS = "0123456789abcdefABCDEF"
     # ISO8601 timeformat; 'graphene time'
@@ -359,13 +347,14 @@ def it(style, text):
 
     return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
 
+
 " REMOTE PROCEDURE CALLS TO PUBLIC API NODES"
 
 
 def wss_handshake():
 
     # create a wss handshake in less than X seconds, else try again
-    print(it('purple',"wss_handshake - node list is hard coded"))
+    print(it("purple", "wss_handshake - node list is hard coded"))
     print("in production use latencyTEST.py to generate list")
     global ws, nodes  # the websocket is created and node list shuffled
 
@@ -375,18 +364,18 @@ def wss_handshake():
         try:
             try:
                 ws.close  # attempt to close open stale connection
-                print(it('purple',"connection terminated"))
+                print(it("purple", "connection terminated"))
             except:
                 pass
             start = time()
             nodes.append(nodes.pop(0))  # rotate list
             node = nodes[0]
-            print(it('purple',"connecting:"), node)
+            print(it("purple", "connecting:"), node)
             ws = wss(node, timeout=HANDSHAKE_TIMEOUT)
             handshake = time() - start
         except:
             continue
-    print(it('purple',"connected:"), node, ws)
+    print(it("purple", "connected:"), node, ws)
     print("elapsed %.3f sec" % (time() - start))
 
 
@@ -399,12 +388,7 @@ def wss_query(params):
             # this is the 4 part format of EVERY rpc request
             # params format is ["location", "object", []]
             query = json_dumps(
-                {
-                    "method": "call",
-                    "params": params,
-                    "jsonrpc": "2.0",
-                    "id": 1,
-                }
+                {"method": "call", "params": params, "jsonrpc": "2.0", "id": 1,}
             )
             # print(query)
             # ws is the websocket connection created by wss_handshake()
@@ -449,10 +433,7 @@ def rpc_fees():
         "database",
         "get_required_fees",
         [
-            [
-                ["1", {"from": str(account_id)}],
-                ["2", {"from": str(account_id)}],
-            ],
+            [["1", {"from": str(account_id)}], ["2", {"from": str(account_id)}],],
             "1.3.0",
         ],
     ]
@@ -475,9 +456,7 @@ def rpc_balances():
     # print(balances)
     for balance in balances:
         if balance["asset_id"] == currency_id:
-            currency = (
-                decimal(balance["amount"]) / 10 ** currency_precision
-            )
+            currency = decimal(balance["amount"]) / 10 ** currency_precision
         if balance["asset_id"] == asset_id:
             assets = decimal(balance["amount"]) / 10 ** asset_precision
         if balance["asset_id"] == "1.3.0":
@@ -489,9 +468,7 @@ def rpc_balances():
 
 def rpc_open_orders():
     # return a list of open orders, for one account, in one market
-    ret = wss_query(
-        ["database", "get_full_accounts", [[account_name], "false"]]
-    )
+    ret = wss_query(["database", "get_full_accounts", [[account_name], "false"]])
     try:
         limit_orders = ret[0][1]["limit_orders"]
     except:
@@ -516,21 +493,17 @@ def rpc_key_reference(public_key):
 
 def rpc_get_transaction_hex_without_sig(tx):
     # use this to verify the manually serialized tx buffer
-    ret = wss_query(
-        ["database", "get_transaction_hex_without_sig", [tx]]
-    )
+    ret = wss_query(["database", "get_transaction_hex_without_sig", [tx]])
     return bytes(ret, "utf-8")
 
 
 def rpc_broadcast_transaction(tx):
     # upload the signed transaction to the blockchain
-    ret = wss_query(
-        ["network_broadcast", "broadcast_transaction", [tx]]
-    )
+    ret = wss_query(["network_broadcast", "broadcast_transaction", [tx]])
     if ret is None:
-        print(it('yellow',"*************************************"))
-        print("manualSIGNING" + it('red'," has placed your order"))
-        print(it('yellow',"*************************************"))
+        print(it("yellow", "*************************************"))
+        print("manualSIGNING" + it("red", " has placed your order"))
+        print(it("yellow", "*************************************"))
         return tx
     pprint(ret)
     return ret
@@ -628,8 +601,7 @@ class ObjectId:
                 assert TYPES[type_verify] == int(b), (
                     # except raise error showing mismatch
                     "Object id does not match object type! "
-                    + "Excpected %d, got %d"
-                    % (TYPES[type_verify], int(b))
+                    + "Excpected %d, got %d" % (TYPES[type_verify], int(b))
                 )
         else:
             raise Exception("Object id is invalid")
@@ -659,9 +631,7 @@ class Array:
         self.length = int(len(self.data))
 
     def __bytes__(self):
-        return bytes(varint(self.length)) + b"".join(
-            [bytes(a) for a in self.data]
-        )
+        return bytes(varint(self.length)) + b"".join([bytes(a) for a in self.data])
 
 
 class Uint8:
@@ -752,8 +722,8 @@ class Base58(object):
 
     def __init__(self, data, prefix="BTS"):
 
-        print(it('green',"Base58"))
-        print(it('blue',data))
+        print(it("green", "Base58"))
+        print(it("blue", data))
         self._prefix = prefix
         if all(c in HEXDIGITS for c in data):
             self._hex = data
@@ -785,7 +755,7 @@ class Base58(object):
 
 
 def base58decode(base58_str):
-    print(it('green',"base58decode"))
+    print(it("green", "base58decode"))
     base58_text = bytes(base58_str, "ascii")
     n = 0
     leading_zeroes_count = 0
@@ -800,13 +770,11 @@ def base58decode(base58_str):
         n = div
     else:
         res.insert(0, n)
-    return hexlify(bytearray(1) * leading_zeroes_count + res).decode(
-        "ascii"
-    )
+    return hexlify(bytearray(1) * leading_zeroes_count + res).decode("ascii")
 
 
 def base58encode(hexstring):
-    print(it('green',"base58encode"))
+    print(it("green", "base58encode"))
     byteseq = bytes(unhexlify(bytes(hexstring, "ascii")))
     n = 0
     leading_zeroes_count = 0
@@ -850,7 +818,7 @@ def doublesha256(s):
 
 def base58CheckEncode(version, payload):
 
-    print(it('green',"base58CheckEncode"))
+    print(it("green", "base58CheckEncode"))
     print(payload, version)
     s = ("%.2x" % version) + payload
     print(s)
@@ -860,7 +828,7 @@ def base58CheckEncode(version, payload):
 
 
 def gphBase58CheckEncode(s):
-    print(it('yellow',"gphBase58CheckEncode"))
+    print(it("yellow", "gphBase58CheckEncode"))
     print(s)
     checksum = ripemd160(s)[:4]
     result = s + hexlify(checksum).decode("ascii")
@@ -868,7 +836,7 @@ def gphBase58CheckEncode(s):
 
 
 def base58CheckDecode(s):
-    print(it('green',"base58CheckDecode"))
+    print(it("green", "base58CheckDecode"))
     print(s)
     s = unhexlify(base58decode(s))
     dec = hexlify(s[:-4]).decode("ascii")
@@ -878,7 +846,7 @@ def base58CheckDecode(s):
 
 
 def gphBase58CheckDecode(s):
-    print(it('yellow',"gphBase58CheckDecode"))
+    print(it("yellow", "gphBase58CheckDecode"))
     print(s)
     s = unhexlify(base58decode(s))
     dec = hexlify(s[:-4]).decode("ascii")
@@ -899,7 +867,7 @@ class Address(object):  # cropped litepresence2019
     # graphenebase/account.py
 
     def __init__(self, address=None, pubkey=None, prefix="BTS"):
-        print(it('red',"Address"), "pubkey", pubkey)
+        print(it("red", "Address"), "pubkey", pubkey)
         self.prefix = prefix
         self._pubkey = Base58(pubkey, prefix=prefix)
         self._address = None
@@ -918,7 +886,7 @@ class PublicKey(Address):  # graphenebase/account.py
 
         global authenticated
 
-        print(it('red',"PublicKey"))
+        print(it("red", "PublicKey"))
         self.prefix = prefix
         self._pk = Base58(pk, prefix=prefix)
         self.address = Address(pubkey=pk, prefix=prefix)
@@ -941,7 +909,7 @@ class PublicKey(Address):  # graphenebase/account.py
                 pass
 
     def _derive_y_from_x(self, x, is_even):
-        print(it('purple',"           y^2 = x^3 + ax + b          "))
+        print(it("purple", "           y^2 = x^3 + ax + b          "))
         print(self, x)
         """ Derive y point from x point """
         curve = ecdsa_SECP256k1.curve
@@ -962,9 +930,9 @@ class PublicKey(Address):  # graphenebase/account.py
         ).pubkey.point
         x_str = ecdsa_util.number_to_string(p.x(), order)
         # y_str = ecdsa_util.number_to_string(p.y(), order)
-        compressed = hexlify(
-            bytes(chr(2 + (p.y() & 1)), "ascii") + x_str
-        ).decode("ascii")
+        compressed = hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
+            "ascii"
+        )
         return compressed
 
     def unCompressed(self):
@@ -1009,7 +977,7 @@ class PrivateKey(PublicKey):  # merged litepresence2019
     def __init__(self, wif=None, prefix="BTS"):
 
         print(prefix)
-        print(it('red',"PrivateKey"))
+        print(it("red", "PrivateKey"))
         print(PublicKey)
         if wif is None:
             import os
@@ -1020,13 +988,9 @@ class PrivateKey(PublicKey):  # merged litepresence2019
         else:
             self._wif = Base58(wif)
         # compress pubkeys only
-        self._pubkeyhex, self._pubkeyuncompressedhex = (
-            self.compressedpubkey()
-        )
+        self._pubkeyhex, self._pubkeyuncompressedhex = self.compressedpubkey()
         self.pubkey = PublicKey(self._pubkeyhex, prefix=prefix)
-        self.uncompressed = PublicKey(
-            self._pubkeyuncompressedhex, prefix=prefix
-        )
+        self.uncompressed = PublicKey(self._pubkeyuncompressedhex, prefix=prefix)
         self.uncompressed.address = Address(
             pubkey=self._pubkeyuncompressedhex, prefix=prefix
         )
@@ -1044,12 +1008,10 @@ class PrivateKey(PublicKey):  # merged litepresence2019
         ).verifying_key.pubkey.point
         x_str = ecdsa_util.number_to_string(p.x(), order)
         y_str = ecdsa_util.number_to_string(p.y(), order)
-        compressed = hexlify(
-            chr(2 + (p.y() & 1)).encode("ascii") + x_str
-        ).decode("ascii")
-        uncompressed = hexlify(
-            chr(4).encode("ascii") + x_str + y_str
-        ).decode("ascii")
+        compressed = hexlify(chr(2 + (p.y() & 1)).encode("ascii") + x_str).decode(
+            "ascii"
+        )
+        uncompressed = hexlify(chr(4).encode("ascii") + x_str + y_str).decode("ascii")
         return [compressed, uncompressed]
 
     def __bytes__(self):
@@ -1089,10 +1051,7 @@ class Asset(GrapheneObject):  # bitsharesbase/objects.py
                 OrderedDict(
                     [
                         ("amount", Int64(kwargs["amount"])),
-                        (
-                            "asset_id",
-                            ObjectId(kwargs["asset_id"], "asset"),
-                        ),
+                        ("asset_id", ObjectId(kwargs["asset_id"], "asset"),),
                     ]
                 )
             )
@@ -1124,7 +1083,7 @@ class Operation:  # refactored  litepresence2019
             self.op = Limit_order_cancel(op[1])
 
     def __bytes__(self):
-        print(it('yellow',"GPHOperation.__bytes__"))
+        print(it("yellow", "GPHOperation.__bytes__"))
         return bytes(Id(self.opId)) + bytes(self.op)
 
 
@@ -1134,7 +1093,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
     # Bitshares(MIT) bitsharesbase/signedtransactions.py
 
     def __init__(self, *args, **kwargs):
-        print(it('red',"Signed_Transaction"))
+        print(it("red", "Signed_Transaction"))
         print(
             """ Create a signed transaction and
                 offer method to create the signature
@@ -1160,20 +1119,12 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
                 kwargs["signatures"] = Array([])
             else:
                 kwargs["signatures"] = Array(
-                    [
-                        Signature(unhexlify(a))
-                        for a in kwargs["signatures"]
-                    ]
+                    [Signature(unhexlify(a)) for a in kwargs["signatures"]]
                 )
 
             if "operations" in kwargs:
                 opklass = self.getOperationKlass()
-                if all(
-                    [
-                        not isinstance(a, opklass)
-                        for a in kwargs["operations"]
-                    ]
-                ):
+                if all([not isinstance(a, opklass) for a in kwargs["operations"]]):
                     kwargs["operations"] = Array(
                         [opklass(a) for a in kwargs["operations"]]
                     )
@@ -1183,18 +1134,9 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
             super().__init__(
                 OrderedDict(
                     [
-                        (
-                            "ref_block_num",
-                            Uint16(kwargs["ref_block_num"]),
-                        ),
-                        (
-                            "ref_block_prefix",
-                            Uint32(kwargs["ref_block_prefix"]),
-                        ),
-                        (
-                            "expiration",
-                            PointInTime(kwargs["expiration"]),
-                        ),
+                        ("ref_block_num", Uint16(kwargs["ref_block_num"]),),
+                        ("ref_block_prefix", Uint32(kwargs["ref_block_prefix"]),),
+                        ("expiration", PointInTime(kwargs["expiration"]),),
                         ("operations", kwargs["operations"]),
                         ("extensions", kwargs["extensions"]),
                         ("signatures", kwargs["signatures"]),
@@ -1247,15 +1189,15 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
         self.data["signatures"] = sigs
 
     def verify(self, pubkeys=[], chain="BTS"):
-        print(it('green',"###############################################"))
+        print(it("green", "###############################################"))
         print("Signed_Transaction.verify")
-        print(it('green',"self, pubkeys, chain"), self, pubkeys, chain)
+        print(it("green", "self, pubkeys, chain"), self, pubkeys, chain)
 
         self.deriveDigest(chain)
-        print(it('green',"self"))
+        print(it("green", "self"))
         print(self)
         signatures = self.data["signatures"].data
-        print(it('green',"signatures"))
+        print(it("green", "signatures"))
         print(signatures)
         pubKeysFound = []
 
@@ -1264,51 +1206,49 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
             phex = hexlify(p).decode("ascii")
             print("")
             print("")
-            print(it('green',"phex"))
-            print(it('green',phex))
-            print(it('cyan',"len(phex)"), len(str(phex)))
+            print(it("green", "phex"))
+            print(it("green", phex))
+            print(it("cyan", "len(phex)"), len(str(phex)))
             print("")
             print("")
             pubKeysFound.append(phex)
 
         for pubkey in pubkeys:
 
-            print(it('green',"for pubkey in pubkeys:"))
-            print(it('green',"************ pubkey ************"))
-            print(it('blue',"repr(pubkey)"))
+            print(it("green", "for pubkey in pubkeys:"))
+            print(it("green", "************ pubkey ************"))
+            print(it("blue", "repr(pubkey)"))
             print(repr(pubkey))
 
-            print(it('cyan',"len(pubkey)"), len(str(pubkey)))
+            print(it("cyan", "len(pubkey)"), len(str(pubkey)))
             print("")
             if not isinstance(pubkey, PublicKey):
                 raise Exception("Pubkeys must be array of 'PublicKey'")
 
             k = pubkey.unCompressed()[2:]
 
-            print(it('green',">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
-            print(it('yellow',"k"))
+            print(it("green", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
+            print(it("yellow", "k"))
             print(k)
-            print(it('cyan',"len(k)"), len(str(k)))
-            print(it('yellow',"pubKeysFound"))
+            print(it("cyan", "len(k)"), len(str(k)))
+            print(it("yellow", "pubKeysFound"))
             print(pubKeysFound)
-            print(it('cyan',"len(pubKeysFound[0])"), len(pubKeysFound[0]))
+            print(it("cyan", "len(pubKeysFound[0])"), len(pubKeysFound[0]))
             print("")
-            print(it('green',">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
+            print(it("green", ">>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>>"))
 
-            if (
-                k not in pubKeysFound
-                and repr(pubkey) not in pubKeysFound
-            ):
+            if k not in pubKeysFound and repr(pubkey) not in pubKeysFound:
                 print(
-                    it('blue',
+                    it(
+                        "blue",
                         "if k not in pubKeysFound and repr(pubkey) "
-                        + "not in pubKeysFound:"
+                        + "not in pubKeysFound:",
                     )
                 )
                 k = PublicKey(PublicKey(k).compressed())
                 f = format(k, "BTS")  # chain_params["prefix"]) # 'BTS'
                 print("")
-                print(it('red',"FIXME"))
+                print(it("red", "FIXME"))
                 raise Exception("Signature for %s missing!" % f)
 
         return pubKeysFound
@@ -1322,11 +1262,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
 
         # Get Unique private keys
         self.privkeys = []
-        [
-            self.privkeys.append(item)
-            for item in wifkeys
-            if item not in self.privkeys
-        ]
+        [self.privkeys.append(item) for item in wifkeys if item not in self.privkeys]
 
         # Sign the message with every private key given!
         sigs = []
@@ -1349,22 +1285,10 @@ class Limit_order_create(GrapheneObject):  # bitsharesbase/operations.py
                 OrderedDict(
                     [
                         ("fee", Asset(kwargs["fee"])),
-                        (
-                            "seller",
-                            ObjectId(kwargs["seller"], "account"),
-                        ),
-                        (
-                            "amount_to_sell",
-                            Asset(kwargs["amount_to_sell"]),
-                        ),
-                        (
-                            "min_to_receive",
-                            Asset(kwargs["min_to_receive"]),
-                        ),
-                        (
-                            "expiration",
-                            PointInTime(kwargs["expiration"]),
-                        ),
+                        ("seller", ObjectId(kwargs["seller"], "account"),),
+                        ("amount_to_sell", Asset(kwargs["amount_to_sell"]),),
+                        ("min_to_receive", Asset(kwargs["min_to_receive"]),),
+                        ("expiration", PointInTime(kwargs["expiration"]),),
                         ("fill_or_kill", Uint8(kwargs["fill_or_kill"])),
                         ("extensions", Array([])),
                     ]
@@ -1385,14 +1309,9 @@ class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
                         ("fee", Asset(kwargs["fee"])),
                         (
                             "fee_paying_account",
-                            ObjectId(
-                                kwargs["fee_paying_account"], "account"
-                            ),
+                            ObjectId(kwargs["fee_paying_account"], "account"),
                         ),
-                        (
-                            "order",
-                            ObjectId(kwargs["order"], "limit_order"),
-                        ),
+                        ("order", ObjectId(kwargs["order"], "limit_order"),),
                         ("extensions", Array([])),
                     ]
                 )
@@ -1402,7 +1321,7 @@ class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
 def verify_message(message, signature, hashfn=sha256):
 
     # graphenebase/ecdsa.py stripped of non-secp256k1 methods
-    print(it('red',"verify_message...return phex"))
+    print(it("red", "verify_message...return phex"))
     # require message and signature to be bytes
     if not isinstance(message, bytes):
         message = bytes(message, "utf-8")
@@ -1416,8 +1335,7 @@ def verify_message(message, signature, hashfn=sha256):
     # "bitwise or"; each bit of the output is 0
     # if the corresponding bit of x AND of y is 0, otherwise it's 1
     ALL_FLAGS = (
-        secp256k1_lib.SECP256K1_CONTEXT_VERIFY
-        | secp256k1_lib.SECP256K1_CONTEXT_SIGN
+        secp256k1_lib.SECP256K1_CONTEXT_VERIFY | secp256k1_lib.SECP256K1_CONTEXT_SIGN
     )
     # ecdsa.PublicKey with additional functions to serialize
     # in uncompressed and compressed formats
@@ -1438,9 +1356,7 @@ def verify_message(message, signature, hashfn=sha256):
 def isArgsThisClass(self, args):  # graphenebase/objects.py
     # if there is only one argument and its type name is
     # the same as the type name of self
-    ret = (
-        len(args) == 1 and type(args[0]).__name__ == type(self).__name__
-    )
+    ret = len(args) == 1 and type(args[0]).__name__ == type(self).__name__
     return ret
 
 
@@ -1478,17 +1394,11 @@ def build_transaction(order):
 
     " VALIDATE INCOMING DATA "
     if not isinstance(order["edicts"], list):
-        raise ValueError(
-            "order parameter must be list: %s" % order["edicts"]
-        )
+        raise ValueError("order parameter must be list: %s" % order["edicts"])
     if not isinstance(order["nodes"], list):
-        raise ValueError(
-            "order parameter must be list: %s" % order["nodes"]
-        )
+        raise ValueError("order parameter must be list: %s" % order["nodes"])
     if not isinstance(order["header"], dict):
-        raise ValueError(
-            "order parameter must be list: %s" % order["header"]
-        )
+        raise ValueError("order parameter must be list: %s" % order["header"])
     # the location of the decimal place must be provided by order
     currency_precision = int(order["header"]["currency_precision"])
     asset_precision = int(order["header"]["asset_precision"])
@@ -1510,9 +1420,7 @@ def build_transaction(order):
     # fetch block data via websocket request
     block = rpc_block_number()
     ref_block_num = block["head_block_number"] & 0xFFFF
-    ref_block_prefix = unpack_from(
-        "<I", unhexlify(block["head_block_id"]), 4
-    )[0]
+    ref_block_prefix = unpack_from("<I", unhexlify(block["head_block_id"]), 4)[0]
     # fetch limit order create and cancel fee via websocket request
     fees = rpc_fees()
     # establish transaction expiration
@@ -1527,19 +1435,13 @@ def build_transaction(order):
     if not login:
         for edict in order["edicts"]:
             if edict["op"] == "cancel":
-                print(
-                    it('yellow',str({k: str(v) for k, v in edict.items()}))
-                )
+                print(it("yellow", str({k: str(v) for k, v in edict.items()})))
                 cancel_edicts.append(edict)
             elif edict["op"] == "buy":
-                print(
-                    it('yellow',str({k: str(v) for k, v in edict.items()}))
-                )
+                print(it("yellow", str({k: str(v) for k, v in edict.items()})))
                 buy_edicts.append(edict)
             elif edict["op"] == "sell":
-                print(
-                    it('yellow',str({k: str(v) for k, v in edict.items()}))
-                )
+                print(it("yellow", str({k: str(v) for k, v in edict.items()})))
                 sell_edicts.append(edict)
     for i in range(len(buy_edicts)):
         buy_edicts[i]["amount"] = decimal(buy_edicts[i]["amount"])
@@ -1557,9 +1459,9 @@ def build_transaction(order):
         if "ids" not in edict.keys():
             edict["ids"] = ["1.7.X"]
         if "1.7.X" in edict["ids"]:  # the "cancel all" signal
-                # for cancel all op, we collect all open orders in 1 market
-                edict["ids"] = rpc_open_orders()
-                print(it('yellow',str(edict)))
+            # for cancel all op, we collect all open orders in 1 market
+            edict["ids"] = rpc_open_orders()
+            print(it("yellow", str(edict)))
         for order_id in edict["ids"]:
             # confirm it is good 1.7.x format:
             order_id = str(order_id)
@@ -1568,9 +1470,7 @@ def build_transaction(order):
             assert int(b) == 7
             assert int(c) == float(c) > 0
             # create cancel fee ordered dictionary
-            fee = OrderedDict(
-                [("amount", fees["cancel"]), ("asset_id", "1.3.0")]
-            )
+            fee = OrderedDict([("amount", fees["cancel"]), ("asset_id", "1.3.0")])
             # create ordered operation dicitonary for this edict
             operation = [
                 2,  # two means "Limit_order_cancel"
@@ -1599,17 +1499,12 @@ def build_transaction(order):
                 currency_value = 0
                 # calculate total value of each amount in the order
                 for i in range(len(buy_edicts)):
-                    currency_value += (
-                        buy_edicts[i]["amount"] * buy_edicts[i]["price"]
-                    )
+                    currency_value += buy_edicts[i]["amount"] * buy_edicts[i]["price"]
                 # scale the order amounts to means
                 scale = SIXSIG * currency / (currency_value + SATOSHI)
                 if scale < 1:
                     print(
-                        it('yellow',
-                            "ALERT: scaling buy edicts to means: %.3f"
-                            % scale
-                        )
+                        it("yellow", "ALERT: scaling buy edicts to means: %.3f" % scale)
                     )
                     for i in range(len(buy_edicts)):
                         buy_edicts[i]["amount"] *= scale
@@ -1623,9 +1518,9 @@ def build_transaction(order):
                 # scale the order amounts to means
                 if scale < 1:
                     print(
-                        it('yellow',
-                            "ALERT: scaling sell edicts to means: %.3f"
-                            % scale
+                        it(
+                            "yellow",
+                            "ALERT: scaling sell edicts to means: %.3f" % scale,
                         )
                     )
                     for i in range(len(sell_edicts)):
@@ -1637,8 +1532,7 @@ def build_transaction(order):
 
         " ALWAYS SAVE LAST 2 BITSHARES FOR FEES "
         if BTS_FEES and (
-            len(buy_edicts + sell_edicts)
-            and ("1.3.0" in [asset_id, currency_id])
+            len(buy_edicts + sell_edicts) and ("1.3.0" in [asset_id, currency_id])
         ):
             # print(bitshares, 'BTS balance')
             # when BTS is the currency don't spend the last 2
@@ -1646,21 +1540,12 @@ def build_transaction(order):
                 bts_value = 0
                 # calculate total bts value of each amount in the order
                 for i in range(len(buy_edicts)):
-                    bts_value += (
-                        buy_edicts[i]["amount"] * buy_edicts[i]["price"]
-                    )
+                    bts_value += buy_edicts[i]["amount"] * buy_edicts[i]["price"]
                 # scale the order amounts to save last two bitshares
-                scale = (
-                    SIXSIG
-                    * max(0, (bitshares - 2))
-                    / (bts_value + SATOSHI)
-                )
+                scale = SIXSIG * max(0, (bitshares - 2)) / (bts_value + SATOSHI)
                 if scale < 1:
                     print(
-                        it('yellow',
-                            "ALERT: scaling buy edicts for fees: %.4f"
-                            % scale
-                        )
+                        it("yellow", "ALERT: scaling buy edicts for fees: %.4f" % scale)
                     )
                     for i in range(len(buy_edicts)):
                         buy_edicts[i]["amount"] *= scale
@@ -1670,17 +1555,13 @@ def build_transaction(order):
                 # calculate total of each bts amount in the order
                 for i in range(len(sell_edicts)):
                     bts_total += sell_edicts[i]["amount"]
-                scale = (
-                    SIXSIG
-                    * max(0, (bitshares - 2))
-                    / (bts_total + SATOSHI)
-                )
+                scale = SIXSIG * max(0, (bitshares - 2)) / (bts_total + SATOSHI)
                 # scale the order amounts to save last two bitshares
                 if scale < 1:
                     print(
-                        it('yellow',
-                            "ALERT: scaling sell edicts for fees: %.4f"
-                            % scale
+                        it(
+                            "yellow",
+                            "ALERT: scaling sell edicts for fees: %.4f" % scale,
                         )
                     )
                     for i in range(len(sell_edicts)):
@@ -1701,9 +1582,7 @@ def build_transaction(order):
                 ce.append(create_edicts[i])
             else:
                 print(
-                    it('red',
-                        "WARN: removing dust threshold %s order" % dust
-                    ),
+                    it("red", "WARN: removing dust threshold %s order" % dust),
                     create_edicts[i],
                 )
         create_edicts = ce[:]  # copy as new list
@@ -1728,30 +1607,20 @@ def build_transaction(order):
         # derive min_to_receive & amount_to_sell from price & amount
         # means SELLING currency RECEIVING assets
         if create_edicts[i]["op"] == "buy":
-            min_to_receive["amount"] = int(
-                amount * 10 ** asset_precision
-            )
+            min_to_receive["amount"] = int(amount * 10 ** asset_precision)
             min_to_receive["asset_id"] = asset_id
 
-            amount_to_sell["amount"] = int(
-                amount * price * 10 ** currency_precision
-            )
+            amount_to_sell["amount"] = int(amount * price * 10 ** currency_precision)
             amount_to_sell["asset_id"] = currency_id
         # means SELLING assets RECEIVING currency
         if create_edicts[i]["op"] == "sell":
-            min_to_receive["amount"] = int(
-                amount * price * 10 ** currency_precision
-            )
+            min_to_receive["amount"] = int(amount * price * 10 ** currency_precision)
             min_to_receive["asset_id"] = currency_id
 
-            amount_to_sell["amount"] = int(
-                amount * 10 ** asset_precision
-            )
+            amount_to_sell["amount"] = int(amount * 10 ** asset_precision)
             amount_to_sell["asset_id"] = asset_id
         # Limit_order_create fee ordered dictionary
-        fee = OrderedDict(
-            [("amount", fees["create"]), ("asset_id", "1.3.0")]
-        )
+        fee = OrderedDict([("amount", fees["create"]), ("asset_id", "1.3.0")])
         # create ordered dicitonary from each buy/sell operation
         operation = [
             1,
@@ -1763,10 +1632,7 @@ def build_transaction(order):
                     ("min_to_receive", min_to_receive),  # OrderedDict
                     ("expiration", op_expiration),  # ISO8601
                     ("fill_or_kill", KILL_OR_FILL),  # bool
-                    (
-                        "extensions",
-                        [],
-                    ),  # always empty list for our purpose
+                    ("extensions", [],),  # always empty list for our purpose
                 ]
             ),
         ]
@@ -1810,13 +1676,13 @@ def serialize_transaction(tx):
         return tx, b""
 
     # gist.github.com/xeroc/9bda11add796b603d83eb4b41d38532b
-    print(it('blue',"serialize_transaction"))
-    print(it('yellow',"IF WE DO EVERYTHING RIGHT:"))
-    print(it('green',"rpc_tx_hex = manual_tx_hex"))
+    print(it("blue", "serialize_transaction"))
+    print(it("yellow", "IF WE DO EVERYTHING RIGHT:"))
+    print(it("green", "rpc_tx_hex = manual_tx_hex"))
     # RPC call for ordered dicts which are dumped by the query
-    print(it('yellow',"get RPC tx hex..."))
+    print(it("yellow", "get RPC tx hex..."))
     rpc_tx_hex = rpc_get_transaction_hex_without_sig(tx)
-    print(it('yellow',"build manual tx hex..."))
+    print(it("yellow", "build manual tx hex..."))
     buf = b""  # create an empty byte string buffer
     # add block number, prefix, and tx expiration to the buffer
     buf += pack("<H", tx["ref_block_num"])  # 2 byte int
@@ -1837,13 +1703,13 @@ def serialize_transaction(tx):
     buf += bytes(varint(len(tx["extensions"])))  # effectively varint(0)
     # this the final manual transaction hex, which should match rpc
     manual_tx_hex = hexlify(buf)
-    print(it('red',"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
+    print(it("red", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
     print("   rpc_tx_hex:  ", rpc_tx_hex)
     print("manual_tx_hex:  ", manual_tx_hex)
-    print(it('red',"XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
-    print(it('yellow',"assert (rpc_tx_hex == manual_tx_hex)"))
+    print(it("red", "XXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXXX"))
+    print(it("yellow", "assert (rpc_tx_hex == manual_tx_hex)"))
     assert rpc_tx_hex == manual_tx_hex, "Serialization Failed"
-    print(it('green',"Serialization Success"))
+    print(it("green", "Serialization Success"))
     # prepend the chain ID to the buffer to create final serialized msg
     message = unhexlify(ID) + buf
     return tx, message
@@ -1873,7 +1739,7 @@ def sign_transaction(tx, message):
             and not (int(sig[32]) & 0x80)
             and not (sig[32] == 0 and not (int(sig[33]) & 0x80))
         )
-        print(it('green',"canonical"), it('cyan',str(ret)))
+        print(it("green", "canonical"), it("cyan", str(ret)))
         print(sig)
         return ret  # true/false
 
@@ -1900,12 +1766,10 @@ def sign_transaction(tx, message):
         ndata[0] += 1  # increment the arbitrary nonce
         # obtain compiled/binary private key from the wif
         privkey = secp256k1_PrivateKey(p, raw=True)
-        print(it('red',str(privkey)))
+        print(it("red", str(privkey)))
         print(privkey)
         # create a new recoverable 65 byte ECDSA signature
-        sig = secp256k1_ffi.new(
-            "secp256k1_ecdsa_recoverable_signature *"
-        )
+        sig = secp256k1_ffi.new("secp256k1_ecdsa_recoverable_signature *")
         # parse a compact ECDSA signature (64 bytes + recovery id)
         # returns: 1 = deterministic; 0 = not deterministic
         deterministic = secp256k1_lib.secp256k1_ecdsa_sign_recoverable(
@@ -1940,7 +1804,7 @@ def sign_transaction(tx, message):
     # this kind of signature is then called "compact signature"
     signature = hexlify(pack("<B", i) + signature).decode("ascii")
     tx["signatures"].append(signature)
-    print(it('blue','tx["signatures"].append(signature)'))
+    print(it("blue", 'tx["signatures"].append(signature)'))
     print(signature)
     print("")
 
@@ -1951,19 +1815,19 @@ def verify_transaction(tx):
     # gist.github.com/xeroc/9bda11add796b603d83eb4b41d38532b
     # once you have derived your new tx including the signatures
     # verify your transaction and it's signature
-    print(it('blue',"verify_transaction"))
-    print(it('blue',"tx2 = Signed_Transaction(**tx)"))
+    print(it("blue", "verify_transaction"))
+    print(it("blue", "tx2 = Signed_Transaction(**tx)"))
     tx2 = Signed_Transaction(**tx)
     print(tx2)
 
-    print(it('blue','tx2.deriveDigest("BTS")'))
+    print(it("blue", 'tx2.deriveDigest("BTS")'))
     tx2.deriveDigest("BTS")
 
-    print(it('blue',"pubkeys = [PrivateKey(wif).pubkey]"))
+    print(it("blue", "pubkeys = [PrivateKey(wif).pubkey]"))
     pubkeys = [PrivateKey(wif).pubkey]
     print(pubkeys)
 
-    print(it('blue','tx2.verify(pubkeys, "BTS")'))
+    print(it("blue", 'tx2.verify(pubkeys, "BTS")'))
     tx2.verify(pubkeys, "BTS")
 
     return tx
@@ -1996,9 +1860,7 @@ def broker(order):
         i += 1
         print("")
         print("manualSIGNING authentication attempt:", i, ctime())
-        child = Process(
-            target=execute, args=(signal, log_in, auth, order)
-        )
+        child = Process(target=execute, args=(signal, log_in, auth, order))
         child.daemon = False
         child.start()
         if JOIN:  # means main script will not continue till child done
@@ -2058,7 +1920,7 @@ def execute(signal, log_in, auth, order):
                 enablePrint()
             broadcasted_tx = rpc_broadcast_transaction(signed_tx)
     else:
-        print(it('red',"manualSIGNING rejected your order"), order["edicts"])
+        print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))
     print("")
     signal.value = 1
@@ -2090,9 +1952,7 @@ def prototype_order():
     proto["header"]["asset_id"] = metaNODE["asset_id"]
     proto["header"]["currency_id"] = metaNODE["currency_id"]
     proto["header"]["asset_precision"] = metaNODE["asset_precision"]
-    proto["header"]["currency_precision"] = metaNODE[
-        "currency_precision"
-    ]
+    proto["header"]["currency_precision"] = metaNODE["currency_precision"]
     proto["header"]["account_id"] = metaNODE["account_id"]
     proto["header"]["account_name"] = metaNODE["account_name"]
     del metaNODE
@@ -2108,23 +1968,13 @@ def log_in():
     global order, order1, order2, order3, nodes
 
     print("\033c")  # clear terminal
-    print('')
-    print(
-        it('green',"                                       y**2 = x**3 + 7")
-    )
-    print(
-        "************************************************************"
-    )
     print("")
-    print(
-        it('green',
-            " manualSIGNING - BUY/SELL/CANCEL OPS v%.8f alpha" % VERSION
-        )
-    )
+    print(it("green", "                                       y**2 = x**3 + 7"))
+    print("************************************************************")
     print("")
-    print(
-        "************************************************************"
-    )
+    print(it("green", " manualSIGNING - BUY/SELL/CANCEL OPS v%.8f alpha" % VERSION))
+    print("")
+    print("************************************************************")
     print("")
     print("             given a buy/sell/cancel order and wif:")
     print("                  convert to graphene terms")
@@ -2136,9 +1986,9 @@ def log_in():
     print("")
     print("           if you input name and wif this script will:")
     print("")
-    print(it('red',"          BUY 10 BTS with OPEN.BTC at 0.00000100"))
+    print(it("red", "          BUY 10 BTS with OPEN.BTC at 0.00000100"))
     print("")
-    print(it('green',"              WITHOUT IMPORTING PYBITSHARES "))
+    print(it("green", "              WITHOUT IMPORTING PYBITSHARES "))
     print("")
     print("enter account name (press ENTER for demo)")
     print("")
@@ -2164,7 +2014,7 @@ def log_in():
         print("using sample wallet import format (wif)")
         print(wif)
         print("")
-        print(it('green',"BEGIN DEMO"))
+        print(it("green", "BEGIN DEMO"))
         print("")
     # add wif, account_id, and account_name to sample order headers
     order1["header"]["wif"] = wif
@@ -2200,18 +2050,18 @@ def demo():
     """
 
     try:
-        print(it('purple',"======================================"))
-        print(it('purple',"receive order                         "))
-        print(it('purple',"======================================"))
+        print(it("purple", "======================================"))
+        print(it("purple", "receive order                         "))
+        print(it("purple", "======================================"))
         pprint(order)
         print("")
     except Exception as e:
         trace(e)
 
     try:
-        print(it('purple',"======================================"))
-        print(it('purple',"build graphene transaction from order "))
-        print(it('purple',"======================================"))
+        print(it("purple", "======================================"))
+        print(it("purple", "build graphene transaction from order "))
+        print(it("purple", "======================================"))
         tx = build_transaction(order)
         pprint(tx)
         print("")
@@ -2219,9 +2069,9 @@ def demo():
         trace(e)
     if len(tx["operations"]):
         try:
-            print(it('purple',"======================================"))
-            print(it('purple',"serialize transaction bytes string    "))
-            print(it('purple',"======================================"))
+            print(it("purple", "======================================"))
+            print(it("purple", "serialize transaction bytes string    "))
+            print(it("purple", "======================================"))
             tx, message = serialize_transaction(tx)
             pprint(tx)
             print("")
@@ -2229,9 +2079,9 @@ def demo():
             trace(e)
 
         try:
-            print(it('purple',"======================================"))
-            print(it('purple',"sign transaction with wif             "))
-            print(it('purple',"======================================"))
+            print(it("purple", "======================================"))
+            print(it("purple", "sign transaction with wif             "))
+            print(it("purple", "======================================"))
             signed_tx = sign_transaction(tx, message)
             pprint(signed_tx)
             print("")
@@ -2239,9 +2089,9 @@ def demo():
             trace(e)
 
         try:
-            print(it('purple',"======================================"))
-            print(it('purple',"verify the signature on transaction   "))
-            print(it('purple',"======================================"))
+            print(it("purple", "======================================"))
+            print(it("purple", "verify the signature on transaction   "))
+            print(it("purple", "======================================"))
             signed_tx = verify_transaction(signed_tx)
             pprint(signed_tx)
             print("")
@@ -2249,9 +2099,9 @@ def demo():
             trace(e)
 
         try:
-            print(it('purple',"======================================"))
-            print(it('purple',"broadcast transaction                 "))
-            print(it('purple',"======================================"))
+            print(it("purple", "======================================"))
+            print(it("purple", "broadcast transaction                 "))
+            print(it("purple", "======================================"))
             broadcasted_tx = rpc_broadcast_transaction(signed_tx)
             pprint(broadcasted_tx)
             print("")
@@ -2262,7 +2112,7 @@ def demo():
 
     try:
         ws.close()
-        print(it('purple',"connection terminated"))
+        print(it("purple", "connection terminated"))
     except Exception as e:
         trace(e)
     print("")
