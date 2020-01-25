@@ -9,16 +9,13 @@ def api_keys():
     """
     return {
         "fscapi": "",
-        "datadt": "",
         "barchart": "",
         "worldcoinindex": "",
         "fxmarket": "",
         "apiforex": "",
         "fixerio": "",
         "openexchangerates":"",
-        "alphavantage":"",
         "currencyconverter": "",
-        "truefx":"",
         "jsonbin":{
             "key":"",
             "id":"",
