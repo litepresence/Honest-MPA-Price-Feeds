@@ -167,7 +167,9 @@ def gather_data(name, wif, do_feed, do_jsonbin):
             # update final output on disk
             race_write(doc="feed.txt", text=feed)
             race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
-            appendage = str(int(time.time())) + " " + time.ctime() + " " + str(feed)
+            appendage = (
+                "\n" + str(int(time.time())) + " " + time.ctime() + " " + str(feed)
+            )
             race_append(doc="feed_append.txt", text=appendage)
             updates += 1
             time.sleep(REFRESH)
