@@ -643,10 +643,10 @@ def thresh(storage, process, epoch, pid, cache):
                 block_bs = block_bs[-100:]
                 reject_bs = reject_bs[-100:]
                 handshake_bs = handshake_bs[-100:]
-                ping_p = sum(ping_bs) / max(1,len(ping_bs))
-                block_p = sum(block_bs) / max(1,len(block_bs))
-                reject_p = sum(reject_bs) / max(1,len(reject_bs))
-                handshake_p = sum(handshake_bs) / max(1,len(handshake_bs))
+                ping_p = sum(ping_bs) / max(1, len(ping_bs))
+                block_p = sum(block_bs) / max(1, len(block_bs))
+                reject_p = sum(reject_bs) / max(1, len(reject_bs))
+                handshake_p = sum(handshake_bs) / max(1, len(handshake_bs))
                 ping_b = str(ping_b).ljust(7)
                 block_b = str(block_b).ljust(7)
                 handshake_b = str(handshake_b).ljust(7)
