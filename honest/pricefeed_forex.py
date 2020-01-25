@@ -10,71 +10,69 @@ USD:FOREX data aggregation script
 
 litepresence2020
 """
+
 # STANDARD PYTHON MODULES
+import time
 from pprint import pprint
 from statistics import median
 from json import dumps as json_dumps
+from multiprocessing import Process
 
 # PRICE FEED MODULES
-from fxcm import fxcm
-from wocu import wocu
-from oanda import oanda
-from liveusd import liveusd
-from fxempire import fxempire
-from bitcoinaverage import bitcoinaverage
-from freeforex import freeforex
-from finviz import finviz
-from yahoo import yahoo
-from wsj import wsj
-from duckduckgo import duckduckgo
-from bloomberg import bloomberg
-from fscapi import fscapi
-from fixerio import fixerio
-from barchart import barchart
-from fxmarket import fxmarket
-from currencyconverter import currencyconverter
-from openexchangerates import openexchangerates
+from forex_api import fixerio, openexchangerates, fscapi
+from forex_api import barchart, currencyconverter, fxmarket
+from forex_scrape import liveusd, freeforex, finviz, yahoo, wsj, duckduckgo, wocu, oanda
+from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire
+from utilities import race_write, ret_markets, race_read_json, it, sigfig
 
-# ADDITIONAL PROPRIETARY MODULES
-from utilities import process_request, it, sigfig
-from utilities import race_write, ret_markets, race_read_json
-
-TIMEOUT = 10
+# GLOBAL CONSTANTS
+TIMEOUT = 15
 
 
 def refresh_forex_rates():
     """
-    make process wrapped external calls
+    make process wrapped external calls; IPC via text pipe
     """
-    # start processes
+    methods = [
+        barchart,
+        bitcoinaverage, # SOMETIMES FAILS / SLOW TO LOAD / CLOUDFARE ??
+        bloomberg,
+        currencyconverter, # NOT COMPATIBLE WITH VPN / DYNAMIC IP
+        duckduckgo,
+        finviz,
+        fixerio,
+        freeforex,
+        fscapi,
+        fxcm,
+        fxempire,
+        fxmarket,
+        liveusd,
+        oanda,
+        openexchangerates,
+        wocu,
+        wsj,
+        yahoo,
+    ]
+    # initialize each external call method as a process
     processes = {}
-    processes["fxcm"] = process_request("fxcm", fxcm)
-    processes["bitcoinaverage"] = process_request("bitcoinaverage", bitcoinaverage)
-    processes["wocu"] = process_request("wocu", wocu)
-    processes["oanda"] = process_request("oanda", oanda)
-    processes["liveusd"] = process_request("liveusd", liveusd)
-    processes["fxempire"] = process_request("fxempire", fxempire)
-    processes["freeforex"] = process_request("freeforex", freeforex)
-    processes["finviz"] = process_request("finviz", finviz)
-    processes["yahoo"] = process_request("yahoo", yahoo)
-    processes["wsj"] = process_request("wsj", wsj)
-    processes["duckduckgo"] = process_request("duckduckgo", duckduckgo)
-    processes["bloomberg"] = process_request("bloomberg", bloomberg)
-    processes["fscapi"] = process_request("fscapi", fscapi)
-    processes["fixerio"] = process_request("fixerio", fixerio)
-    processes["barchart"] = process_request("barchart", barchart)
-    processes["fxmarket"] = process_request("fxmarket", fxmarket)
-    processes["openexchangerates"] = process_request(
-        "openexchangerates", openexchangerates
-    )
-    processes["currencyconverter"] = process_request(
-        "currencyconverter", currencyconverter
-    )
-    # join, timeout, and terminate processes
-    for site in processes.keys():
+    for method in methods:
+        site = method.__name__
+        race_write(f"{site}_forex.txt", {})
+        processes[site] = Process(target=method, args=(site,))
+        processes[site].daemon = False
+        processes[site].start()
+        # FIXME: FOR DEPLOYMENT ON LOW COST WEB HOSTING SERVICES
+        # FIXME: ALTERNATIVE RAM SAVINGS 0.5GB, WITH ADDED EXECUTION TIME OF 4 MINUTES
+        # FIXME: **INCLUDE** NEXT 3 LINES FOR LOW RAM ALTERNATIVE
+        # processes[site].join(TIMEOUT)
+        # processes[site].terminate()
+        # time.sleep(5)
+    # FIXME: **EXCLUDE** NEXT 4 LINES FOR LOW RAM ALTERNATIVE
+    for site in processes.keys(): 
         processes[site].join(TIMEOUT)
+    for site in processes.keys(): 
         processes[site].terminate()
-    # read the text pipe ipc results
+    # read the text pipe ipc results of each process
     sources = {}
     for site in processes.keys():
         sources[site] = race_read_json(f"{site}_forex.txt")
