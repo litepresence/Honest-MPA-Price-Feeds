@@ -123,6 +123,8 @@ def ret_markets():
         "USD:RUB",
         "USD:JPY",
         "USD:KRW",
+        "USD:XAG",
+        "USD:XAU",
     ]
 
 
