@@ -2,20 +2,28 @@
 this will be imported by various forex scripts which require api keys
 """
 
-def api_keys():
+def config_apikeys():
     """
-    enter your api keys here for additional data sources
+    enter your api keys here for additional data sources, get keys at:
+
+    barchart.com
+    fcsapi.com
+    fixer.io
+    free.currencyconverterapi.com
+    fxmarketapi.com
+    openexchangerates.org
+    
     also enter your jsonbin.io key, id, and url here
     """
     return {
-        "fscapi": "",
+
         "barchart": "",
-        "worldcoinindex": "",
-        "fxmarket": "",
-        "apiforex": "",
+        "fscapi": "",
         "fixerio": "",
-        "openexchangerates":"",
         "currencyconverter": "",
+        "fxmarket": "",
+        "openexchangerates":"",
+
         "jsonbin":{
             "key":"",
             "id":"",
