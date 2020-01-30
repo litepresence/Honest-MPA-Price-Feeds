@@ -25,14 +25,15 @@ from getpass import getpass
 # YOU ARE OBLIGED AS AN HONEST MPA PRICE FEED PRODUCER
 # TO PUBLISH WITH THESE UNALTERED METHODS AND CONSTANTS
 # ######################################################################################
-from utilities import race_write, race_read_json, sigfig
+from utilities import race_write, race_read_json, sigfig, it
 from pricefeed_forex import pricefeed_forex
 from pricefeed_cex import pricefeed_cex
-from pricefeed_dex import pricefeed_dex, race_append
+from pricefeed_dex import pricefeed_dex, race_append, print_logo
 from pricefeed_publish import broker
+from pricefeed_sceletus import sceletus_agents, sceletus
 from jsonbin import update_jsonbin
 
-CER = 2.0  # encourage payment of fees in bts, else 2X profit for HONEST producers
+CER = 1.5  # encourage payment of fees in bts, else 2X profit for HONEST producers
 MCR = 160  # min declared by FINRA is 125; min recommended by core dev is 160
 MSSR = 200  # liquidate mal investment immediately to as low as 50% below market rate
 REFRESH = 3600  # maintain accurate timely price feeds
@@ -72,9 +73,17 @@ def publish_feed(prices, name, wif):
     btsbtc = dict(pub_dict)
     btsbtc["asset_name"] = "HONEST.BTC"
     btsbtc["settlement_price"] = prices["feed"]["BTS:BTC"]
+    # HONEST.XAG publication edict
+    btsxag = dict(pub_dict)
+    btsxag["asset_name"] = "HONEST.XAG"
+    btsxag["settlement_price"] = prices["feed"]["BTS:XAG"]
+    # HONEST.XAU publication edict
+    btsxau = dict(pub_dict)
+    btsxau["asset_name"] = "HONEST.XAU"
+    btsxau["settlement_price"] = prices["feed"]["BTS:XAU"]
     # append edicts to the edicts list
     # eventually we will update to: [btscny, btsusd, btsbtc] and beyond...
-    edicts = [btscny]
+    edicts = [btscny, btsusd, btsbtc, btsxag, btsxau]
     # build and broker the publication order
     order = {
         "header": header,
@@ -84,7 +93,7 @@ def publish_feed(prices, name, wif):
     broker(order)
 
 
-def gather_data(name, wif, do_feed, do_jsonbin):
+def gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus):
     """
     primary event loop
     """
@@ -93,11 +102,13 @@ def gather_data(name, wif, do_feed, do_jsonbin):
     race_write("pricefeed_forex.txt", {})
     race_write("pricefeed_cex.txt", {})
     race_write("pricefeed_dex.txt", {})
+    race_write("sceletus_output.txt", [])
     race_write("feed.txt", {})
     # begin the dex pricefeed (metanode fork)
     dex_process = Process(target=pricefeed_dex)
     dex_process.daemon = False
     dex_process.start()
+    # dex_process.join(10)
     dex = {}
     # wait until the first dex pricefeed writes to file
     while dex == {}:
@@ -117,6 +128,8 @@ def gather_data(name, wif, do_feed, do_jsonbin):
             usdrub = forex["medians"]["USD:RUB"][0]
             usdjpy = forex["medians"]["USD:JPY"][0]
             usdkrw = forex["medians"]["USD:KRW"][0]
+            usdxau = forex["medians"]["USD:XAU"][0]
+            usdxag = forex["medians"]["USD:XAG"][0]
             # localize cex rates
             btcusd = cex["BTC:USD"]["median"]
             cex_btsbtc = cex["BTS:BTC"]["median"]
@@ -136,6 +149,8 @@ def gather_data(name, wif, do_feed, do_jsonbin):
                 "BTS:RUB": (btsusd * usdrub),
                 "BTS:JPY": (btsusd * usdjpy),
                 "BTS:KRW": (btsusd * usdkrw),
+                "BTS:XAU": (btsusd * usdxau),
+                "BTS:XAG": (btsusd * usdxag),
             }
             feed = {k: sigfig(v) for k, v in feed.items()}
             # forex priced in bts terms; switch symbol and 1/price
@@ -158,12 +173,27 @@ def gather_data(name, wif, do_feed, do_jsonbin):
                 "inverse": inverse_feed,
                 "feed": feed,
             }
+
             # publish feed prices to the blockchain
-            if do_feed.lower() == "y":
+            if do_feed == "y":
+                time.sleep(3)
+                print(it("red", "PUBLISHING TO BLOCKCHAIN"))
+                time.sleep(3)
                 publish_feed(prices, name, wif)
-            # publish feed prices and production data to jsonbin.io
-            if do_jsonbin.lower() == "y":
+            # upload production data matrix to jsonbin.io
+            if do_jsonbin == "y":
+                time.sleep(3)
+                print(it("red", "UPLOADING TO JSONBIN"))
+                time.sleep(3)
                 update_jsonbin(prices)
+            # buy/sell reference rates with two accounts
+            if do_sceletus == "y":
+                time.sleep(3)
+                print(it("red", "SCELETUS REFERENCE RATES"))
+                time.sleep(3)
+                sceletus_orders, sceletus_output = sceletus(prices, agents, do_sceletus)
+                race_write("sceletus_orders.txt", sceletus_orders)
+                race_write("sceletus_output.txt", sceletus_output)
             # update final output on disk
             race_write(doc="feed.txt", text=feed)
             race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
@@ -182,13 +212,33 @@ def main():
     """
     initialize final aggregation and publication event loop
     """
-    do_feed = input("\033c\n\nto publish 'y + Enter' or Enter to demo\n\n")
-    do_jsonbin = input("\n\nto update jsonbin 'y + Enter' or Enter to skip\n\n")
+    print("\033c")
+    print_logo()
+    do_feed = input(
+        "\n  to PUBLISH"
+        + it("cyan", " y + Enter ")
+        + "or Enter to skip\n\n           "
+    ).lower()
+    do_jsonbin = input(
+        "\n  to JSONBIN"
+        + it("cyan", " y + Enter ")
+        + "or Enter to skip\n\n           "
+    ).lower()
+    agents, do_sceletus = sceletus_agents()
     wif, name = "", ""
     if do_feed.lower() == "y":
-        name = input("\n\nBitshares DEX account name:\n\n")
-        wif = getpass("\n\nBitshares DEX wif:\n\n")
-    gather_data(name, wif, do_feed, do_jsonbin)
+        name = input(
+            "\n  Bitshares"
+            + it("yellow", " FEED PRODUCING ")
+            + "agent name:\n\n           "
+        )
+        wif = getpass(
+            "\n  Bitshares"
+            + it("yellow", " FEED PRODUCING ")
+            + "agent wif:\n           "
+        )
+        print("           *****************")
+    gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus)
 
 
 if __name__ == "__main__":
