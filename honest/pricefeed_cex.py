@@ -261,19 +261,21 @@ def get_price(api):
             print(trace(error), {k: v for k, v in api.items() if k != "secret"})
         break
     now = int(time.time())
-    doc = api["exchange"] + ".txt"
+    doc = api["exchange"] + api["pair"] + ".txt"
+    print("writing", doc)
     data = {"last": last, "time": now}
     race_write(doc, json_dumps(data))
 
 
-def aggregate(exchanges):
+def aggregate(exchanges, api):
     """
     post process data from all exchanges to extract medians and means
     """
     data = {}
     for exchange in exchanges:
         try:
-            doc = exchange + ".txt"
+            doc = exchange + api["pair"] + ".txt"
+            print("reading", doc)
             data[exchange] = race_read_json(doc)
         except Exception as error:
             print(error.args)
@@ -309,7 +311,7 @@ def fetch(exchanges, api):
     for exchange in exchanges:
         processes[exchange].join(20)
         processes[exchange].terminate()
-    return aggregate(exchanges)
+    return aggregate(exchanges, api)
 
 
 def pricefeed_cex():
