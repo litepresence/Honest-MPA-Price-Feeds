@@ -103,12 +103,12 @@ def WTFPL_v0_March_1765():
 # h/t @vvk123 @sschiessl @harukaff_bot
 # remainder WTFPL March 1765
 
-DEV = False
+DEV = True
 COLOR = True
 
 " STANDARD PYTHON MODULES "
 
-from time import time, ctime, mktime, strptime
+from time import time, ctime, mktime, gmtime, asctime, strptime, strftime
 from multiprocessing import Process, Value  # encapsulate processes
 from decimal import Decimal as decimal  # higher precision than float
 from json import dumps as json_dumps  # serialize object to string
@@ -158,6 +158,7 @@ print("\033c")  # clear screen if they are all installed
 " litepresence/extinction-event MODULES "
 
 from dex_meta_node import bitshares_trustless_client
+from utilities import race_write
 
 " LINUX AND PYTHON 3 REQUIRED "
 
@@ -328,7 +329,7 @@ def control_panel():
     # default True to execute order in primary script process
     JOIN = True
     # ignore orders value less than ~X bitshares; 0 to disable
-    DUST = 20
+    DUST = 0
 
 
 " COLOR TERMINAL "
@@ -723,7 +724,7 @@ class Base58(object):
     def __init__(self, data, prefix="BTS"):
 
         print(it("green", "Base58"))
-        print(it("blue", data))
+        print(it("blue", data[:4]))
         self._prefix = prefix
         if all(c in HEXDIGITS for c in data):
             self._hex = data
@@ -837,7 +838,7 @@ def gphBase58CheckEncode(s):
 
 def base58CheckDecode(s):
     print(it("green", "base58CheckDecode"))
-    print(s)
+    print(s[:4])
     s = unhexlify(base58decode(s))
     dec = hexlify(s[:-4]).decode("ascii")
     checksum = doublesha256(dec)[:4]
@@ -1919,6 +1920,17 @@ def execute(signal, log_in, auth, order):
             if not DEV:
                 enablePrint()
             broadcasted_tx = rpc_broadcast_transaction(signed_tx)
+        current_time = {
+            "unix": int(time()),
+            "local": ctime() + " " + strftime("%Z"),
+            "utc": asctime(gmtime()) + " UTC",
+        }
+        receipt = {
+            "time": current_time,
+            "message": message,
+            "broadcasted_tx": broadcasted_tx,
+        }
+        race_write(doc="broadcasted_tx.txt", text=receipt)
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))
