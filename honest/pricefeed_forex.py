@@ -22,8 +22,9 @@ from multiprocessing import Process
 from forex_api import fixerio, openexchangerates, fscapi
 from forex_api import barchart, currencyconverter, fxmarket
 from forex_scrape import liveusd, freeforex, finviz, yahoo, wsj
-from forex_scrape import reuters, duckduckgo, wocu, oanda
-from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire
+from forex_scrape import reuters, duckduckgo, wocu, oanda, aastock, fxempire2, ino
+from forex_scrape import fxrate, forextime, currencyme, forexrates, exchangeratewidget
+from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire1, investing
 from utilities import race_write, ret_markets, race_read_json, it, sigfig
 
 # GLOBAL CONSTANTS
@@ -35,25 +36,34 @@ def refresh_forex_rates():
     make process wrapped external calls; IPC via text pipe
     """
     methods = [
-        barchart,
-        bitcoinaverage, # SOMETIMES FAILS / SLOW TO LOAD / CLOUDFARE ??
-        bloomberg,
-        currencyconverter, # NOT COMPATIBLE WITH VPN / DYNAMIC IP
-        duckduckgo,
-        finviz,
-        fixerio,
-        freeforex,
-        fscapi,
-        fxcm,
-        fxempire,
-        fxmarket,
-        liveusd,
-        oanda,
-        openexchangerates,
-        reuters,
-        wocu,
-        wsj,
-        yahoo,
+        aastock,  # DARKWEB API; MORNINGSTAR (GOOGLE FINANCE) BACKDOOR
+        barchart,  # KEYED
+        bitcoinaverage,  # MAY ADD CAPTCHA; HEADER REQUIRED; CLOUDFARE SPOOFING
+        bloomberg,  # MAY ADD CAPTCHA; HEADER REQUIRED; CLOUDFARE SPOOFING
+        currencyconverter,  # KEYED, NOT COMPATIBLE WITH VPN / DYNAMIC IP
+        currencyme,  # DARKWEB API
+        duckduckgo,  # XML SCRAPING, XE BACKDOOR
+        exchangeratewidget,  # XML SCRAPING
+        finviz,  # DARKWEB API
+        fixerio,  # KEYED
+        forexrates,  # XML SCRAPING
+        forextime,  # DARKWEB API
+        freeforex,  # FREE API
+        fscapi,  # KEYED
+        fxcm,  # CLOUDFARE SPOOFING; HEADER REQUIRED; ALMOST JSON RESPONSE
+        fxempire1,  # XIGNITE BACKDOOR; HEADER REQUIRED; CLOUDFARE SPOOFING
+        fxempire2,  # TRADINGVIEW BACKDOOR
+        fxmarket,  # KEYED
+        fxrate,  # XML SCRAPING
+        ino,  # DARKWEB API
+        investing,  # CLOUDFARE SPOOFING, XML SCRAPING
+        liveusd,  # DARKWEB API
+        oanda,  # DARKWEB API; RC4 ECRYPTION OF LATIN ENCODING
+        openexchangerates,  # KEYED
+        reuters,  # REFINITIV BACKDOOR, DARKWEB API
+        wocu,  # XML SCRAPING
+        wsj,  # MARKETWATCH BACKDOOR, DARKWEB API
+        yahoo,  # YAHOO FINANCE V7 DARKWEB API
     ]
     # initialize each external call method as a process
     processes = {}
@@ -64,15 +74,15 @@ def refresh_forex_rates():
         processes[site].daemon = False
         processes[site].start()
         # FIXME: FOR DEPLOYMENT ON LOW COST WEB HOSTING SERVICES
-        # FIXME: ALTERNATIVE RAM SAVINGS 0.5GB, WITH ADDED EXECUTION TIME OF 4 MINUTES
+        # FIXME: ALTERNATIVE RAM SAVINGS 0.5GB, WITH ADDED EXECUTION TIME OF 5 MINUTES
         # FIXME: **INCLUDE** NEXT 3 LINES FOR LOW RAM ALTERNATIVE
         # processes[site].join(TIMEOUT)
         # processes[site].terminate()
         # time.sleep(5)
     # FIXME: **EXCLUDE** NEXT 4 LINES FOR LOW RAM ALTERNATIVE
-    for site in processes.keys(): 
+    for site in processes.keys():
         processes[site].join(TIMEOUT)
-    for site in processes.keys(): 
+    for site in processes.keys():
         processes[site].terminate()
     # read the text pipe ipc results of each process
     sources = {}
