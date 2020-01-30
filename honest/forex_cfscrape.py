@@ -26,9 +26,9 @@ import cfscrape
 from utilities import race_write, refine_data
 
 
-def fxempire(site):
+def fxempire1(site):
     """
-    live forex rates scraped from fxempire.com
+    live forex rates scraped from fxempire.com (backdoor to xignite)
     """
     url = "https://www.fxempire.com/api/v1/en/markets/list"
     headers = {
@@ -67,7 +67,17 @@ def fxempire(site):
                     data[pair] = float(price)
                 except:
                     pass
+        for item in ret["commodities"]:
+            try:
+                if item["symbol"] in ["XAUUSD", "XAGUSD"]:
+                    pair = "USD:" + item["symbol"].replace("USD", "")
+                    price = 1 / float(item["value"])
+                    data[pair] = price
+            except:
+                pass
+        data = {k: v for k, v in data.items() if "RUB" not in k}  # RUBLE is stale
         data = refine_data(data)
+        print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(f"{site} failed to load")
@@ -124,7 +134,7 @@ def fxcm(site):
                 symbol = symbol[:3] + ":" + symbol[-3:]
                 data[symbol] = (float(item["Ask"]) + float(item["Bid"])) / 2
         data = refine_data(data)
-        # inter process communication via txt
+        print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(f"{site} failed to load")
@@ -135,14 +145,14 @@ def bloomberg(site):
     live forex rates scraped from bloomberg.com
     """
     uri = "https://www.bloomberg.com/markets/api/bulk-time-series/price/"
-    endpoint = "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR"
+    endpoint = "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR,XAUUSD%3ACUR,XAGUSD%3ACUR"
     url = uri + endpoint
     headers = {
         "authority": "www.bloomberg.com",
         "method": "GET",
         "path": (
             "/markets/api/comparison/data?securities="
-            + "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR"
+            + "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR,XAUUSD%3ACUR,XAGUSD%3ACUR"
             + "&securityType=CURRENCY&locale=en"
         ),
         "scheme": "https",
@@ -188,7 +198,10 @@ def bloomberg(site):
             symbol = item["id"].replace(":CUR", "")
             symbol = symbol[:3] + ":" + symbol[-3:]
             data[symbol] = float(item["lastPrice"])
+        data["USD:XAG"] = 1 / data.pop("XAG:USD")
+        data["USD:XAU"] = 1 / data.pop("XAU:USD")
         data = refine_data(data)
+        print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(f"{site} failed to load")
@@ -207,6 +220,47 @@ def bitcoinaverage(site):
         for key, val in ret.items():
             data["USD:" + key] = float(val["rate"])
         data = refine_data(data)
+        print(site, data)
+        race_write(f"{site}_forex.txt", json_dumps(data))
+    except:
+        print(f"{site} failed to load")
+
+
+def investing(site):
+    """
+    live forex rates scraped from investing.com
+    https://www.investing.com/webmaster-tools/live-currency-cross-rates
+    """
+    url = (
+        "https://www.widgets.investing.com/live-currency-cross-rates?"
+        + "theme=darkTheme&cols=last&pairs=3,2111,2124,2126,650,962711,69,68"
+    )
+    headers = {
+        "href": (
+            "https://www.investing.com?utm_source=WMT&amp;utm_medium=referral&amp;"
+            + "utm_campaign=LIVE_CURRENCY_X_RATES&amp;utm_content=Footer%20Link"
+        ),
+        "target": "_blank",
+        "rel": "nofollow",
+    }
+    try:
+        session = requests.Session()
+        session.headers = headers
+        cfscrape_requests = cfscrape.create_scraper(sess=session)
+        ret = cfscrape_requests.get(url, headers=headers, timeout=(15, 15)).text
+        lines = ret.split('target="_blank"')
+        lines = [i.replace(" ", "").replace(",", "") for i in lines]
+        lines = [i for i in lines if "askpid" in i]
+        lines = [i.split("hiddenFour")[0] for i in lines]
+        data = {}
+        for item in lines:
+            data[item.split("</a>")[0].replace(">", "")] = item.split('last">')[1]
+        data = {k.replace("/", ":"): v.split("</div>")[0] for k, v in data.items()}
+        data = {k: float(v) for k, v in data.items()}
+        data["USD:XAG"] = 1 / data.pop("XAG:USD")
+        data["USD:XAU"] = 1 / data.pop("XAU:USD")
+        data = refine_data(data)
+        print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(f"{site} failed to load")
