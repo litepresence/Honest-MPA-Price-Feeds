@@ -53,6 +53,8 @@ def config_sceletus():
     but the scripts do not have means currently to replenish account 1 w/
     acount 2's purchases and vice versa.  so manually replenishing is currently needed
     on a recurring basis depending on the amount of each asset you hold.
+    
+    I view sceletus as an ideal low cost, high yield marketing program for our offering
 
     CURRENT RECOMMENDED SETTINGS:
 
