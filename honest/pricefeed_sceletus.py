@@ -11,30 +11,7 @@ final aggregation of prices vs a variety of noteworthy dex instruments
 RPC places dust sized opposing buy and sell orders using two accounts
 leverages the manualsigning.py broker(order) method
 
-NOTE: YOU CANNOT RUN THIS AT THE SAME TIME AS pricefeed_final.py in the SAME FOLDER
-NOTE: make a full copy of honest folder contents including the pipe folder
-NOTE: pricefeed_sceletus.py must have its OWN pipe files
-
-results in the following 18 market pairs to skeleton:
-
-HONEST.BTC:BTC
-HONEST.BTC:BTS
-HONEST.BTC:CNY
-HONEST.BTC:GDEX.BTC
-HONEST.BTC:USD
-HONEST.CNY:BTC
-HONEST.CNY:BTS
-HONEST.CNY:CNY
-HONEST.CNY:GDEX.BTC
-HONEST.CNY:HONEST.BTC
-HONEST.CNY:HONEST.USD
-HONEST.CNY:USD
-HONEST.USD:BTC
-HONEST.USD:BTS
-HONEST.USD:CNY
-HONEST.USD:GDEX.BTC
-HONEST.USD:HONEST.BTC
-HONEST.USD:USD
+this module by pricefeed_final.py
 
 litepresence2020
 """
@@ -49,29 +26,15 @@ from statistics import median
 from multiprocessing import Process
 from json import dumps as json_dumps
 
-
 # HONEST PRICE FEEDS MODULES
 from dex_manual_signing import broker
 from pricefeed_cex import pricefeed_cex
 from pricefeed_forex import pricefeed_forex
 from pricefeed_dex import pricefeed_dex, race_append, trace
-from utilities import race_write, race_read_json, sigfig
+from utilities import race_write, race_read_json, sigfig, it
 from dex_meta_node import rpc_last, rpc_lookup_asset_symbols, rpc_lookup_accounts
 from dex_meta_node import wss_handshake
-
-# ######################################################################################
-# ######################################################################################
-# USER CONTROLS
-# ######################################################################################
-# maintain accurate historical chart skeleton
-REFRESH = 3600
-# draw a price chart in this matrix of market pairs:
-CURRENCIES = ["CNY", "USD", "BTS", "BTC", "GDEX.BTC"]
-HONEST_ASSETS = ["HONEST.CNY"]  # , "HONEST.USD", "HONEST.BTC"]
-HONEST_TO_HONEST = True
-# ######################################################################################
-# ######################################################################################
-BEGIN = int(time.time())  # Intialize runtime count
+from config_sceletus import config_sceletus
 
 
 def reconnect(rpc):
@@ -118,15 +81,18 @@ def create_pairs():
     return a list of the markets to skeleton
     use a matrix of CURRENCIES and HONEST_ASSETS
     """
+    config = config_sceletus()
     pairs = []
-    for currency in CURRENCIES:
-        for asset in HONEST_ASSETS:
+    for currency in config["currencies"]:
+        for asset in config["honest_assets"]:
             pairs.append(asset + ":" + currency)
-    if HONEST_TO_HONEST:
+    if config["honest_to_honest"]:
         honest_pairs = [
-            i[0] + ":" + i[1] for i in list(itertools.combinations(HONEST_ASSETS, 2))
+            i[0] + ":" + i[1]
+            for i in list(itertools.combinations(config["honest_assets"], 2))
         ]
         pairs += honest_pairs
+    pairs = [i for i in pairs if i not in config["exclude_pairs"]]
     pairs.sort()
     return pairs
 
@@ -166,7 +132,7 @@ def sceletus(prices, agents, do_sceletus):
     update the historic chart on the blockchain using buy/sell broker(order) method
     for each pair to be skeleton'd, for each agent on opposing sides of the book
     """
-    output = [{}, {}]
+    output = [{}, {}, time.ctime()]
     orders = []
     # calculate skeleton honest-to-honest rates
     usd_cny_btc = create_usd_cny_btc(prices)
@@ -218,14 +184,25 @@ def sceletus(prices, agents, do_sceletus):
                 bitassets["BTS:" + currency]
             )
         # determine a dust size amount for this market pair
-        amount = 1 / 10 ** (asset_precision - 2)
+        if bare_asset == "BTC":
+            amount == 0.00000300
+        if bare_asset in ["CNY", "USD"]:
+            if currency == "BTS":
+                amount = 0.0005
+            elif bare_currency == "CNY":
+                amount = 0.02
+            elif bare_currency == "USD":
+                amount = 0.15
+            elif bare_currency == "BTC":
+                amount = 0.2
+        if bare_asset == "USD":
+            amount *= 0.15
         # perform buy ops for agents[0] and sell ops for agents[1]
         for idx in range(2):
-            header = {
-                "account_name": agents[idx]["name"],
-                "account_id": agents[idx]["id"],
-                "wif": agents[idx]["wif"],
-            }
+            header["account_name"] = agents[idx]["name"]
+            header["account_id"] = agents[idx]["id"]
+            header["wif"] = agents[idx]["wif"]
+
             operation = "buy"
             if idx:  # idx is zero or one
                 operation = "sell"
@@ -247,128 +224,52 @@ def sceletus(prices, agents, do_sceletus):
                 "edicts": [edict],
                 "nodes": nodes,
             }
-            output[idx][pair] = "%.16f" % price
+            output[idx][pair] = price
             # print the outcome and if not a demo, then live execution
             orders.append(order)
             if do_sceletus:
                 broker(order)
 
-    race_write("orders.txt", orders)
-    race_write("output.txt", output)
+    return orders, output
 
 
-def gather_data(agents, do_sceletus):
+def sceletus_agents():
     """
-    primary event loop
-    """
-    # purge the IPC text pipe
-    race_write("pricefeed_final.txt", {})
-    race_write("pricefeed_forex.txt", {})
-    race_write("pricefeed_cex.txt", {})
-    race_write("pricefeed_dex.txt", {})
-    race_write("feed.txt", {})
-    # begin the dex pricefeed (metanode fork)
-    dex_process = Process(target=pricefeed_dex)
-    dex_process.daemon = False
-    dex_process.start()
-    dex = {}
-    # wait until the first dex pricefeed writes to file
-    while dex == {}:
-        dex = race_read_json("pricefeed_dex.txt")
-    updates = 1
-    while True:
-        try:
-            # collect forex and cex data
-            forex = pricefeed_forex()  # takes about 30 seconds
-            cex = pricefeed_cex()  # takes about 30 seconds
-            # read the latest dex data
-            dex = race_read_json("pricefeed_dex.txt")
-            # localize forex rates
-            usdcny = forex["medians"]["USD:CNY"][0]
-            usdeur = forex["medians"]["USD:EUR"][0]
-            usdgbp = forex["medians"]["USD:GBP"][0]
-            usdrub = forex["medians"]["USD:RUB"][0]
-            usdjpy = forex["medians"]["USD:JPY"][0]
-            usdkrw = forex["medians"]["USD:KRW"][0]
-            # localize cex rates
-            btcusd = cex["BTC:USD"]["median"]
-            cex_btsbtc = cex["BTS:BTC"]["median"]
-            # attain dex BTS:BTC median
-            dex_btsbtc = median([v for k, v in dex["last"].items() if "BTC" in k])
-            # finalize btsbtc mean by averaging dex and cex rates
-            btsbtc = (cex_btsbtc + dex_btsbtc) / 2
-            # create implied bts us dollar price
-            btsusd = btsbtc * btcusd
-            # create implied bts priced in forex terms
-            feed = {
-                "BTS:BTC": btsbtc,
-                "BTS:USD": btsusd,
-                "BTS:CNY": (btsusd * usdcny),
-                "BTS:EUR": (btsusd * usdeur),
-                "BTS:GBP": (btsusd * usdgbp),
-                "BTS:RUB": (btsusd * usdrub),
-                "BTS:JPY": (btsusd * usdjpy),
-                "BTS:KRW": (btsusd * usdkrw),
-            }
-            feed = {k: sigfig(v) for k, v in feed.items()}
-            # forex priced in bts terms; switch symbol and 1/price
-            inverse_feed = {
-                (k[-3:] + ":" + k[:3]): sigfig(1 / v) for k, v in feed.items()
-            }
-            # aggregate full price calculation for jsonbin.io
-            current_time = {
-                "unix": int(time.time()),
-                "local": time.ctime() + " " + time.strftime("%Z"),
-                "utc": time.asctime(time.gmtime()) + " UTC",
-                "runtime": int(time.time() - BEGIN),
-                "updates": updates,
-            }
-            prices = {
-                "time": current_time,
-                "cex": cex,
-                "dex": dex,
-                "forex": forex,
-                "inverse": inverse_feed,
-                "feed": feed,
-            }
-
-            sceletus(prices, agents, do_sceletus)
-            # update final output on disk
-            appendage = (
-                "\n" + str(int(time.time())) + " " + time.ctime() + " " + str(prices)
-            )
-            race_append(doc="feed_append.txt", text=appendage)
-            race_write(doc="feed.txt", text=feed)
-            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
-            updates += 1
-            time.sleep(REFRESH)
-        except Exception as error:
-            print(trace(error))
-            time.sleep(1)  # try again in 10 seconds
-
-
-def main():
-    """
-    initialize final aggregation and publication event loop
+    select whether to sceletus and input agents name and wif
     """
     # demo or live decision input
     do_sceletus = input(
-        "\033c\n\nto skeleton the market 'y + Enter' or Enter to demo\n\n"
-    )
+        "\n  to SCELETUS"
+        + it("cyan", " y + Enter ")
+        + "or Enter to skip\n\n           "
+    ).lower()
     # create a list of two agent dictionaries with name and wif
     agents = []
-    for i in range(2):
-        agent = {"name": "XXX", "wif": "XXX", "id": "XXX"}
+    agent = {"name": "XXX", "wif": "XXX", "id": "XXX"}
+    for idx in range(2):
+        side = "BUYING"
+        color = "green"
+        if idx:
+            side = "SELLING"
+            color = "red"
         if do_sceletus == "y":
-            name = input(f"\n\nBitshares DEX agent {i} name:\n\n")
-            wif = getpass(f"\n\nBitshares DEX agent {i} wif:\n\n")
+            name = input(
+                "\n  Bitshares"
+                + it(color, f" SCELETUS {side} ")
+                + "agent name:\n\n           "
+            )
+            wif = getpass(
+                "\n  Bitshares"
+                + it(color, f" SCELETUS {side} ")
+                + "agent wif:\n           "
+            )
+            print("           *****************")
             agent = {"name": name, "wif": wif}
         agents.append(agent)
 
-    # begin the data collection process
-    gather_data(agents, do_sceletus)
+    return agents, do_sceletus
 
 
 if __name__ == "__main__":
 
-    main()
+    print("see module docstring, launch with pricefeed_final.py")
