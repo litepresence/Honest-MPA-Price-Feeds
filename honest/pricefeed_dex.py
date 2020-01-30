@@ -40,7 +40,7 @@ from websocket import create_connection as wss
 from websocket import enableTrace
 
 # HONEST PRICE FEED MODULES
-from utilities import sigfig
+from utilities import sigfig, it
 
 # ======================================================================
 VERSION = "HONEST MPA DEX FEED 0.00000001"
@@ -512,6 +512,11 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                     implied_btcusd = usd / btc
                 except:
                     print(it("cyan", "WARN: GATHERING PRICES"))
+                sceletus_output = {}
+                try:
+                    sceletus_output = race_read(doc="sceletus_output.txt")
+                except:
+                    pass
                 runtime = int(time()) - cache["begin"]
                 # storage['bw_depth'] = max(int(len(nodes) / 6), 1)
                 if (len(white) < storage["bw_depth"]) or (
@@ -532,7 +537,7 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                 print_market(storage, cache)
                 print(keys)
                 print("")
-                print("runtime:epoch:pid:upm", runtime, epoch, pid, upm)
+                print("runtime:epoch:pid:upm", it("green", runtime), epoch, pid, upm)
                 try:
                     print(
                         "fds:processes        ", descriptors, process, "of", PROCESSES
@@ -585,12 +590,12 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                     print(
                         it("purple", btc_dict)
                     )  # json_dump(btc_dict, indent=0, sort_keys=True)))
-                    print("MEDIAN BTS:gatewayBTC:", "%.16f" % btc)
+                    print("MEDIAN BTS:gatewayBTC:", it("cyan", ("%.16f" % btc)))
                     print(
                         it("purple", usd_dict)
                     )  # json_dump(usd_dict, indent=0, sort_keys=True)))
                     print("MEDIAN BTS:gatewayUSD:", "%.16f" % usd)
-                    print("IMPLIED DEX BTC:USD", it("cyan", "%.4f" % implied_btcusd))
+                    print("IMPLIED DEX BTC:USD", it("yellow", ("%.4f" % implied_btcusd)))
                 except:
                     pass
 
@@ -600,17 +605,34 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                         print(
                             "CEX",
                             key,
-                            {k2: v2["last"] for k2, v2 in val["data"].items()},
+                            {k: ("%.8f"%v["last"]) for k, v in val["data"].items()},
                         )
-                        print("CEX MEDIAN", key, it("cyan", val["median"]))
+                        print("CEX MEDIAN", key, it("cyan", ("%.8f" % val["median"])))
+                    print("\npair:min:mid:max:qty:source")
                     for key, val in forex["medians"].items():
-                        print("FOREX", key, val)
+                        fxdata = [i[0] for i in forex["aggregate"][key]]
+                        print(
+                            it("green", key),
+                            str(min(fxdata)).ljust(11),
+                            it("cyan", str(val[0]).ljust(11)),
+                            str(max(fxdata)).ljust(11),
+                            len(fxdata),
+                            " ".join([i[1][:4] for i in forex["aggregate"][key]]),
+                        )
                     print(
                         "FINAL INVERSE",
                         {k: sigfig(v) for k, v in final["inverse"].items()},
                     )
                     print("FINAL FEED", it("green", final["feed"]))
                     print("FEED CLOCK", it("yellow", final["time"]))
+                    try:
+                        print(
+                            "SCELETUS  ",
+                            it("purple", sceletus_output[2]),
+                            it("green", sceletus_output[0]),
+                        )
+                    except:
+                        pass
                     stale = time() - final["time"]["unix"]
                     if stale > 4000:
                         print(
@@ -823,9 +845,9 @@ def get_cache(storage, cache, nodes):  # DONE
             in which we had faith, we must have been ruined.
                 $$$ Ben Franklin $$$
 
-            Resistance and Disobedience in Economic Activity
-            is the Most Moral Human Action Possible
-                $$$ SEK3 $$$
+            Resistance and disobedience in economic activity
+            is the most moral human action possible.
+                $$$ Samuel E. Konkin III $$$
             """,
             )
         )
@@ -1067,24 +1089,24 @@ def nascent_trend(maven):  # DONE
 
 # HELPER FUNCTIONS
 # ======================================================================
+def print_logo():
+    """
+    +===============================+
+      ╦ ╦  ╔═╗  ╔╗╔  ╔═╗  ╔═╗  ╔╦╗
+      ╠═╣  ║ ║  ║║║  ║╣   ╚═╗   ║
+      ╩ ╩  ╚═╝  ╝╚╝  ╚═╝  ╚═╝   ╩
+        MARKET - PEGGED - ASSETS
+    +===============================+
+    """
+    print(it("green", print_logo.__doc__))
+
+
 def print_market(storage, cache):  # DONE
     """
     pricefeed_dex header containing with cached values
     """
     print("\033c")
-    print(
-        it(
-            "green",
-            """
-        +===============================+
-          ╦ ╦  ╔═╗  ╔╗╔  ╔═╗  ╔═╗  ╔╦╗
-          ╠═╣  ║ ║  ║║║  ║╣   ╚═╗   ║
-          ╩ ╩  ╚═╝  ╝╚╝  ╚═╝  ╚═╝   ╩
-            MARKET - PEGGED - ASSETS
-        +===============================+
-        """,
-        )
-    )
+    print_logo()
     print("")
     print(
         ctime(),
