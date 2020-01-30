@@ -32,16 +32,7 @@ bitassets such as USD, CNY, BTC should NOT have the "bit" prefix
 """
 
 def config_sceletus():
-    """  
-    SAMPLE:
-    
-    return {
-        "currencies": ["BTS", "CNY", "USD", "GDEX.BTC", "BTC", "RUDEX.BTC"],
-        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC"],
-        "honest_to_honest": False,
-        "exclude_pairs": [],  # currency:asset,
-    }
-    """
+
     
     return {
         "currencies": ["BTS", "CNY", "USD", "GDEX.BTC"], 
@@ -49,3 +40,56 @@ def config_sceletus():
         "honest_to_honest": False,
         "exclude_pairs": [], 
     }
+
+    """  
+    A REQUEST:
+
+    As sceletus'ing all the cross rates for any one individual would be to much to ask...
+    I'm hopeful that feed producers will  be willing to split up the duties.
+    for example... one of us takes the honest to honest pairs...
+    another takes the honest to gateway.btc pairs...
+    another takes honest to bitassets, etc.
+    The cost of doing these trades is dust...
+    but the scripts do not have means currently to replenish account 1 w/
+    acount 2's purchases and vice versa.  so manually replenishing is currently needed
+    on a recurring basis depending on the amount of each asset you hold.
+
+    CURRENT RECOMMENDED SETTINGS:
+
+    @litepresence 10 markets (intra honest pairings)
+    
+    return {
+        "currencies": [],
+        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC", "HONEST.XAU", "HONEST.XAG"],
+        "honest_to_honest": True,
+        "exclude_pairs": [],  # currency:asset,
+    }
+    
+    @Don_Gabriel 5 markets (BTS to honest pairs)
+
+    return {
+        "currencies": ["BTS"],
+        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC", "HONEST.XAU", "HONEST.XAG"],
+        "honest_to_honest": False,
+        "exclude_pairs": [],  # currency:asset,
+    }
+
+    @AmmarYousef 6 markets (bitBTC and GDEX.BTC to H.CNY, H.USD and H.BTC)
+
+    return {
+        "currencies": ["BTC", "GDEX.BTC"],
+        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC"],
+        "honest_to_honest": False,
+        "exclude_pairs": [],  # currency:asset,
+    }
+
+    @JBahai 6 markets bitCNY and bitUSD to H.CNY, H.USD and H.BTC
+
+    return {
+        "currencies": ["USD", "CNY"],
+        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC"],
+        "honest_to_honest": False,
+        "exclude_pairs": [],  # currency:asset,
+    }
+    
+    """
