@@ -31,14 +31,20 @@ the MPA's to be sceletus'd should always be in the "honest_assets" group
 bitassets such as USD, CNY, BTC should NOT have the "bit" prefix
 """
 
+
 def config_sceletus():
 
-    
     return {
-        "currencies": ["BTS", "CNY", "USD", "GDEX.BTC"], 
-        "honest_assets": ["HONEST.CNY"], 
-        "honest_to_honest": False,
-        "exclude_pairs": [], 
+        "currencies": ["BTS", "CNY", "USD", "GDEX.BTC"],
+        "honest_assets": [
+            "HONEST.BTC",
+            "HONEST.CNY",
+            "HONEST.USD",
+            "HONEST.XAU",
+            "HONEST.XAG",
+        ],
+        "honest_to_honest": True,
+        "exclude_pairs": [],
     }
 
     """  
@@ -49,12 +55,8 @@ def config_sceletus():
     for example... one of us takes the honest to honest pairs...
     another takes the honest to gateway.btc pairs...
     another takes honest to bitassets, etc.
-    The cost of doing these trades is dust...
-    but the scripts do not have means currently to replenish account 1 w/
-    acount 2's purchases and vice versa.  so manually replenishing is currently needed
-    on a recurring basis depending on the amount of each asset you hold.
-    
-    I view sceletus as an ideal low cost, high yield marketing program for our offering
+
+    you will need about 500 BTS worth of each asset you will be sceletus'ing
 
     CURRENT RECOMMENDED SETTINGS:
 
@@ -67,7 +69,7 @@ def config_sceletus():
         "exclude_pairs": [],  # currency:asset,
     }
     
-    @Don_Gabriel 5 markets (BTS to honest pairs)
+    @JBahai 5 markets (BTS to honest pairs)
 
     return {
         "currencies": ["BTS"],
@@ -76,19 +78,19 @@ def config_sceletus():
         "exclude_pairs": [],  # currency:asset,
     }
 
-    @AmmarYousef 6 markets (bitBTC and GDEX.BTC to H.CNY, H.USD and H.BTC)
+    @AmmarYousef 5 markets (bitBTC and GDEX.BTC to H.CNY, H.USD and H.BTC)
 
     return {
-        "currencies": ["BTC", "GDEX.BTC"],
-        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC"],
+        "currencies": ["GDEX.BTC"],
+        "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC", "HONEST.XAU", "HONEST.XAG"],
         "honest_to_honest": False,
         "exclude_pairs": [],  # currency:asset,
     }
 
-    @JBahai 6 markets bitCNY and bitUSD to H.CNY, H.USD and H.BTC
+    @Don_Gabriel  9 markets bitCNY and bitUSD to H.CNY, H.USD and H.BTC
 
     return {
-        "currencies": ["USD", "CNY"],
+        "currencies": ["USD", "CNY", "BTC"],
         "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC"],
         "honest_to_honest": False,
         "exclude_pairs": [],  # currency:asset,
