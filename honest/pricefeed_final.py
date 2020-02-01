@@ -30,12 +30,12 @@ from pricefeed_forex import pricefeed_forex
 from pricefeed_cex import pricefeed_cex
 from pricefeed_dex import pricefeed_dex, race_append, print_logo
 from pricefeed_publish import broker
-from pricefeed_sceletus import sceletus_agents, sceletus
+from pricefeed_sceletus import sceletus
 from jsonbin import update_jsonbin
 
-CER = 1.5  # encourage payment of fees in bts, else 2X profit for HONEST producers
+CER = 1.5  # encourage payment of fees in bts, else 1.5X profit for HONEST producers
 MCR = 160  # min declared by FINRA is 125; min recommended by core dev is 160
-MSSR = 200  # liquidate mal investment immediately to as low as 50% below market rate
+MSSR = 125  # liquidate default immediately to as low as 100/125 = 20% below market rate
 REFRESH = 3600  # maintain accurate timely price feeds
 # ######################################################################################
 # TRADEMARK HONEST MPA litepresence2020 - BDFL
@@ -93,7 +93,7 @@ def publish_feed(prices, name, wif):
     broker(order)
 
 
-def gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus):
+def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus):
     """
     primary event loop
     """
@@ -103,6 +103,7 @@ def gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus):
     race_write("pricefeed_cex.txt", {})
     race_write("pricefeed_dex.txt", {})
     race_write("sceletus_output.txt", [])
+    race_write("honest_cross_rates.txt", {})
     race_write("feed.txt", {})
     # begin the dex pricefeed (metanode fork)
     dex_process = Process(target=pricefeed_dex)
@@ -173,30 +174,32 @@ def gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus):
                 "inverse": inverse_feed,
                 "feed": feed,
             }
-
+            # update final output on disk
+            race_write(doc="feed.txt", text=feed)
+            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
             # publish feed prices to the blockchain
             if do_feed == "y":
                 time.sleep(3)
-                print(it("red", "PUBLISHING TO BLOCKCHAIN"))
-                time.sleep(3)
+                print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
+                time.sleep(5)
                 publish_feed(prices, name, wif)
             # upload production data matrix to jsonbin.io
             if do_jsonbin == "y":
                 time.sleep(3)
-                print(it("red", "UPLOADING TO JSONBIN"))
-                time.sleep(3)
+                print("\n", it("red", "UPLOADING TO JSONBIN"))
+                time.sleep(5)
                 update_jsonbin(prices)
-            # buy/sell reference rates with two accounts
+            # buy/sell reference rates with two accounts\
+            msg = "DEMO SCELETUS REFERENCE RATES"
             if do_sceletus == "y":
-                time.sleep(3)
-                print(it("red", "SCELETUS REFERENCE RATES"))
-                time.sleep(3)
-                sceletus_orders, sceletus_output = sceletus(prices, agents, do_sceletus)
-                race_write("sceletus_orders.txt", sceletus_orders)
-                race_write("sceletus_output.txt", sceletus_output)
-            # update final output on disk
-            race_write(doc="feed.txt", text=feed)
-            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
+                msg = msg.replace("DEMO ", "")
+            time.sleep(3)
+            print("\n", it("red", msg))
+            time.sleep(5)
+            sceletus_orders, sceletus_output = sceletus(prices, name, wif, do_sceletus)
+            race_append("sceletus_orders.txt", ("\n\n" + json_dumps(sceletus_orders)))
+            race_write("sceletus_output.txt", json_dumps(sceletus_output))
+
             appendage = (
                 "\n" + str(int(time.time())) + " " + time.ctime() + " " + str(feed)
             )
@@ -215,30 +218,22 @@ def main():
     print("\033c")
     print_logo()
     do_feed = input(
-        "\n  to PUBLISH"
-        + it("cyan", " y + Enter ")
-        + "or Enter to skip\n\n           "
+        "\n  to PUBLISH" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
     ).lower()
     do_jsonbin = input(
-        "\n  to JSONBIN"
+        "\n  to JSONBIN" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
+    ).lower()
+    do_sceletus = input(
+        "\n  to SCELETUS"
         + it("cyan", " y + Enter ")
         + "or Enter to skip\n\n           "
     ).lower()
-    agents, do_sceletus = sceletus_agents()
     wif, name = "", ""
-    if do_feed.lower() == "y":
-        name = input(
-            "\n  Bitshares"
-            + it("yellow", " FEED PRODUCING ")
-            + "agent name:\n\n           "
-        )
-        wif = getpass(
-            "\n  Bitshares"
-            + it("yellow", " FEED PRODUCING ")
-            + "agent wif:\n           "
-        )
+    if do_feed.lower() == "y" or (do_sceletus == "y"):
+        name = input("\n  Bitshares" + it("yellow", " AGENT NAME:\n\n           "))
+        wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
         print("           *****************")
-    gather_data(name, wif, agents, do_feed, do_jsonbin, do_sceletus)
+    gather_data(name, wif, do_feed, do_jsonbin, do_sceletus)
 
 
 if __name__ == "__main__":
