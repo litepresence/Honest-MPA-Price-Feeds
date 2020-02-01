@@ -17,6 +17,8 @@ litepresence2020
 """
 
 # STANDARD PYTHON MODULES
+import sys
+
 import time
 import random
 import itertools
@@ -59,24 +61,58 @@ def reconnect(rpc):
     return rpc
 
 
-def create_usd_cny_btc(prices):
+def create_honest_cross_rates(prices):
     """
     return a dictionary of forex/cex median cross prices for usd cny and btc
     """
+    usdxau = prices["forex"]["medians"]["USD:XAU"][0]
+    usdxag = prices["forex"]["medians"]["USD:XAG"][0]
     usdcny = prices["forex"]["medians"]["USD:CNY"][0]
     btcusd = prices["cex"]["BTC:USD"]["median"]
     btccny = btcusd * usdcny
-    return {
-        "USD:CNY": usdcny,
-        "CNY:USD": 1 / usdcny,
-        "BTC:USD": btcusd,
-        "USD:BTC": 1 / btcusd,
-        "BTC:CNY": btccny,
-        "CNY:BTC": 1 / btccny,
+    usdbtc = 1 / btcusd
+    cnyusd = 1 / usdcny
+    cnybtc = 1 / btccny
+    xagusd = 1 / usdxag
+    xauusd = 1 / usdxau
+    xauxag = xauusd * usdxag
+    xaubtc = xauusd * usdbtc
+    xagbtc = xagusd * usdbtc
+    xaucny = xauusd * usdcny
+    xagcny = xagusd * usdcny
+    btcxau = 1 / xaubtc
+    btcxag = 1 / xagbtc
+    cnyxau = 1 / xaucny
+    cnyxag = 1 / xagcny
+    xagxau = 1 / xauxag
+
+    honest_cross_rates = {
+        "CNY:USD": sigfig(cnyusd),
+        "CNY:XAG": sigfig(cnyxag),
+        "CNY:XAU": sigfig(cnyxau),
+        "CNY:BTC": sigfig(cnybtc),
+        "USD:CNY": sigfig(usdcny),
+        "USD:XAG": sigfig(usdxag),
+        "USD:XAU": sigfig(usdxau),
+        "USD:BTC": sigfig(usdbtc),
+        "XAU:CNY": sigfig(xaucny),
+        "XAU:USD": sigfig(xauusd),
+        "XAU:XAG": sigfig(xauxag),
+        "XAU:BTC": sigfig(xaubtc),
+        "XAG:CNY": sigfig(xagcny),
+        "XAG:USD": sigfig(xagusd),
+        "XAG:XAU": sigfig(xagxau),
+        "XAG:BTC": sigfig(xagbtc),
+        "BTC:CNY": sigfig(btccny),
+        "BTC:USD": sigfig(btcusd),
+        "BTC:XAU": sigfig(btcxau),
+        "BTC:XAG": sigfig(btcxag),
     }
+    race_write(doc="honest_cross_rates.txt", text=json_dumps(honest_cross_rates))
+    return honest_cross_rates
 
 
-def create_pairs():
+def create_pairs(tick):
     """
     return a list of the markets to skeleton
     use a matrix of CURRENCIES and HONEST_ASSETS
@@ -115,100 +151,198 @@ def fetch_bts_bitassets(rpc):
     return bitassets
 
 
-def market_split(pair):
+def create_qty_rate(prices, bitassets):
     """
-    sort pair into dict of asset and currency
+    QUANTITY GENERALLY:
+    CNY, USD are precision 4 :: BTS is precision 5 :: XAG,XAG,BTC are precision 8
+    graphene integer currency and asset quanitites must be greater than 300
+    to enacts a dust transaction with precision 0.333% or finer:
+    pairs ending in BTC assets are all 0.00000300 qty
+    pairs ending in XAU assets are all 0.00001800 qty
+    pairs ending in XAG assets are all 0.0.0015 qty
+    pairs ending in USD and CNY assets are all 0.03 qty, except BTC:CNY 0.2 qty
+    pairs ending in BTS require case by case approach
+    some additional quirks may become apparent with use
+
+    RATE GENERALLY:  (XYZ:ABC * ABC:JKL) = XYZ:JKL
     """
-    asset = pair.split(":")[0]
-    currency = pair.split(":")[1]
-    bare_asset = asset.replace("HONEST.", "")
-    bare_currency = currency.replace("HONEST.", "").replace("GDEX.", "")
+    # calculate skeleton honest-to-honest rates
+    rates = create_honest_cross_rates(prices)
+    # 20 HONEST to HONEST
+    honest_to_honest = {
+        "HONEST.CNY:HONEST.BTC": {"qty": 0.3, "rate": rates["CNY:BTC"]},
+        "HONEST.USD:HONEST.BTC": {"qty": 0.03, "rate": rates["USD:BTC"]},
+        "HONEST.XAG:HONEST.BTC": {"qty": 0.0003, "rate": rates["XAG:BTC"]},
+        "HONEST.XAU:HONEST.BTC": {"qty": 0.000003, "rate": rates["XAU:BTC"]},
+        "HONEST.CNY:HONEST.XAU": {"qty": 0.3, "rate": rates["CNY:XAU"]},
+        "HONEST.USD:HONEST.XAU": {"qty": 0.03, "rate": rates["USD:XAU"]},
+        "HONEST.XAG:HONEST.XAU": {"qty": 0.0003, "rate": rates["XAG:XAU"]},
+        "HONEST.BTC:HONEST.XAU": {"qty": 0.000003, "rate": rates["BTC:XAU"]},
+        "HONEST.CNY:HONEST.XAG": {"qty": 0.3, "rate": rates["CNY:XAG"]},
+        "HONEST.USD:HONEST.XAG": {"qty": 0.03, "rate": rates["USD:XAG"]},
+        "HONEST.BTC:HONEST.XAG": {"qty": 0.000003, "rate": rates["BTC:XAG"]},
+        "HONEST.XAU:HONEST.XAG": {"qty": 0.000003, "rate": rates["XAU:XAG"]},
+        "HONEST.CNY:HONEST.USD": {"qty": 0.3, "rate": rates["CNY:USD"]},
+        "HONEST.XAG:HONEST.USD": {"qty": 0.0003, "rate": rates["XAG:USD"]},
+        "HONEST.XAU:HONEST.USD": {"qty": 0.000003, "rate": rates["XAU:USD"]},
+        "HONEST.BTC:HONEST.USD": {"qty": 0.000003, "rate": rates["BTC:USD"]},
+        "HONEST.USD:HONEST.CNY": {"qty": 0.03, "rate": rates["USD:CNY"]},
+        "HONEST.XAG:HONEST.CNY": {"qty": 0.0003, "rate": rates["XAG:CNY"]},
+        "HONEST.XAU:HONEST.CNY": {"qty": 0.000003, "rate": rates["XAU:CNY"]},
+        "HONEST.BTC:HONEST.CNY": {"qty": 0.000003, "rate": rates["BTC:CNY"]},
+    }
+    # 5 HONEST TO BTS
+    honest_to_bts = {
+        "HONEST.CNY:BTS": {"qty": 0.3, "rate": prices["inverse"]["CNY:BTS"]},
+        "HONEST.USD:BTS": {"qty": 0.03, "rate": prices["inverse"]["USD:BTS"]},
+        "HONEST.XAG:BTS": {"qty": 0.0003, "rate": prices["inverse"]["XAG:BTS"]},
+        "HONEST.XAU:BTS": {"qty": 0.000003, "rate": prices["inverse"]["XAU:BTS"]},
+        "HONEST.BTC:BTS": {"qty": 0.000003, "rate": prices["inverse"]["BTC:BTS"]},
+    }
+    # 5 HONEST TO GATEWAY BTC
+    hcnygbtc = float(prices["inverse"]["CNY:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    husdgbtc = float(prices["inverse"]["USD:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    hxaggbtc = float(prices["inverse"]["XAG:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    hxaugbtc = float(prices["inverse"]["XAU:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    hbtcgbtc = float(prices["inverse"]["BTC:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    honest_to_gdexbtc = {
+        "HONEST.CNY:GDEX.BTC": {"qty": 0.3, "rate": hcnygbtc},
+        "HONEST.USD:GDEX.BTC": {"qty": 0.03, "rate": husdgbtc},
+        "HONEST.XAG:GDEX.BTC": {"qty": 0.003, "rate": hxaggbtc},
+        "HONEST.XAU:GDEX.BTC": {"qty": 0.000003, "rate": hxaugbtc},
+        "HONEST.BTC:GDEX.BTC": {"qty": 0.000003, "rate": hbtcgbtc},
+    }
+    # 15 HONEST to BITASSETS: CNY, USD, BTC
+    hcnycny = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:CNY"])
+    husdcny = float(prices["inverse"]["USD:BTS"]) * float(bitassets["BTS:CNY"])
+    hxagcny = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:CNY"])
+    hxaucny = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:CNY"])
+    hbtccny = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:CNY"])
+    hcnyusd = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:USD"])
+    husdusd = float(prices["inverse"]["USD:BTS"]) * float(bitassets["BTS:USD"])
+    hxagusd = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:USD"])
+    hxauusd = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:USD"])
+    hbtcusd = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:USD"])
+    hcnybtc = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:BTC"])
+    husdbtc = float(prices["inverse"]["USD:BTS"]) * float(bitassets["BTS:BTC"])
+    hxagbtc = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:BTC"])
+    hxaubtc = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:BTC"])
+    hbtcbtc = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:BTC"])
+    honest_to_bitcny = {
+        "HONEST.CNY:CNY": {"qty": 0.3, "rate": hcnycny},
+        "HONEST.USD:CNY": {"qty": 0.03, "rate": husdcny},
+        "HONEST.XAG:CNY": {"qty": 0.003, "rate": hxagcny},
+        "HONEST.XAU:CNY": {"qty": 0.000003, "rate": hxaucny},
+        "HONEST.BTC:CNY": {"qty": 0.000003, "rate": hbtccny},
+    }
+    honest_to_bitusd = {
+        "HONEST.CNY:USD": {"qty": 0.3, "rate": hcnyusd},
+        "HONEST.USD:USD": {"qty": 0.03, "rate": husdusd},
+        "HONEST.XAG:USD": {"qty": 0.003, "rate": hxagusd},
+        "HONEST.XAU:USD": {"qty": 0.00003, "rate": hxauusd},
+        "HONEST.BTC:USD": {"qty": 0.00003, "rate": hbtcusd},
+    }
+    honest_to_bitbtc = {
+        "HONEST.CNY:BTC": {"qty": 0.3, "rate": hcnybtc},
+        "HONEST.USD:BTC": {"qty": 0.03, "rate": husdbtc},
+        "HONEST.XAG:BTC": {"qty": 0.003, "rate": hxagbtc},
+        "HONEST.XAU:BTC": {"qty": 0.000003, "rate": hxaubtc},
+        "HONEST.BTC:BTC": {"qty": 0.000003, "rate": hbtcbtc},
+    }
+    qty_rate = {}
+    qty_rate.update(honest_to_bts)
+    qty_rate.update(honest_to_bitcny)
+    qty_rate.update(honest_to_bitusd)
+    qty_rate.update(honest_to_bitbtc)
+    qty_rate.update(honest_to_gdexbtc)
+    qty_rate.update(honest_to_honest)
 
-    return asset, currency, bare_asset, bare_currency
+    qty_rate = {
+        k: {k2: sigfig(v2) for k2, v2 in v.items()} for k, v in qty_rate.items()
+    }
+
+    return qty_rate
 
 
-def sceletus(prices, agents, do_sceletus):
+def sceletus(prices, name, wif, do_sceletus):
     """
     update the historic chart on the blockchain using buy/sell broker(order) method
     for each pair to be skeleton'd, for each agent on opposing sides of the book
     """
-    output = [{}, {}, time.ctime()]
     orders = []
-    # calculate skeleton honest-to-honest rates
-    usd_cny_btc = create_usd_cny_btc(prices)
+    order_dict = {}
+    header = {}
+    tick = prices["time"]["updates"]
     # create a list of all pairs to be skeleton'd
-    pairs = create_pairs()
+    pairs = create_pairs(tick)
     # websocket handshake
     rpc = reconnect(None)
-    # remote procedure price of bts to Bitassets 1.0 (bogus) rates
+    # remote procedure price of bts to Bitassets rates
     bitassets = fetch_bts_bitassets(rpc)
+    account_id = ""
     if do_sceletus:
-        for idx, agent in enumerate(agents):
-            agents[idx]["id"] = rpc_lookup_accounts(
-                rpc, {"account_name": agent["name"]}
-            )
-    header = {}
+        account_id = rpc_lookup_accounts(rpc, {"account_name": name})
+    # build qty_rate dict
+    qty_rate = create_qty_rate(prices, bitassets)
+
     # each agent will place a limit order for each market pair
     for pair in pairs:
+        amount = sigfig(qty_rate[pair]["qty"])
+        price = sigfig(qty_rate[pair]["rate"])
+        order_dict[pair] = [amount, price]
         # sort pair into dict of asset and currency
-        asset, currency, bare_asset, bare_currency = market_split(pair)
+        asset = pair.split(":")[0]
+        currency = pair.split(":")[1]
         pair_dict = {
             "asset": asset,
             "currency": currency,
         }
+        # flash the curreny pair being bought/sold
+        msg = "\033c\n\n\n"
+        msg += it("red", "SCELETUS")
+        msg += "\n\n\n"
+        for i in range(50):
+            msg += (
+                "\n       "
+                + asset
+                + "  :  "
+                + currency
+                + "   @   "
+                + it("cyan", price)
+                + "   qty   "
+                + it("yellow", amount)
+            )
+        print(msg)
         # make rpc for A.B.C id's and precisions
         (
             asset_id,
             asset_precision,
             currency_id,
             currency_precision,
-        ) = rpc_lookup_asset_symbols(
-            rpc, pair_dict
-        )  # nonetype is not subscriptable???
+        ) = rpc_lookup_asset_symbols(rpc, pair_dict)
         # update the header respectively
         header["asset_id"] = asset_id
         header["currency_id"] = currency_id
         header["asset_precision"] = asset_precision
         header["currency_precision"] = currency_precision
-        # when BTS is the quote currency, skeleton the inverse feed price
-        if currency == "BTS":
-            price = float(prices["inverse"][bare_asset + ":" + "BTS"])
-        # when HONEST MPA or gateway is currency skeleton the median market rate
-        elif currency in ["HONEST.BTC", "HONEST.CNY", "HONEST.USD", "GDEX.BTC"]:
-            price = float(usd_cny_btc[bare_asset + ":" + bare_currency])
-        # when bitasset is currency skeleton using BTS as the intemediary currency:
-        # prce = pricefeed inverse * bitasset rate
-
-        elif currency in ["CNY", "USD", "BTC"]:
-            price = float(prices["inverse"][bare_asset + ":" + "BTS"]) * float(
-                bitassets["BTS:" + currency]
-            )
-        # determine a dust size amount for this market pair
-        if bare_asset == "BTC":
-            amount == 0.00000300
-        if bare_asset in ["CNY", "USD"]:
-            if currency == "BTS":
-                amount = 0.0005
-            elif bare_currency == "CNY":
-                amount = 0.02
-            elif bare_currency == "USD":
-                amount = 0.15
-            elif bare_currency == "BTC":
-                amount = 0.2
-        if bare_asset == "USD":
-            amount *= 0.15
         # perform buy ops for agents[0] and sell ops for agents[1]
         for idx in range(2):
-            header["account_name"] = agents[idx]["name"]
-            header["account_id"] = agents[idx]["id"]
-            header["wif"] = agents[idx]["wif"]
-
-            operation = "buy"
-            if idx:  # idx is zero or one
-                operation = "sell"
-            # adjust the final price to ensure execution
-            price = sigfig(price)
-            # build the final edict for this agent*pair
+            # build the header with correct account info
+            header["account_name"] = name
+            header["account_id"] = account_id
+            header["wif"] = wif
+            operation = ["buy", "sell"][idx]
+            # build the final edict for this agent*pair with operation and qty_rate
             edict = {
                 "op": operation,
                 "amount": amount,
@@ -224,52 +358,27 @@ def sceletus(prices, agents, do_sceletus):
                 "edicts": [edict],
                 "nodes": nodes,
             }
-            output[idx][pair] = price
             # print the outcome and if not a demo, then live execution
-            orders.append(order)
+            orders.append(
+                {
+                    "time": time.ctime(),
+                    "unix": int(time.time()),
+                    "tick": tick,
+                    "name": name,
+                    "op": operation,
+                    "pair": pair,
+                    "price": price,
+                    "amount": amount,
+                }
+            )
+            
             if do_sceletus:
                 broker(order)
 
-    return orders, output
-
-
-def sceletus_agents():
-    """
-    select whether to sceletus and input agents name and wif
-    """
-    # demo or live decision input
-    do_sceletus = input(
-        "\n  to SCELETUS"
-        + it("cyan", " y + Enter ")
-        + "or Enter to skip\n\n           "
-    ).lower()
-    # create a list of two agent dictionaries with name and wif
-    agents = []
-    agent = {"name": "XXX", "wif": "XXX", "id": "XXX"}
-    for idx in range(2):
-        side = "BUYING"
-        color = "green"
-        if idx:
-            side = "SELLING"
-            color = "red"
-        if do_sceletus == "y":
-            name = input(
-                "\n  Bitshares"
-                + it(color, f" SCELETUS {side} ")
-                + "agent name:\n\n           "
-            )
-            wif = getpass(
-                "\n  Bitshares"
-                + it(color, f" SCELETUS {side} ")
-                + "agent wif:\n           "
-            )
-            print("           *****************")
-            agent = {"name": name, "wif": wif}
-        agents.append(agent)
-
-    return agents, do_sceletus
+    return orders, order_dict
 
 
 if __name__ == "__main__":
 
+    print(create_pairs())
     print("see module docstring, launch with pricefeed_final.py")
