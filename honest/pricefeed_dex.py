@@ -52,12 +52,12 @@ TIMEOUT = 100  # 100
 PROCESSES = 10  # 20 (slower than metanode)
 MIN_NODES = 15  # 15
 BOOK_DEPTH = 30  # 30
-THRESH_PAUSE = 10  # 4 (slower than metanode)
+THRESH_PAUSE = 10  # 10  # 4 (slower than metanode)
 UTILIZATIONS = 30  # 30
 HISTORY_DEPTH = 30  # 30
 LATENCY_REPEAT = 900  # 900
 LATENCY_TIMEOUT = 5  # 5
-BIFURCATION_PAUSE = 10  # 2 (slower than metanode)
+BIFURCATION_PAUSE = 10  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
 PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
@@ -517,6 +517,11 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                     sceletus_output = race_read(doc="sceletus_output.txt")
                 except:
                     pass
+                try:
+                    honest_cross_rates = race_read(doc="honest_cross_rates.txt")
+                except:
+                    pass
+
                 runtime = int(time()) - cache["begin"]
                 # storage['bw_depth'] = max(int(len(nodes) / 6), 1)
                 if (len(white) < storage["bw_depth"]) or (
@@ -595,7 +600,9 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                         it("purple", usd_dict)
                     )  # json_dump(usd_dict, indent=0, sort_keys=True)))
                     print("MEDIAN BTS:gatewayUSD:", "%.16f" % usd)
-                    print("IMPLIED DEX BTC:USD", it("yellow", ("%.4f" % implied_btcusd)))
+                    print(
+                        "IMPLIED DEX BTC:USD", it("yellow", ("%.4f" % implied_btcusd))
+                    )
                 except:
                     pass
 
@@ -605,13 +612,16 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                         print(
                             "CEX",
                             key,
-                            {k: ("%.8f"%v["last"]) for k, v in val["data"].items()},
+                            {k: ("%.8f" % v["last"]) for k, v in val["data"].items()},
                         )
                         print("CEX MEDIAN", key, it("cyan", ("%.8f" % val["median"])))
-                    print("\npair:min:mid:max:qty:source")
+                    print(
+                        "\n inverse ::: pair ::: min ::: mid ::: max ::: qty ::: source"
+                    )
                     for key, val in forex["medians"].items():
                         fxdata = [i[0] for i in forex["aggregate"][key]]
                         print(
+                            it("cyan", str(sigfig(1 / val[0])).rjust(12)),
                             it("green", key),
                             str(min(fxdata)).ljust(11),
                             it("cyan", str(val[0]).ljust(11)),
@@ -626,10 +636,13 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
                     print("FINAL FEED", it("green", final["feed"]))
                     print("FEED CLOCK", it("yellow", final["time"]))
                     try:
+                        print("HONEST CROSS RATES", honest_cross_rates)
+                    except:
+                        pass
+                    try:
                         print(
                             "SCELETUS  ",
-                            it("purple", sceletus_output[2]),
-                            it("green", sceletus_output[0]),
+                            it("purple", sceletus_output),
                         )
                     except:
                         pass
