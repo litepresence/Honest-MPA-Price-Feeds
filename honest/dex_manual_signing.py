@@ -103,7 +103,7 @@ def WTFPL_v0_March_1765():
 # h/t @vvk123 @sschiessl @harukaff_bot
 # remainder WTFPL March 1765
 
-DEV = True
+DEV = False
 COLOR = True
 
 " STANDARD PYTHON MODULES "
