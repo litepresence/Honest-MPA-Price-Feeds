@@ -67,11 +67,9 @@ CURRENCIES = [
     "GDEX.BTC",
     "RUDEX.BTC",
     "XBTSX.BTC",
-    "SPARKDEX.BTC",
     "GDEX.USDT",
     "RUDEX.USDT",
     "XBTSX.USDT",
-    "SPARKDEX.USD",
 ]
 ASSET = "BTS"
 
