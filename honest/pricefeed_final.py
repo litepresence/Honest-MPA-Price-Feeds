@@ -32,6 +32,7 @@ from pricefeed_dex import pricefeed_dex, race_append, print_logo
 from pricefeed_publish import broker
 from pricefeed_sceletus import sceletus
 from jsonbin import update_jsonbin
+from cancel_all_markets import cancel_all_markets
 
 CER = 1.5  # encourage payment of fees in bts, else 1.5X profit for HONEST producers
 MCR = 160  # min declared by FINRA is 125; min recommended by core dev is 160
@@ -93,7 +94,7 @@ def publish_feed(prices, name, wif):
     broker(order)
 
 
-def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus):
+def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel):
     """
     primary event loop
     """
@@ -134,10 +135,19 @@ def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus):
             # localize cex rates
             btcusd = cex["BTC:USD"]["median"]
             cex_btsbtc = cex["BTS:BTC"]["median"]
+            cex_btsbtc_list = []
+            for key, val in cex["BTS:BTC"]["data"].items():
+                cex_btsbtc_list.append(val["last"])
             # attain dex BTS:BTC median
-            dex_btsbtc = median([v for k, v in dex["last"].items() if "BTC" in k])
-            # finalize btsbtc mean by averaging dex and cex rates
-            btsbtc = (cex_btsbtc + dex_btsbtc) / 2
+            dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
+            dex_btsbtc = median(dex_btsbtc_list)
+
+            # finalize btsbtc mean by averaging median dex with median cex rates
+            # btsbtc = (median(dex_btsbtc_list) + median(cex_btsbtc_list)) / 2
+
+            # finalize btsbtc by taking median of all cex and dex btsbtc prices 
+            btsbtc = median(dex_btsbtc_list + cex_btsbtc_list)
+            
             # create implied bts us dollar price
             btsusd = btsbtc * btcusd
             # create implied bts priced in forex terms
@@ -189,9 +199,14 @@ def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus):
                 print("\n", it("red", "UPLOADING TO JSONBIN"))
                 time.sleep(5)
                 update_jsonbin(prices)
-            # buy/sell reference rates with two accounts\
+            # buy/sell reference rates with two accounts
             msg = "DEMO SCELETUS REFERENCE RATES"
             if do_sceletus == "y":
+                if do_cancel == "y":
+                    time.sleep(3)
+                    print("\n", it("red", "CANCEL ALL IN ALL MARKETS"))
+                    time.sleep(5)
+                    cancel_all_markets(name, wif)  
                 msg = msg.replace("DEMO ", "")
             time.sleep(3)
             print("\n", it("red", msg))
@@ -228,12 +243,15 @@ def main():
         + it("cyan", " y + Enter ")
         + "or Enter to skip\n\n           "
     ).lower()
+    do_cancel = input(
+        "\n  to CANCEL" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
+    ).lower()
     wif, name = "", ""
     if do_feed.lower() == "y" or (do_sceletus == "y"):
         name = input("\n  Bitshares" + it("yellow", " AGENT NAME:\n\n           "))
         wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
         print("           *****************")
-    gather_data(name, wif, do_feed, do_jsonbin, do_sceletus)
+    gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel)
 
 
 if __name__ == "__main__":
