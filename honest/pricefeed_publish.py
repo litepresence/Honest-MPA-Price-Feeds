@@ -58,7 +58,7 @@ VERSION = "Bitshares Price Feed Publisher 0.00000001"
 # FIXME: it would be pythonic to move constants to global space
 # FIXME: this script could use a soup-to-nuts once over to pylint standards
 # =======================================================================
-DEV = True  # WARN: will expose your wif in terminal
+DEV = False  # WARN: will expose your wif in terminal
 COLOR = True
 
 
