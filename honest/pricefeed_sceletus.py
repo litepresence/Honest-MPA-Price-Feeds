@@ -47,16 +47,23 @@ def reconnect(rpc):
         rpc.close()
     except:
         pass
-    # create a connection to a dex node
-    storage = {"mean_ping": 1}
-    nodes = race_read_json("nodes.txt")
-    random.shuffle(nodes)
-    # return rpc, handshake_latency, handshake_max
-    rpc, _, _ = wss_handshake(storage, nodes[0])
-    # make sure its a fast connection, else recursion
-    begin = time.time()
-    _ = rpc_last(rpc, {"asset": "BTS", "currency": "BTC"})
+    while True:
+        try:
+            # create a connection to a dex node
+            storage = {"mean_ping": 1}
+            nodes = race_read_json("nodes.txt")
+            random.shuffle(nodes)
+            # return rpc, handshake_latency, handshake_max
+            rpc, _, _ = wss_handshake(storage, nodes[0])
+            # make sure its a fast connection, else recursion
+            begin = time.time()
+            _ = rpc_last(rpc, {"asset": "BTS", "currency": "BTC"})
+            break
+        except Exception as error:
+            print(trace(error))
+            pass
     if begin - time.time() > 0.4:
+        print(nodes[0], "TOO SLOW")
         reconnect(rpc)
     return rpc
 
