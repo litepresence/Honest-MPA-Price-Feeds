@@ -1656,7 +1656,7 @@ def build_transaction(order):
         tx_operations.append(operation)
 
     # prevent inadvertent huge number of orders
-    tx_operations = tx_operations[:LIMIT]
+    # tx_operations = tx_operations[:LIMIT]
     # the tx is just a regular dictionary we will convert to json later
     # the operations themselves must still be an OrderedDict
     tx = {
