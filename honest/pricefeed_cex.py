@@ -48,6 +48,8 @@ def return_urls():
         "poloniex": "https://www.poloniex.com",
         "binance": "https://api.binance.com",
         "bitstamp": "https://www.bitstamp.net",
+        "huobi": "https://api.huobi.pro",
+        "hitbtc": "https://api.hitbtc.com", 
     }
 
 
@@ -86,14 +88,27 @@ def symbol_syntax(exchange, symbol):
             asset = "XBT"
         if currency == "BTC":
             currency = "XBT"
+        if asset == "DOGE":
+            asset = "XDG"
     if exchange == "poloniex":
+        
         if asset == "XLM":
             asset = "STR"
+            
         if currency == "USD":
             currency = "USDT"
+            
+        if asset == "BCH":
+            asset = "BCHABC"
+            
     if exchange == "binance":
         if currency == "USD":
             currency = "USDT"
+    if exchange == "bitfinex":
+        if asset == "BCH":
+            asset = "BAB"
+        if asset == "DASH":
+            asset = "DSH"
     symbols = {
         "bittrex": (currency + "-" + asset),
         "bitfinex": (asset + currency),
@@ -102,8 +117,12 @@ def symbol_syntax(exchange, symbol):
         "coinbase": (asset + "-" + currency),
         "kraken": (asset.lower() + currency.lower()),
         "bitstamp": (asset + ":" + currency),
+        "huobi": (asset.lower() + currency.lower()),
+        "hitbtc": (asset + currency),
     }
+
     symbol = symbols[exchange]
+    print(symbol, exchange)
     return symbol
 
 
@@ -153,7 +172,10 @@ def request(api, signal):
         params=api["params"],
         headers=api["headers"],
     )
-    data = resp.json()
+    try:
+        data = resp.json()
+    except:
+        print(resp.text)
     doc = (
         api["exchange"]
         + api["pair"]
@@ -215,6 +237,8 @@ def get_price(api):
     """
     Last Price as float
     """
+    doc = api["exchange"] + api["pair"] + ".txt"
+    race_write(doc, {})
     exchange = api["exchange"]
     symbol = symbol_syntax(exchange, api["pair"])
     endpoints = {
@@ -225,6 +249,8 @@ def get_price(api):
         "coinbase": "/products/{}/ticker".format(symbol),
         "kraken": "/0/public/Ticker",
         "bitstamp": "/api/ticker",
+        "huobi": "/market/trade",
+        "hitbtc": f"/api/2/public/ticker/{symbol}", 
     }
     params = {
         "bittrex": {"market": symbol},
@@ -234,6 +260,8 @@ def get_price(api):
         "coinbase": {"market": symbol},
         "kraken": {"pair": [symbol]},
         "bitstamp": {},
+        "huobi": {"symbol":symbol},
+        "hitbtc": {}, 
     }
     api["endpoint"] = endpoints[exchange]
     api["params"] = params[exchange]
@@ -257,11 +285,14 @@ def get_price(api):
                 last = float(data["c"][0])
             elif exchange == "bitstamp":
                 last = float(data["last"])
+            elif exchange == "huobi":
+                last = float(data["tick"]["data"][-1]["price"])
+            elif exchange == "hitbtc":
+                last = float(data["last"])
         except Exception as error:
             print(trace(error), {k: v for k, v in api.items() if k != "secret"})
         break
     now = int(time.time())
-    doc = api["exchange"] + api["pair"] + ".txt"
     print("writing", doc)
     data = {"last": last, "time": now}
     race_write(doc, json_dumps(data))
@@ -276,19 +307,20 @@ def aggregate(exchanges, api):
         try:
             doc = exchange + api["pair"] + ".txt"
             print("reading", doc)
-            data[exchange] = race_read_json(doc)
+            json_data = race_read_json(doc)
+            if json_data:
+                data[exchange] = json_data
         except Exception as error:
             print(error.args)
     prices = []
     for key, val in data.items():
-        if int(time.time()) - val["time"] < 300:
-            prices.append(val["last"])
+        try:
+            if int(time.time()) - val["time"] < 300:
+                prices.append(val["last"])
+        except Exception as error:
+            print(error.args)
     median_price = median(prices)
     mean_price = sum(prices) / len(prices)
-    for key, val in data.items():
-        mad = abs(data[key]["last"] - median_price)
-        data[key]["mad"] = mad
-        data[key]["percent_mad"] = 100 * mad / median_price
     return {
         "mean": mean_price,
         "median": median_price,
@@ -334,6 +366,8 @@ def pricefeed_cex():
         "bittrex",
         "binance",
         "poloniex",
+        "huobi",
+        "hitbtc",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
     race_write("pricefeed_cex.txt", cex)
