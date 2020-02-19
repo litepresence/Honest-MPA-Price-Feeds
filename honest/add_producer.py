@@ -30,8 +30,17 @@ PRODUCER_IDS = [
     "1.2.1060824",  # bitshares-notifications  @murda_ra
     "1.2.1691170",  # bitshares-robot          @AmmarYousef
     "1.2.20638",  # datasecuritynode           @JBahai
+    "1.2.390320",  # agorise                   @KenCode
 ]
-ASSET_ID = "1.3.5641"  # HONEST.CNY
+# ASSET_ID = "1.3.5641"  # HONEST.CNY
+# ASSET_ID = "1.3.5649"  # HONEST.USD
+# ASSET_ID = "1.3.5650"  # HONEST.BTC
+# ASSET_ID = "1.3.5651"  # HONEST.XAU
+# ASSET_ID = "1.3.5652"  # HONEST.XAG
+# ASSET_ID = "1.3.5659"  # HONEST.ETH
+# ASSET_ID = "1.3.5660"  # HONEST.XRP
+# ASSET_ID = "1.3.5661"  # HONEST.ETH1
+ASSET_ID = "1.3.5662"  # HONEST.XRP1
 # ######################################################################################
 # FIXME: add method to remove a producer
 # FIXME: use ASSET_NAME instead ASSET_ID; add call in pricefeed_publish.py to translate
