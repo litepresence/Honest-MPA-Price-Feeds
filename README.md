@@ -91,6 +91,7 @@ From time to time the github will be updated.   Please check in regularly at the
 To sign up as a feed producer for HONEST market pegged assets on Bitshares Blockchain find me on telegram, I'm a chat mod in the groups:
 
 https://t.me/bitshares_community
+
 https://t.me/bitsharesDEX
 
 or via email:
