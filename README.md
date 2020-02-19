@@ -3,7 +3,7 @@ Honest Price Feeds for Bitshares Market Pegged Assets
 
 We are currently feeding an HONEST price hourly to 9 BitShares Market Pegged Assets: 
 
-These are backed by the BTS core token as collateral:
+These are backed by the BTS core token as collateral, meaning you "borrow them into existence" with Bitshares:
 
     HONEST.CNY (CHINESE YUAN)
     HONEST.BTC (BITCOIN)
@@ -13,10 +13,12 @@ These are backed by the BTS core token as collateral:
     HONEST.ETH (ETHEREUM)
     HONEST.XRP (RIPPLE)
 
-These are backed by HONEST.BTC as collateral:
+These are backed by HONEST.BTC as collateral, meaning you "borrow them into existence" with Bitcoin:
 
     HONEST.ETH1 (ETHEREUM)
     HONEST.XRP1 (RIPPLE)
+    
+NOTE: The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem and are the only MPA backed MPA's currently available.   In this regard they are an exotic, novel financial instrument. 
 
 # Installation
 You should be on a linux box with latest python version installed (3.7 or better).
