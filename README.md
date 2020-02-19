@@ -4,6 +4,7 @@ Honest Price Feeds for Bitshares Market Pegged Assets
 We are currently feeding an HONEST price hourly to 9 BitShares Market Pegged Assets: 
 
 These are backed by the BTS core token as collateral:
+
     HONEST.CNY (CHINESE YUAN)
     HONEST.BTC (BITCOIN)
     HONEST.USD (US DOLLAR)
@@ -13,6 +14,7 @@ These are backed by the BTS core token as collateral:
     HONEST.XRP (RIPPLE)
 
 These are backed by HONEST.BTC as collateral:
+
     HONEST.ETH1 (ETHEREUM)
     HONEST.XRP1 (RIPPLE)
 
