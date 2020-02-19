@@ -96,4 +96,16 @@ def config_sceletus():
         "exclude_pairs": [],  # currency:asset,
     }
     
+    @KenCode 8 markets H.BTC and BTS to H.ETH, H.ETH1, H.XRP and H.XRP1
+    return {
+    "currencies": ["HONEST.BTC", "BTS"],
+        "honest_assets": [
+            "HONEST.ETH",
+            "HONEST.XRP",
+            "HONEST.ETH1",
+            "HONEST.XRP1",
+        ],
+        "honest_to_honest": False,
+        "exclude_pairs": [],
+    }
     """
