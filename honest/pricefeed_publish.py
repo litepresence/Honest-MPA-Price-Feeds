@@ -1341,29 +1341,45 @@ def build_transaction(order):
             producer_edicts.append(edict)
     # TRANSLATE PRICE FEED PUBLISH ORDERS TO GRAPHENE
     for edict in publish_edicts:
-        # make external rpc for id and precision
+        # make external rpc for id and precision for the asset
         asset_id, asset_precision = rpc_lookup_asset_symbols(edict["asset_name"])
-        # adjust settlment price to graphene asset precision
-        adj_settlement = edict["settlement_price"] * 10 ** asset_precision / 10 ** 5
-        # convert core and settlement prices to a base/quote fraction
-        base = fraction(adj_settlement)["base"]
-        core = int(base * edict["CER"])
-        quote = fraction(adj_settlement)["quote"]
+        # repeat for currency
+        currency_id, currency_precision = rpc_lookup_asset_symbols(
+            edict["currency_name"]
+        )
+        # adjust settlment price to graphene asset and currency precisions
+        adj_settlement = (
+            edict["settlement_price"] * 10 ** asset_precision / 10 ** currency_precision
+        )
+        if edict["currency_name"] == "BTS":
+            adj_core = adj_settlement
+        else:
+            adj_core = edict["core_price"] * 10 ** asset_precision / 10 ** 5
+        # FEE ORDERED DICT
         # create publication fee ordered dict
         fee = OrderedDict([("amount", fees["publish"]), ("asset_id", "1.3.0")])
+        # SETTLEMENT ORDERED DICT
+        # convert settlement price to a base/quote fraction
+        s_base = fraction(adj_settlement)["base"]
+        s_quote = fraction(adj_settlement)["quote"]
         # create a settlement-base price ordered dict
-        settlement_base = OrderedDict([("amount", base), ("asset_id", asset_id),])
-        # create a core-base price ordered dict (multiply base by CER)
-        core_base = OrderedDict([("amount", core), ("asset_id", asset_id),])
-        # create a quote price ordered dict (used w/ both settlement and core bases)
-        settlment_quote = OrderedDict([("amount", quote), ("asset_id", "1.3.0"),])
-        # combine respective bases and quote price
+        settlement_base = OrderedDict([("amount", s_base), ("asset_id", asset_id)])
+        # create a quote price ordered dict used w/ settlement base
+        settlement_quote = OrderedDict([("amount", s_quote), ("asset_id", currency_id)])
+        # combine settlement base and quote price
         settlement_price = OrderedDict(
-            [("base", settlement_base), ("quote", settlment_quote)]
+            [("base", settlement_base), ("quote", settlement_quote)]
         )
-        core_exchange_rate = OrderedDict(
-            [("base", core_base), ("quote", settlment_quote)]
-        )
+        # CORE ORDERED DICT
+        # convert core price to a base/quote fraction and multiply base by CER coeff
+        c_base = int(fraction(adj_core)["base"] * edict["CER"])
+        c_quote = fraction(adj_core)["quote"]
+        # create a core-base price ordered dict
+        core_base = OrderedDict([("amount", c_base), ("asset_id", asset_id),])
+        # create a quote price ordered dict used w/ core base
+        core_quote = OrderedDict([("amount", c_quote), ("asset_id", "1.3.0")])
+        # combine core base and quote price
+        core_exchange_rate = OrderedDict([("base", core_base), ("quote", core_quote)])
         # /bitshares/bitshares.py
         feed = OrderedDict(
             (
