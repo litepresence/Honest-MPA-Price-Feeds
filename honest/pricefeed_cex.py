@@ -49,7 +49,7 @@ def return_urls():
         "binance": "https://api.binance.com",
         "bitstamp": "https://www.bitstamp.net",
         "huobi": "https://api.huobi.pro",
-        "hitbtc": "https://api.hitbtc.com", 
+        "hitbtc": "https://api.hitbtc.com",
     }
 
 
@@ -91,16 +91,16 @@ def symbol_syntax(exchange, symbol):
         if asset == "DOGE":
             asset = "XDG"
     if exchange == "poloniex":
-        
+
         if asset == "XLM":
             asset = "STR"
-            
+
         if currency == "USD":
             currency = "USDT"
-            
+
         if asset == "BCH":
             asset = "BCHABC"
-            
+
     if exchange == "binance":
         if currency == "USD":
             currency = "USDT"
@@ -116,7 +116,7 @@ def symbol_syntax(exchange, symbol):
         "poloniex": (currency + "_" + asset),
         "coinbase": (asset + "-" + currency),
         "kraken": (asset.lower() + currency.lower()),
-        "bitstamp": (asset + ":" + currency),
+        "bitstamp": (asset.lower() + currency.lower()),
         "huobi": (asset.lower() + currency.lower()),
         "hitbtc": (asset + currency),
     }
@@ -248,9 +248,9 @@ def get_price(api):
         "poloniex": "/public",
         "coinbase": "/products/{}/ticker".format(symbol),
         "kraken": "/0/public/Ticker",
-        "bitstamp": "/api/ticker",
+        "bitstamp": f"/api/v2/ticker/{symbol}",  # "bitstamp": "/api/ticker",
         "huobi": "/market/trade",
-        "hitbtc": f"/api/2/public/ticker/{symbol}", 
+        "hitbtc": f"/api/2/public/ticker/{symbol}",
     }
     params = {
         "bittrex": {"market": symbol},
@@ -260,8 +260,8 @@ def get_price(api):
         "coinbase": {"market": symbol},
         "kraken": {"pair": [symbol]},
         "bitstamp": {},
-        "huobi": {"symbol":symbol},
-        "hitbtc": {}, 
+        "huobi": {"symbol": symbol},
+        "hitbtc": {},
     }
     api["endpoint"] = endpoints[exchange]
     api["params"] = params[exchange]
@@ -370,6 +370,25 @@ def pricefeed_cex():
         "hitbtc",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
+
+    exchanges = [
+        "bittrex",
+        "binance",
+        "poloniex",
+        "huobi",
+        "hitbtc",
+        "bitfinex",
+        "coinbase",
+        "kraken",
+        "bitstamp",
+    ]
+    # api["pair"] = "LTC:BTC"
+    # cex[api["pair"]] = fetch(exchanges, api)
+    api["pair"] = "XRP:BTC"
+    cex[api["pair"]] = fetch(exchanges, api)
+    api["pair"] = "ETH:BTC"
+    cex[api["pair"]] = fetch(exchanges, api)
+
     race_write("pricefeed_cex.txt", cex)
     return cex
 
