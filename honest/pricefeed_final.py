@@ -61,31 +61,48 @@ def publish_feed(prices, name, wif):
         "CER": CER,
         "MSSR": MSSR,
         "MCR": MCR,
+        "currency_name": "BTS",
     }
-    # HONEST.CNY publication edict
+    # create publication edict for each MPA
+    # include standard publication dictionary parameters with unique name and price
     btscny = dict(pub_dict)
     btscny["asset_name"] = "HONEST.CNY"
     btscny["settlement_price"] = prices["feed"]["BTS:CNY"]
-    # HONEST.USD publication edict
     btsusd = dict(pub_dict)
     btsusd["asset_name"] = "HONEST.USD"
     btsusd["settlement_price"] = prices["feed"]["BTS:USD"]
-    # HONEST.BTC publication edict
     btsbtc = dict(pub_dict)
     btsbtc["asset_name"] = "HONEST.BTC"
     btsbtc["settlement_price"] = prices["feed"]["BTS:BTC"]
-    # HONEST.XAG publication edict
     btsxag = dict(pub_dict)
     btsxag["asset_name"] = "HONEST.XAG"
     btsxag["settlement_price"] = prices["feed"]["BTS:XAG"]
-    # HONEST.XAU publication edict
     btsxau = dict(pub_dict)
     btsxau["asset_name"] = "HONEST.XAU"
     btsxau["settlement_price"] = prices["feed"]["BTS:XAU"]
-    # append edicts to the edicts list
-    # eventually we will update to: [btscny, btsusd, btsbtc] and beyond...
-    edicts = [btscny, btsusd, btsbtc, btsxag, btsxau]
-    # build and broker the publication order
+    # btsltc = dict(pub_dict)
+    # btsltc["asset_name"] = "HONEST.LTC"
+    # btsltc["settlement_price"] = prices["feed"]["BTS:LTC"]
+    btseth = dict(pub_dict)
+    btseth["asset_name"] = "HONEST.ETH"
+    btseth["settlement_price"] = prices["feed"]["BTS:ETH"]
+    btsxrp = dict(pub_dict)
+    btsxrp["asset_name"] = "HONEST.XRP"
+    btsxrp["settlement_price"] = prices["feed"]["BTS:XRP"]
+    btseth1 = dict(pub_dict)
+    # these are a little different; we'll override currency name and add core price
+    btseth1["asset_name"] = "HONEST.ETH1"
+    btseth1["currency_name"] = "HONEST.BTC"
+    btseth1["core_price"] = prices["feed"]["BTS:ETH"]
+    btseth1["settlement_price"] = prices["feed"]["BTC:ETH"]
+    btsxrp1 = dict(pub_dict)
+    btsxrp1["asset_name"] = "HONEST.XRP1"
+    btsxrp1["currency_name"] = "HONEST.BTC"
+    btsxrp1["core_price"] = prices["feed"]["BTS:XRP"]
+    btsxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
+    # add each publication edict to the edicts list
+    edicts = [btscny, btsusd, btsbtc, btsxag, btsxau, btseth, btsxrp, btseth1, btsxrp1]
+    # construct and broker() the publication order dictionary
     order = {
         "header": header,
         "edicts": edicts,
@@ -94,7 +111,7 @@ def publish_feed(prices, name, wif):
     broker(order)
 
 
-def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel):
+def gather_data(name, wif, trigger):
     """
     primary event loop
     """
@@ -125,11 +142,11 @@ def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel):
             dex = race_read_json("pricefeed_dex.txt")
             # localize forex rates
             usdcny = forex["medians"]["USD:CNY"][0]
-            usdeur = forex["medians"]["USD:EUR"][0]
-            usdgbp = forex["medians"]["USD:GBP"][0]
-            usdrub = forex["medians"]["USD:RUB"][0]
-            usdjpy = forex["medians"]["USD:JPY"][0]
-            usdkrw = forex["medians"]["USD:KRW"][0]
+            # usdeur = forex["medians"]["USD:EUR"][0]
+            # usdgbp = forex["medians"]["USD:GBP"][0]
+            # usdrub = forex["medians"]["USD:RUB"][0]
+            # usdjpy = forex["medians"]["USD:JPY"][0]
+            # usdkrw = forex["medians"]["USD:KRW"][0]
             usdxau = forex["medians"]["USD:XAU"][0]
             usdxag = forex["medians"]["USD:XAG"][0]
             # localize cex rates
@@ -141,25 +158,31 @@ def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel):
             # attain dex BTS:BTC median
             dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
             dex_btsbtc = median(dex_btsbtc_list)
-
-            # finalize btsbtc mean by averaging median dex with median cex rates
-            # btsbtc = (median(dex_btsbtc_list) + median(cex_btsbtc_list)) / 2
-
-            # finalize btsbtc by taking median of all cex and dex btsbtc prices 
+            # finalize btsbtc by taking median of all cex and dex btsbtc prices
             btsbtc = median(dex_btsbtc_list + cex_btsbtc_list)
-            
+            # create feed prices for crypto altcoins: LTC, ETH, XRP
+            # btcltc = 1/cex["LTC:BTC"]["median"]
+            btceth = 1 / cex["ETH:BTC"]["median"]
+            btcxrp = 1 / cex["XRP:BTC"]["median"]
+            # btsltc = btsbtc * btcltc
+            btseth = btsbtc * btceth
+            btsxrp = btsbtc * btcxrp
             # create implied bts us dollar price
             btsusd = btsbtc * btcusd
             # create implied bts priced in forex terms
             feed = {
+                "BTC:ETH": btceth,
+                "BTC:XRP": btcxrp,
+                "BTS:ETH": btseth,
+                "BTS:XRP": btsxrp,
                 "BTS:BTC": btsbtc,
                 "BTS:USD": btsusd,
                 "BTS:CNY": (btsusd * usdcny),
-                "BTS:EUR": (btsusd * usdeur),
-                "BTS:GBP": (btsusd * usdgbp),
-                "BTS:RUB": (btsusd * usdrub),
-                "BTS:JPY": (btsusd * usdjpy),
-                "BTS:KRW": (btsusd * usdkrw),
+                # "BTS:EUR": (btsusd * usdeur),
+                # "BTS:GBP": (btsusd * usdgbp),
+                # "BTS:RUB": (btsusd * usdrub),
+                # "BTS:JPY": (btsusd * usdjpy),
+                # "BTS:KRW": (btsusd * usdkrw),
                 "BTS:XAU": (btsusd * usdxau),
                 "BTS:XAG": (btsusd * usdxag),
             }
@@ -188,30 +211,32 @@ def gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel):
             race_write(doc="feed.txt", text=feed)
             race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
             # publish feed prices to the blockchain
-            if do_feed == "y":
+            if trigger["feed"] == "y":
                 time.sleep(3)
                 print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
                 time.sleep(5)
                 publish_feed(prices, name, wif)
             # upload production data matrix to jsonbin.io
-            if do_jsonbin == "y":
+            if trigger["jsonbin"] == "y":
                 time.sleep(3)
                 print("\n", it("red", "UPLOADING TO JSONBIN"))
                 time.sleep(5)
                 update_jsonbin(prices)
             # buy/sell reference rates with two accounts
             msg = "DEMO SCELETUS REFERENCE RATES"
-            if do_sceletus == "y":
-                if do_cancel == "y":
+            if trigger["sceletus"] == "y":
+                if trigger["cancel"] == "y":
                     time.sleep(3)
                     print("\n", it("red", "CANCEL ALL IN ALL MARKETS"))
                     time.sleep(5)
-                    cancel_all_markets(name, wif)  
+                    cancel_all_markets(name, wif)
                 msg = msg.replace("DEMO ", "")
             time.sleep(3)
             print("\n", it("red", msg))
             time.sleep(5)
-            sceletus_orders, sceletus_output = sceletus(prices, name, wif, do_sceletus)
+            sceletus_orders, sceletus_output = sceletus(
+                prices, name, wif, trigger["sceletus"]
+            )
             race_append("sceletus_orders.txt", ("\n\n" + json_dumps(sceletus_orders)))
             race_write("sceletus_output.txt", json_dumps(sceletus_output))
 
@@ -232,26 +257,25 @@ def main():
     """
     print("\033c")
     print_logo()
-    do_feed = input(
-        "\n  to PUBLISH" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
+    trigger = {}
+    trigger["feed"] = input(
+        "\n  to PUBLISH" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
     ).lower()
-    do_jsonbin = input(
-        "\n  to JSONBIN" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
+    trigger["jsonbin"] = input(
+        "\n  to JSONBIN" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
     ).lower()
-    do_sceletus = input(
-        "\n  to SCELETUS"
-        + it("cyan", " y + Enter ")
-        + "or Enter to skip\n\n           "
+    trigger["sceletus"] = input(
+        "\n  to SCELETUS" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
     ).lower()
-    do_cancel = input(
-        "\n  to CANCEL" + it("cyan", " y + Enter ") + "or Enter to skip\n\n           "
+    trigger["cancel"] = input(
+        "\n  to CANCEL" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
     ).lower()
     wif, name = "", ""
-    if do_feed.lower() == "y" or (do_sceletus == "y"):
+    if trigger["feed"].lower() == "y" or (trigger["sceletus"] == "y"):
         name = input("\n  Bitshares" + it("yellow", " AGENT NAME:\n\n           "))
         wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
         print("           *****************")
-    gather_data(name, wif, do_feed, do_jsonbin, do_sceletus, do_cancel)
+    gather_data(name, wif, trigger)
 
 
 if __name__ == "__main__":
