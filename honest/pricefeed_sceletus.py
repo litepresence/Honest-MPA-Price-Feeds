@@ -76,44 +76,94 @@ def create_honest_cross_rates(prices):
     usdxag = prices["forex"]["medians"]["USD:XAG"][0]
     usdcny = prices["forex"]["medians"]["USD:CNY"][0]
     btcusd = prices["cex"]["BTC:USD"]["median"]
+    ethbtc = prices["cex"]["ETH:BTC"]["median"]
+    xrpbtc = prices["cex"]["XRP:BTC"]["median"]
     btccny = btcusd * usdcny
     usdbtc = 1 / btcusd
     cnyusd = 1 / usdcny
     cnybtc = 1 / btccny
     xagusd = 1 / usdxag
     xauusd = 1 / usdxau
+
     xauxag = xauusd * usdxag
     xaubtc = xauusd * usdbtc
     xagbtc = xagusd * usdbtc
     xaucny = xauusd * usdcny
     xagcny = xagusd * usdcny
+
     btcxau = 1 / xaubtc
     btcxag = 1 / xagbtc
     cnyxau = 1 / xaucny
     cnyxag = 1 / xagcny
     xagxau = 1 / xauxag
 
+    btceth = 1 / ethbtc
+    btcxrp = 1 / xrpbtc
+
+    cnyeth = cnybtc * btceth
+    cnyxrp = cnybtc * btcxrp
+    usdeth = usdbtc * btceth
+    usdxrp = usdbtc * btcxrp
+    xageth = xagbtc * btceth
+    xagxrp = xagbtc * btcxrp
+    xaueth = xaubtc * btceth
+    xauxrp = xaubtc * btcxrp
+
+    ethcny = 1 / cnyeth
+    ethusd = 1 / usdeth
+    ethxag = 1 / xageth
+    ethxau = 1 / xaueth
+    xrpcny = 1 / cnyxrp
+    xrpusd = 1 / usdxrp
+    xrpxag = 1 / xagxrp
+    xrpxau = 1 / xauxrp
+
+    ethxrp = ethbtc * btcxrp
+    xrpeth = 1 / ethxrp
+
     honest_cross_rates = {
         "CNY:USD": sigfig(cnyusd),
         "CNY:XAG": sigfig(cnyxag),
         "CNY:XAU": sigfig(cnyxau),
         "CNY:BTC": sigfig(cnybtc),
+        "CNY:ETH": sigfig(cnyeth),
+        "CNY:XRP": sigfig(cnyxrp),
         "USD:CNY": sigfig(usdcny),
         "USD:XAG": sigfig(usdxag),
         "USD:XAU": sigfig(usdxau),
         "USD:BTC": sigfig(usdbtc),
+        "USD:ETH": sigfig(usdeth),
+        "USD:XRP": sigfig(usdxrp),
         "XAU:CNY": sigfig(xaucny),
         "XAU:USD": sigfig(xauusd),
         "XAU:XAG": sigfig(xauxag),
         "XAU:BTC": sigfig(xaubtc),
+        "XAU:ETH": sigfig(xaueth),
+        "XAU:XRP": sigfig(xauxrp),
         "XAG:CNY": sigfig(xagcny),
         "XAG:USD": sigfig(xagusd),
         "XAG:XAU": sigfig(xagxau),
         "XAG:BTC": sigfig(xagbtc),
+        "XAG:ETH": sigfig(xageth),
+        "XAG:XRP": sigfig(xagxrp),
         "BTC:CNY": sigfig(btccny),
         "BTC:USD": sigfig(btcusd),
         "BTC:XAU": sigfig(btcxau),
         "BTC:XAG": sigfig(btcxag),
+        "BTC:ETH": sigfig(btceth),
+        "BTC:XRP": sigfig(btcxrp),
+        "ETH:CNY": sigfig(ethcny),
+        "ETH:USD": sigfig(ethusd),
+        "ETH:XAU": sigfig(ethxau),
+        "ETH:XAG": sigfig(ethxag),
+        "ETH:BTC": sigfig(ethbtc),
+        "ETH:XRP": sigfig(ethxrp),
+        "XRP:CNY": sigfig(xrpcny),
+        "XRP:USD": sigfig(xrpusd),
+        "XRP:XAU": sigfig(xrpxau),
+        "XRP:XAG": sigfig(xrpxag),
+        "XRP:ETH": sigfig(xrpeth),
+        "XRP:BTC": sigfig(xrpbtc),
     }
     race_write(doc="honest_cross_rates.txt", text=json_dumps(honest_cross_rates))
     return honest_cross_rates
@@ -177,32 +227,56 @@ def create_qty_rate(prices, bitassets):
     rates = create_honest_cross_rates(prices)
     # 20 HONEST to HONEST
     honest_to_honest = {
+        "HONEST.XRP:HONEST.BTC": {"qty": 0.3, "rate": rates["XRP:BTC"]},
         "HONEST.CNY:HONEST.BTC": {"qty": 0.3, "rate": rates["CNY:BTC"]},
         "HONEST.USD:HONEST.BTC": {"qty": 0.03, "rate": rates["USD:BTC"]},
         "HONEST.XAG:HONEST.BTC": {"qty": 0.0003, "rate": rates["XAG:BTC"]},
+        "HONEST.ETH:HONEST.BTC": {"qty": 0.00003, "rate": rates["ETH:BTC"]},
         "HONEST.XAU:HONEST.BTC": {"qty": 0.000003, "rate": rates["XAU:BTC"]},
+        "HONEST.XRP:HONEST.XAU": {"qty": 0.3, "rate": rates["XRP:XAU"]},
         "HONEST.CNY:HONEST.XAU": {"qty": 0.3, "rate": rates["CNY:XAU"]},
         "HONEST.USD:HONEST.XAU": {"qty": 0.03, "rate": rates["USD:XAU"]},
         "HONEST.XAG:HONEST.XAU": {"qty": 0.0003, "rate": rates["XAG:XAU"]},
+        "HONEST.ETH:HONEST.XAU": {"qty": 0.00003, "rate": rates["ETH:XAU"]},
         "HONEST.BTC:HONEST.XAU": {"qty": 0.000003, "rate": rates["BTC:XAU"]},
+        "HONEST.XRP:HONEST.XAG": {"qty": 0.3, "rate": rates["XRP:XAG"]},
         "HONEST.CNY:HONEST.XAG": {"qty": 0.3, "rate": rates["CNY:XAG"]},
         "HONEST.USD:HONEST.XAG": {"qty": 0.03, "rate": rates["USD:XAG"]},
+        "HONEST.ETH:HONEST.XAG": {"qty": 0.00003, "rate": rates["ETH:XAG"]},
         "HONEST.BTC:HONEST.XAG": {"qty": 0.000003, "rate": rates["BTC:XAG"]},
         "HONEST.XAU:HONEST.XAG": {"qty": 0.000003, "rate": rates["XAU:XAG"]},
+        "HONEST.XRP:HONEST.USD": {"qty": 0.3, "rate": rates["XRP:USD"]},
         "HONEST.CNY:HONEST.USD": {"qty": 0.3, "rate": rates["CNY:USD"]},
         "HONEST.XAG:HONEST.USD": {"qty": 0.0003, "rate": rates["XAG:USD"]},
+        "HONEST.ETH:HONEST.USD": {"qty": 0.00003, "rate": rates["ETH:USD"]},
         "HONEST.XAU:HONEST.USD": {"qty": 0.000003, "rate": rates["XAU:USD"]},
         "HONEST.BTC:HONEST.USD": {"qty": 0.000003, "rate": rates["BTC:USD"]},
+        "HONEST.XRP:HONEST.CNY": {"qty": 0.3, "rate": rates["XRP:CNY"]},
         "HONEST.USD:HONEST.CNY": {"qty": 0.03, "rate": rates["USD:CNY"]},
         "HONEST.XAG:HONEST.CNY": {"qty": 0.0003, "rate": rates["XAG:CNY"]},
+        "HONEST.ETH:HONEST.CNY": {"qty": 0.00003, "rate": rates["ETH:CNY"]},
         "HONEST.XAU:HONEST.CNY": {"qty": 0.000003, "rate": rates["XAU:CNY"]},
         "HONEST.BTC:HONEST.CNY": {"qty": 0.000003, "rate": rates["BTC:CNY"]},
+        "HONEST.CNY:HONEST.XRP": {"qty": 0.3, "rate": rates["CNY:XRP"]},
+        "HONEST.USD:HONEST.XRP": {"qty": 0.03, "rate": rates["USD:XRP"]},
+        "HONEST.XAG:HONEST.XRP": {"qty": 0.0003, "rate": rates["XAG:XRP"]},
+        "HONEST.ETH:HONEST.XRP": {"qty": 0.00003, "rate": rates["ETH:XRP"]},
+        "HONEST.XAU:HONEST.XRP": {"qty": 0.000003, "rate": rates["XAU:XRP"]},
+        "HONEST.BTC:HONEST.XRP": {"qty": 0.000003, "rate": rates["BTC:XRP"]},
+        "HONEST.CNY:HONEST.ETH": {"qty": 0.3, "rate": rates["CNY:ETH"]},
+        "HONEST.XRP:HONEST.ETH": {"qty": 0.3, "rate": rates["XRP:ETH"]},
+        "HONEST.USD:HONEST.ETH": {"qty": 0.03, "rate": rates["USD:ETH"]},
+        "HONEST.XAG:HONEST.ETH": {"qty": 0.0003, "rate": rates["XAG:ETH"]},
+        "HONEST.XAU:HONEST.ETH": {"qty": 0.000003, "rate": rates["XAU:ETH"]},
+        "HONEST.BTC:HONEST.ETH": {"qty": 0.000003, "rate": rates["BTC:ETH"]},
     }
     # 5 HONEST TO BTS
     honest_to_bts = {
+        "HONEST.XRP:BTS": {"qty": 0.3, "rate": prices["inverse"]["XRP:BTS"]},
         "HONEST.CNY:BTS": {"qty": 0.3, "rate": prices["inverse"]["CNY:BTS"]},
         "HONEST.USD:BTS": {"qty": 0.03, "rate": prices["inverse"]["USD:BTS"]},
         "HONEST.XAG:BTS": {"qty": 0.0003, "rate": prices["inverse"]["XAG:BTS"]},
+        "HONEST.ETH:BTS": {"qty": 0.00003, "rate": prices["inverse"]["ETH:BTS"]},
         "HONEST.XAU:BTS": {"qty": 0.000003, "rate": prices["inverse"]["XAU:BTS"]},
         "HONEST.BTC:BTS": {"qty": 0.000003, "rate": prices["inverse"]["BTC:BTS"]},
     }
@@ -222,12 +296,20 @@ def create_qty_rate(prices, bitassets):
     hbtcgbtc = float(prices["inverse"]["BTC:BTS"]) * float(
         prices["dex"]["last"]["GDEX.BTC"]
     )
+    hxrpgbtc = float(prices["inverse"]["XRP:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
+    hethgbtc = float(prices["inverse"]["ETH:BTS"]) * float(
+        prices["dex"]["last"]["GDEX.BTC"]
+    )
     honest_to_gdexbtc = {
         "HONEST.CNY:GDEX.BTC": {"qty": 0.3, "rate": hcnygbtc},
         "HONEST.USD:GDEX.BTC": {"qty": 0.03, "rate": husdgbtc},
         "HONEST.XAG:GDEX.BTC": {"qty": 0.003, "rate": hxaggbtc},
         "HONEST.XAU:GDEX.BTC": {"qty": 0.000003, "rate": hxaugbtc},
         "HONEST.BTC:GDEX.BTC": {"qty": 0.000003, "rate": hbtcgbtc},
+        "HONEST.ETH:GDEX.BTC": {"qty": 0.00003, "rate": hethgbtc},
+        "HONEST.XRP:GDEX.BTC": {"qty": 0.3, "rate": hxrpgbtc},
     }
     # 15 HONEST to BITASSETS: CNY, USD, BTC
     hcnycny = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:CNY"])
@@ -235,22 +317,33 @@ def create_qty_rate(prices, bitassets):
     hxagcny = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:CNY"])
     hxaucny = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:CNY"])
     hbtccny = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:CNY"])
+    hethcny = float(prices["inverse"]["ETH:BTS"]) * float(bitassets["BTS:CNY"])
+    hxrpcny = float(prices["inverse"]["XRP:BTS"]) * float(bitassets["BTS:CNY"])
+
     hcnyusd = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:USD"])
     husdusd = float(prices["inverse"]["USD:BTS"]) * float(bitassets["BTS:USD"])
     hxagusd = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:USD"])
     hxauusd = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:USD"])
     hbtcusd = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:USD"])
+    hethusd = float(prices["inverse"]["ETH:BTS"]) * float(bitassets["BTS:USD"])
+    hxrpusd = float(prices["inverse"]["XRP:BTS"]) * float(bitassets["BTS:USD"])
+
     hcnybtc = float(prices["inverse"]["CNY:BTS"]) * float(bitassets["BTS:BTC"])
     husdbtc = float(prices["inverse"]["USD:BTS"]) * float(bitassets["BTS:BTC"])
     hxagbtc = float(prices["inverse"]["XAG:BTS"]) * float(bitassets["BTS:BTC"])
     hxaubtc = float(prices["inverse"]["XAU:BTS"]) * float(bitassets["BTS:BTC"])
     hbtcbtc = float(prices["inverse"]["BTC:BTS"]) * float(bitassets["BTS:BTC"])
+    hethbtc = float(prices["inverse"]["ETH:BTS"]) * float(bitassets["BTS:BTC"])
+    hxrpbtc = float(prices["inverse"]["XRP:BTS"]) * float(bitassets["BTS:BTC"])
+
     honest_to_bitcny = {
         "HONEST.CNY:CNY": {"qty": 0.3, "rate": hcnycny},
         "HONEST.USD:CNY": {"qty": 0.03, "rate": husdcny},
         "HONEST.XAG:CNY": {"qty": 0.003, "rate": hxagcny},
         "HONEST.XAU:CNY": {"qty": 0.000003, "rate": hxaucny},
         "HONEST.BTC:CNY": {"qty": 0.000003, "rate": hbtccny},
+        "HONEST.ETH:CNY": {"qty": 0.00003, "rate": hethcny},
+        "HONEST.XRP:CNY": {"qty": 0.3, "rate": hxrpcny},
     }
     honest_to_bitusd = {
         "HONEST.CNY:USD": {"qty": 0.3, "rate": hcnyusd},
@@ -258,6 +351,8 @@ def create_qty_rate(prices, bitassets):
         "HONEST.XAG:USD": {"qty": 0.003, "rate": hxagusd},
         "HONEST.XAU:USD": {"qty": 0.00003, "rate": hxauusd},
         "HONEST.BTC:USD": {"qty": 0.00003, "rate": hbtcusd},
+        "HONEST.ETH:USD": {"qty": 0.00003, "rate": hethusd},
+        "HONEST.XRP:USD": {"qty": 0.3, "rate": hxrpusd},
     }
     honest_to_bitbtc = {
         "HONEST.CNY:BTC": {"qty": 0.3, "rate": hcnybtc},
@@ -265,6 +360,8 @@ def create_qty_rate(prices, bitassets):
         "HONEST.XAG:BTC": {"qty": 0.003, "rate": hxagbtc},
         "HONEST.XAU:BTC": {"qty": 0.000003, "rate": hxaubtc},
         "HONEST.BTC:BTC": {"qty": 0.000003, "rate": hbtcbtc},
+        "HONEST.ETH:BTC": {"qty": 0.00003, "rate": hethbtc},
+        "HONEST.XRP:BTC": {"qty": 0.3, "rate": hxrpbtc},
     }
     qty_rate = {}
     qty_rate.update(honest_to_bts)
@@ -278,7 +375,22 @@ def create_qty_rate(prices, bitassets):
         k: {k2: sigfig(v2) for k2, v2 in v.items()} for k, v in qty_rate.items()
     }
 
-    return qty_rate
+    # repackage dict to handle XRP1 and ETH1 as well
+    qty_rate2 = {}
+    for key, val in qty_rate.items():
+        # include all standard standard variants
+        qty_rate2[key] = val
+        # handle the ETH1 variants
+        if "ETH" in key:
+            qty_rate2[key.replace("ETH", "ETH1")] = val
+        # handle the XRP1 variants
+        if "XRP" in key:
+            qty_rate2[key.replace("XRP", "XRP1")] = val
+        # handle the ETH1 to XRP1 crossrate and vice versa
+        if ("ETH" in key) and ("XRP" in key):
+            qty_rate2[key.replace("XRP", "XRP1").replace("ETH", "ETH1")] = val
+
+    return qty_rate2
 
 
 def sceletus(prices, name, wif, do_sceletus):
@@ -378,7 +490,7 @@ def sceletus(prices, name, wif, do_sceletus):
                     "amount": amount,
                 }
             )
-            
+
             if do_sceletus:
                 broker(order)
 
