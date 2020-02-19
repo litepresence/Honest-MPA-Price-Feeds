@@ -118,11 +118,11 @@ def ret_markets():
     """
     return [
         "USD:CNY",
-        "USD:EUR",
-        "USD:GBP",
-        "USD:RUB",
-        "USD:JPY",
-        "USD:KRW",
+        # "USD:EUR",
+        # "USD:GBP",
+        # "USD:RUB",
+        # "USD:JPY",
+        # "USD:KRW",
         "USD:XAG",
         "USD:XAU",
     ]
