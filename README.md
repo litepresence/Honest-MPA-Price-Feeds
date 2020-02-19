@@ -4,17 +4,17 @@ Honest Price Feeds for Bitshares Market Pegged Assets
 I am currently feeding an honest price hourly to 9 HONEST MPA's: 
 
 These are backed by the BTS core token as collateral:
-# HONEST.CNY (CHINESE YUAN)
-# HONEST.BTC (BITCOIN)
-# HONEST.USD (US DOLLAR)
-# HONEST.XAU (GOLD)
-# HONEST.XAG (SILVER)
-# HONEST.ETH (ETHEREUM)
-# HONEST.XRP (RIPPLE)
+- HONEST.CNY (CHINESE YUAN)
+- HONEST.BTC (BITCOIN)
+- HONEST.USD (US DOLLAR)
+- HONEST.XAU (GOLD)
+- HONEST.XAG (SILVER)
+- HONEST.ETH (ETHEREUM)
+- HONEST.XRP (RIPPLE)
 
 These are backed by HONEST.BTC as collateral:
-# HONEST.ETH1 (ETHEREUM)
-# HONEST.XRP1 (RIPPLE)
+- HONEST.ETH1 (ETHEREUM)
+- HONEST.XRP1 (RIPPLE)
 
 # Installation
 You should be on a linux box with latest python version installed (3.7 or better).
