@@ -1,7 +1,7 @@
 # Honest-MPA-Price-Feeds
 Honest Price Feeds for Bitshares Market Pegged Assets
 
-I am currently feeding an honest price hourly to 9 HONEST MPA's: 
+We are currently feeding an HONEST price hourly to 9 BitShares Market Pegged Assets: 
 
 These are backed by the BTS core token as collateral:
 - HONEST.CNY (CHINESE YUAN)
