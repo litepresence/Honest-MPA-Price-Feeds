@@ -68,7 +68,9 @@ Press `y + Enter` when prompted at startup by the `jsonbin` question.   For all 
 
 To view your `jsonbin` and ensure everything is working correctly, visit:
 
-https://api.jsonbin.io/b/<your_bin_id>/latest (be sure to install your bin id where it goes in the link)
+    https://api.jsonbin.io/b/<your_bin_id>/latest 
+
+(be sure to install your bin id where it goes in the link)
 
 In `config_api.py` you have a place to store this web address marked `jsonbin: url:`; this is not strictly necessary, but you should at the very least bookmark your `jsonbin` in a web browser, to check up on it later.  Be sure to include `/latest` on the end of the url, as the `jsonbin` will contain a historic copy of every upload you make.  Without `latest` the url points to the first upload and will appear to not update.
 
