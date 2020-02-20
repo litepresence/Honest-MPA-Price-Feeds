@@ -54,7 +54,7 @@ Then press `Enter` 4 times to skip `publish`, `jsonbin`, `sceletus`, and `cancel
 
 to set up www.jsonbin.io functionality:
 
-`config_api.py` will need the configuration dictionary values updated for `jsonbin: key:` edited and the script saved.  You get that `key` at www.jsonbin.io in the `api keys` tab, after signing up for their service.   After installing the `key`, run the jsonbin.py script ONCE in the terminal with the command:
+`config_api.py` will need the configuration dictionary values updated for `jsonbin: key:` and then the script saved.  You get your `key` at www.jsonbin.io in the `api keys` tab, after signing up for their service.   After installing the `key`, run the jsonbin.py script ONCE in the terminal with the command:
 
     python3 jsonbin.py 
     
