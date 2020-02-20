@@ -18,7 +18,7 @@ These are backed by HONEST.BTC as collateral, meaning you "borrow them into exis
     HONEST.ETH1 (ETHEREUM)
     HONEST.XRP1 (RIPPLE)
     
-NOTE: The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem and are the only MPA backed MPA's currently available.   In this regard they are an exotic, experimental financial instrument. 
+NOTE: The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem as they are the only MPA backed MPA's on the DEX.   In this regard they are an exotic, experimental financial instrument. 
 
 # Installation
 You should be on a linux box with latest python version installed (3.7 or better).
