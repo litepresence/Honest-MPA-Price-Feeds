@@ -1,3 +1,4 @@
+wheel
 requests
 cfscrape
 psutil
