@@ -27,13 +27,16 @@ __AUTHOR__ = "litepresence"
 __AUTHOR_EMAIL__ = "finitestate@tutamail.com"
 __URL__ = "http://www.litepresence.com"
 __NAME__ = "Honest-MPA-Price-Feeds"
+
 sudos()
+
 print("\n\nInstalling requirements.txt...\n\n")
+
 setup(
     name=__NAME__,
     version=__VERSION__,
     description=(
-        "Price Feeds" "Bitshares Distributed Exchange Algo Price Feed Tool"
+        "HONEST MPA PRICE FEEDS FOR BITSHARES DEX"
     ),
     long_description=open("README.md").read(),
     download_url="https://github.com/litepresence/extinction-event/tarball/"
@@ -44,20 +47,9 @@ setup(
     keywords=[
         "bts",
         "bitshares",
-        "bitsharesquant",
-        "quant",
-        "quantitative",
-        "palmpay",
-        "beet",
-        "dexbot",
-        "crypto-bridge",
-        "rudex",
-        "easydex",
-        "cryptobridge",
+        "palmpay"
         "btc",
         "bitcoin",
-        "openledger",
-        "open-ledger",
         "crypto",
         "altcoin",
         "cryptocurrency",
@@ -65,24 +57,11 @@ setup(
         "contract",
         "distributed",
         "exchange",
-        "micro",
-        "metanode",
-        "meta node",
-        "meta",
         "litepresence",
-        "latencytest",
-        "latency test",
-        "latency",
-        "back test",
-        "backtest",
-        "backtesting",
-        "algo",
-        "algorithmic",
-        "test",
-        "quant",
-        "bot",
-        "botscript",
-        "bot script",
+        "market pegged asset",
+        "MPA",
+        "smartcoin",
+        "makerDAO",
     ],
     packages=find_packages(),
     classifiers=[
