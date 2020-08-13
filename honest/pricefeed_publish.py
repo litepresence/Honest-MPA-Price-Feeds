@@ -533,15 +533,17 @@ class PointInTime:
 
 def fraction(num):
     """
-    convert a terminating decimal into least common denominator fraction
-    (litepresence 2020)
+    convert float to limited precision least common denominator fraction
     """
     den = 1
-    while True:  # move decimal place
+    while True:  # move decimal place by factor of 10
         num *= 10
         den *= 10
-        if int(num) == num:
+        # escape when numerator is integer or denominator approaches double long int
+        if (int(num) == num) or (den == 10 ** 14):
             break
+    # ensure numerator is now an integer
+    num = int(num)
     while True:  # remove common factors of 2
         if int(num / 2) == num / 2 and int(den / 2) == den / 2:
             num /= 2
