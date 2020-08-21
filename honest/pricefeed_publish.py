@@ -1670,7 +1670,10 @@ def execute(signal, log_in, auth, order):
             signed_tx = sign_transaction(tx, message)
         except Exception as e:
             trace(e)
-        signed_tx = verify_transaction(signed_tx)
+        try:
+            signed_tx = verify_transaction(signed_tx)
+        except Exception as e:
+            trace(e)
         if not DEV:
             enablePrint()
         broadcasted_tx = rpc_broadcast_transaction(signed_tx)
