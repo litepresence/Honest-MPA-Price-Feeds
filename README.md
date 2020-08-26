@@ -27,6 +27,7 @@ First, perform these commands:
 
     sudo apt-get update
     sudo apt-get install pkg-config
+    sudo apt-get install libffi-dev
     sudo apt-get install libsecp256k1-dev
 
 You will then need to manually pip3 install the following dependencies (sorry no setup.py yet):
