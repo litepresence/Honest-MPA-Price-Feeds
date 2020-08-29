@@ -35,9 +35,9 @@ from jsonbin import update_jsonbin
 from cancel_all_markets import cancel_all_markets
 
 CER = 1.5  # encourage payment of fees in bts, else 1.5X profit for HONEST producers
-MCR = 160  # min declared by FINRA is 125; min recommended by core dev is 160
+MCR = 150  # min declared by FINRA is 125; min recommended by core dev is 160
 MSSR = 125  # liquidate default immediately to as low as 100/125 = 20% below market rate
-REFRESH = 3600  # maintain accurate timely price feeds
+REFRESH = 3100  # maintain accurate timely price feeds
 # ######################################################################################
 # TRADEMARK HONEST MPA litepresence2020 - BDFL
 # ######################################################################################
