@@ -14,7 +14,6 @@ from dex_manual_signing import broker
 from utilities import race_read_json, it
 
 
-
 def wss_query(rpc, params):
     """
     Send and receive websocket requests
@@ -37,10 +36,7 @@ def rpc_open_orders(rpc, account_name):
         limit_orders = ret[0][1]["limit_orders"]
     except:
         limit_orders = []
-    orders = []
-    for order in limit_orders:
-        orders.append(order["id"])
-    return orders
+    return [order["id"] for order in limit_orders]
 
 
 def rpc_account_id(rpc, account_name):
@@ -48,8 +44,7 @@ def rpc_account_id(rpc, account_name):
     given an account name return an account id
     """
     ret = wss_query(rpc, ["database", "lookup_accounts", [account_name, 1]])
-    account_id = ret[0][1]
-    return account_id
+    return ret[0][1]
 
 
 def main():

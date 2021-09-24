@@ -17,22 +17,14 @@ litepresence2020
 """
 
 # STANDARD PYTHON MODULES
-import sys
-
 import time
 import random
 import itertools
-from pprint import pprint
-from getpass import getpass
-from statistics import median
-from multiprocessing import Process
 from json import dumps as json_dumps
 
 # HONEST PRICE FEEDS MODULES
 from dex_manual_signing import broker
-from pricefeed_cex import pricefeed_cex
-from pricefeed_forex import pricefeed_forex
-from pricefeed_dex import pricefeed_dex, race_append, trace
+from pricefeed_dex import trace
 from utilities import race_write, race_read_json, sigfig, it
 from dex_meta_node import rpc_last, rpc_lookup_asset_symbols, rpc_lookup_accounts
 from dex_meta_node import wss_handshake
@@ -61,7 +53,6 @@ def reconnect(rpc):
             break
         except Exception as error:
             print(trace(error))
-            pass
     if begin - time.time() > 0.4:
         print(nodes[0], "TOO SLOW")
         reconnect(rpc)
@@ -169,7 +160,7 @@ def create_honest_cross_rates(prices):
     return honest_cross_rates
 
 
-def create_pairs(tick):
+def create_pairs():
     """
     return a list of the markets to skeleton
     use a matrix of CURRENCIES and HONEST_ASSETS
@@ -199,7 +190,7 @@ def fetch_bts_bitassets(rpc):
         "BTS:USD": 0,
         "BTS:CNY": 0,
     }
-    for pair in bitassets.keys():
+    for pair in bitassets:
         pair_dict = {
             "asset": pair.split(":")[0],
             "currency": pair.split(":")[1],
@@ -403,7 +394,7 @@ def sceletus(prices, name, wif, do_sceletus):
     header = {}
     tick = prices["time"]["updates"]
     # create a list of all pairs to be skeleton'd
-    pairs = create_pairs(tick)
+    pairs = create_pairs()
     # websocket handshake
     rpc = reconnect(None)
     # remote procedure price of bts to Bitassets rates
@@ -430,7 +421,7 @@ def sceletus(prices, name, wif, do_sceletus):
         msg = "\033c\n\n\n"
         msg += it("red", "SCELETUS")
         msg += "\n\n\n"
-        for i in range(50):
+        for _ in range(50):
             msg += (
                 "\n       "
                 + asset

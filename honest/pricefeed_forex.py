@@ -29,6 +29,7 @@ from utilities import race_write, ret_markets, race_read_json, it, sigfig
 
 # GLOBAL CONSTANTS
 TIMEOUT = 15
+SAVE_RAM = False  # True for deployment on low cost web hosting; saves 0.5G RAM
 
 
 def refresh_forex_rates():
@@ -73,17 +74,15 @@ def refresh_forex_rates():
         processes[site] = Process(target=method, args=(site,))
         processes[site].daemon = False
         processes[site].start()
-        # FIXME: FOR DEPLOYMENT ON LOW COST WEB HOSTING SERVICES
-        # FIXME: ALTERNATIVE RAM SAVINGS 0.5GB, WITH ADDED EXECUTION TIME OF 5 MINUTES
-        # FIXME: **INCLUDE** NEXT 3 LINES FOR LOW RAM ALTERNATIVE
-        # processes[site].join(TIMEOUT)
-        # processes[site].terminate()
-        # time.sleep(5)
-    # FIXME: **EXCLUDE** NEXT 4 LINES FOR LOW RAM ALTERNATIVE
-    for site in processes.keys():
-        processes[site].join(TIMEOUT)
-    for site in processes.keys():
-        processes[site].terminate()
+        if SAVE_RAM:
+            processes[site].join(TIMEOUT)
+            processes[site].terminate()
+            time.sleep(5)
+    if not SAVE_RAM:
+        for site in processes.keys():
+            processes[site].join(TIMEOUT)
+        for site in processes.keys():
+            processes[site].terminate()
     # read the text pipe ipc results of each process
     sources = {}
     for site in processes.keys():
@@ -100,7 +99,7 @@ def aggregate_rates():
     aggregate = {}
     for source, prices in sources.items():
         for pair, price in prices.items():
-            if pair in aggregate.keys():
+            if pair in aggregate:
                 aggregate[pair].append((price, source))
             else:
                 aggregate[pair] = [(price, source)]

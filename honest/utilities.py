@@ -13,9 +13,11 @@ litepresence2020
 
 # STANDARD PYTHON MODULES
 import os
+import sys
 import time
 from json import loads as json_loads
-from multiprocessing import Process, Value
+from traceback import format_exc
+
 
 # GLOBAL VARIABLES
 ATTEMPTS = 3
@@ -35,6 +37,31 @@ def it(style, text):
         "cyan": 96,
     }
     return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
+
+
+def block_print():
+    """
+    temporarily disable printing
+    """
+    sys.stdout = open(os.devnull, "w")
+
+
+def enable_print():
+    """
+    re-enable printing
+    """
+    sys.stdout = sys.__stdout__
+
+
+def trace(error):
+    """
+    print and return stack trace upon exception
+    """
+    msg = str(type(error).__name__) + "\n"
+    msg += str(error.args) + "\n"
+    msg += str(format_exc()) + "\n"
+    print(msg)
+    return msg
 
 
 def sigfig(price):

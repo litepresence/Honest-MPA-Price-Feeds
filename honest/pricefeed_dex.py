@@ -41,23 +41,24 @@ from websocket import enableTrace
 
 # HONEST PRICE FEED MODULES
 from utilities import sigfig, it
+from config_nodes import public_nodes
 
 # ======================================================================
 VERSION = "HONEST MPA DEX FEED 0.00000001"
 # ======================================================================
 DEV = False
 COLOR = True
-MAVENS = 7  # 7
+MAVENS = 1  # 7
 TIMEOUT = 100  # 100
-PROCESSES = 10  # 20 (slower than metanode)
-MIN_NODES = 15  # 15
-BOOK_DEPTH = 30  # 30
-THRESH_PAUSE = 10  # 10  # 4 (slower than metanode)
+PROCESSES = 1  # 20 (slower than metanode)
+MIN_NODES = 9  # 15
+BOOK_DEPTH = 2  # 30
+THRESH_PAUSE = 20  # 10  # 4 (slower than metanode)
 UTILIZATIONS = 30  # 30
-HISTORY_DEPTH = 30  # 30
+HISTORY_DEPTH = 2  # 30
 LATENCY_REPEAT = 900  # 900
 LATENCY_TIMEOUT = 5  # 5
-BIFURCATION_PAUSE = 10  # 10  # 2 (slower than metanode)
+BIFURCATION_PAUSE = 20  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
 PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
@@ -65,61 +66,16 @@ PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
 
 CURRENCIES = [
     "GDEX.BTC",
-    "RUDEX.BTC",
     "XBTSX.BTC",
     "GDEX.USDT",
-    "RUDEX.USDT",
     "XBTSX.USDT",
 ]
 ASSET = "BTS"
 
-# GLOBAL USER DEFINED WHITELIST
-# ======================================================================
-def public_nodes():
-    """
-    Static list of RPC nodes
-    """
-    # SEEN LIVE JAN 2020
-    return [
-        "wss://siliconvalley.us.api.bitshares.org/ws",
-        "wss://us.nodes.bitshares.ws/wss",
-        "wss://dallas.us.api.bitshares.org/wss",
-        "wss://blockzms.xyz/wss",
-        "wss://api.bitshares.bhuz.info/wss",
-        "wss://hk.nodes.bitshares.ws/wss",
-        "wss://ws.gdex.io/wss",
-        "wss://btsfullnode.bangzi.info/wss",
-        "wss://sg.nodes.bitshares.ws",
-        "wss://eu.openledger.info/wss",
-        "wss://bts.open.icowallet.net/ws",
-        "wss://eu.nodes.bitshares.ws/ws",
-        "wss://bitshares.openledger.info/wss",
-        "wss://api.dex.trading",
-        "wss://btsws.roelandp.nl/wss",
-        "wss://citadel.li/node/ws",
-        "wss://node.bitshares.eu/wss",
-        "wss://api.bts.ai/ws",
-        "wss://kimziv.com/wss",
-        "wss://openledger.hk/wss",
-        "wss://api.weaccount.cn/wss",
-        "wss://api.61bts.com/ws",
-        "wss://dex.iobanker.com:9090/ws",
-        "wss://api.bts.mobi/ws",
-        "wss://node1.deexnet.com/ws",
-        "wss://node4.deexnet.com/ws",
-        "wss://node5.deexnet.com/ws",
-        "wss://node2.deexnodes.net/ws",
-        "wss://node3.deexnodes.net/ws",
-        "wss://node6.deexnodes.net/ws",
-        "wss://node7.deexnodes.net/ws",
-        "wss://node1.deex.exchange/ws",
-        "wss://node6.deex.exchange/ws",
-    ]
-
 
 # INTER PROCESS COMMUNICATION VIA TEXT
 # ======================================================================
-def bitshares_trustless_client():  # DONE
+def bitshares_trustless_client():
     """
     Include this definition in your script to storage['access'] pricefeed_dex.txt
     Deploy your bot script in the same folder as pricefeed_dex.py
@@ -136,7 +92,7 @@ def bitshares_trustless_client():  # DONE
         except Exception as error:
             msg = trace(error)
             race_condition = ["Unterminated", "Expecting"]
-            if any([x in str(error.args) for x in race_condition]):
+            if any(x in str(error.args) for x in race_condition):
                 print("pricefeed_dex = bitshares_trustless_client() RACE READ")
             elif "pricefeed_dex is blank" in str(error.args):
                 continue
@@ -212,7 +168,7 @@ def race_write(doc="", text=""):  # DONE
                 pass
 
 
-def race_read(doc=""):  # DONE
+def race_read(doc=""):
     """
     Concurrent Read from File Operation
     """
@@ -237,10 +193,7 @@ def race_read(doc=""):  # DONE
                             ret = json_load(ret)
                         except BaseException:
                             print("race_read() failed %s" % str(ret))
-                            if "{" in ret:
-                                ret = {}
-                            else:
-                                ret = []
+                            ret = {} if "{" in ret else []
                 break
         except FileNotFoundError:
             ret = []
@@ -361,7 +314,7 @@ def rpc_last(rpc, cache):  # DONE
 
 # STATISTICAL DATA CURATION
 # ======================================================================
-def thresh(storage, process, epoch, pid, cache):  # DONE
+def thresh(storage, process, epoch, pid, cache):
     """
     Make calls for data, shake out any errors
     There are 20 threshing process running in parallel
@@ -719,7 +672,7 @@ def thresh(storage, process, epoch, pid, cache):  # DONE
             continue
 
 
-def bifurcation(storage, cache):  # DONE
+def bifurcation(storage, cache):
     """
     Given 7 dictionaries of data (mavens) find the most common
     Send good (statistical mode) data to pricefeed_dex
@@ -822,7 +775,7 @@ def bifurcation(storage, cache):  # DONE
             continue  # from top of while loop NOT pass through error
 
 
-def get_cache(storage, cache, nodes):  # DONE
+def get_cache(storage, cache, nodes):
     """
     Acquire and store asset ids, and asset precisions
     This is called once prior to spawning additional processes
@@ -950,7 +903,7 @@ def winnow(storage, list_type, node):  # DONE
         pass
 
 
-def latency_test(storage):  # DONE
+def latency_test(storage):
     """
     In loop, latency test the static list to produce nodes.txt
     Qualify round 1 = good chain id, 1000ms ping, 5000ms handshake
@@ -1032,7 +985,7 @@ def latency_test(storage):  # DONE
         sleep(max(0, (LATENCY_REPEAT - (time() - start))))
 
 
-def spawn(storage, cache):  # DONE
+def spawn(storage, cache):
     """
     Multiprocessing handler spawns all parallel processes
     """
@@ -1084,7 +1037,7 @@ def spawn(storage, cache):  # DONE
                 race_append(doc="pricefeed_dexlog.txt", text=msg)
 
 
-def nascent_trend(maven):  # DONE
+def nascent_trend(maven):
     """
     Append data from recently polled node to vetted list of dictionaries
     """
@@ -1112,7 +1065,7 @@ def print_logo():
     print(it("green", print_logo.__doc__))
 
 
-def print_market(storage, cache):  # DONE
+def print_market(storage, cache):
     """
     pricefeed_dex header containing with cached values
     """
@@ -1127,59 +1080,46 @@ def print_market(storage, cache):  # DONE
         "data",
     )
     print("==================================================")
-    currencies = []
-    for key, val in cache["currency_id"].items():
-        currencies.append((key, val, cache["currency_precision"][key]))
+    currencies = [
+        (key, val, cache["currency_precision"][key])
+        for key, val in cache["currency_id"].items()
+    ]
+
     print("CURRENCIES: ", currencies)
     print("ASSET:      ", cache["asset"], cache["asset_id"], cache["asset_precision"])
     print("==================================================")
     print("")
 
 
-def remove_chars(string, chars):  # DONE
+def remove_chars(string, chars):
     """
     Return string without given characters
     """
-    return "".join([c for c in string if c not in set(chars)])
+    return "".join(c for c in string if c not in set(chars))
 
 
-def precision(number, places):  # DONE
+def precision(number, places):
     """
     String representation of float to n decimal places
     """
     return ("%." + str(places) + "f") % float(number)
 
 
-def from_iso_date(date):  # DONE
+def from_iso_date(date):
     """
     Unix epoch given iso8601 datetime
     """
     return int(timegm(strptime(str(date), "%Y-%m-%dT%H:%M:%S")))
 
 
-def to_iso_date(unix):  # DONE
+def to_iso_date(unix):
     """
     iso8601 datetime given unix epoch
     """
     return datetime.utcfromtimestamp(int(unix)).isoformat()
 
 
-def it(style, text):  # DONE
-    """
-    Color printing in terminal
-    """
-    emphasis = {
-        "red": 91,
-        "green": 92,
-        "yellow": 93,
-        "blue": 94,
-        "purple": 95,
-        "cyan": 96,
-    }
-    return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
-
-
-def welcome(cache):  # DONE
+def welcome(cache):
     """
     Announce version and print logo, log current local time
     """
@@ -1188,7 +1128,7 @@ def welcome(cache):  # DONE
     return cache
 
 
-def version(cache):  # DONE
+def version(cache):
     """
     Get version number from VERSION name
     Label terminal window
@@ -1198,7 +1138,7 @@ def version(cache):  # DONE
     return cache
 
 
-def sign_in(cache):  # DONE
+def sign_in(cache):
     """
     skip sign in... install global "CURRENCIES"
     """
@@ -1215,7 +1155,7 @@ def sign_in(cache):  # DONE
     return cache
 
 
-def trace(error):  # DONE
+def trace(error):
     """
     Stack trace upon exception
     """
@@ -1225,15 +1165,12 @@ def trace(error):  # DONE
     return msg
 
 
-def initialize():  # DONE
+def initialize():
     """
     Clear text IPC channels
     Initialize storage and cache
     """
-    storage = {}
-    storage["data_latency"] = 0
-    storage["access"] = 0
-    storage["mean_ping"] = 0.5
+    storage = {"data_latency": 0, "access": 0, "mean_ping": 0.5}
     now = int(time())
     cache = {"begin": now}
     if DEV:
@@ -1248,7 +1185,7 @@ def initialize():  # DONE
     return storage, cache
 
 
-def get_nodes():  # DONE
+def get_nodes():
     """
     Dynamic list if long enough else static list
     """
@@ -1258,7 +1195,7 @@ def get_nodes():  # DONE
     return nodes
 
 
-def pricefeed_dex():  # DONE
+def pricefeed_dex():
     """
     Primary event backbone
     """

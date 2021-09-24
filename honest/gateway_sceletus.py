@@ -56,19 +56,17 @@ def rpc_open_orders(rpc, account_name):
         limit_orders = ret[0][1]["limit_orders"]
     except:
         limit_orders = []
-    orders = []
     for order in limit_orders:
         print(order)
+
+    return limit_orders
 
 
 def create_prices(cex, dex, forex):
     """
     extract pertinent median prices from cex and forex dictionaries
     """
-    prices = {}
-    for key, val in cex.items():
-        if ":" in key:
-            prices[key] = val["median"]
+    prices = {key: val["median"] for key, val in cex.items() if ":" in key}
     for key, val in forex["medians"].items():
         if key in ["USD:CNY", "USD:EUR"]:
             prices[key] = val[0]
@@ -163,7 +161,7 @@ def forex_rates():
     aggregate = {}
     for source, prices in sources.items():
         for pair, price in prices.items():
-            if pair in aggregate.keys():
+            if pair in aggregate:
                 aggregate[pair].append((price, source))
             else:
                 aggregate[pair] = [(price, source)]
@@ -475,8 +473,8 @@ def create_qty_rate(prices, gateway):
         qty_rate = rudex_qty_rate(prices)
 
     for key, val in qty_rate.items():
-        qty_rate[key] = {"qty":val["qty"],"rate":sigfig(val["rate"])}
-        
+        qty_rate[key] = {"qty": val["qty"], "rate": sigfig(val["rate"])}
+
     return qty_rate
 
 
@@ -491,10 +489,10 @@ def sceletus(prices, gateway, name, wif, do_sceletus):
     # build qty_rate dict
     qty_rate = create_qty_rate(prices, gateway)
     print("\033c")
-    print_logo()   
+    print_logo()
     print("\n\nQTY_RATE")
     for k, v in qty_rate.items():
-        print(k, v, it("cyan", sigfig(1/v["rate"])))
+        print(k, v, it("cyan", sigfig(1 / v["rate"])))
     time.sleep(5)
     print(it("green", "Begin sceletus buy/sell ops..."))
     time.sleep(5)
@@ -641,9 +639,9 @@ def select_assets(gateway):
             "XEM",
             "ZEC",
         ]
-    if gateway == "RUDEX":
+    elif gateway == "RUDEX":
         assets = ["DGB", "EOS", "ETH", "STEEM"]
-    if gateway == "XBTSX":
+    elif gateway == "XBTSX":
         assets = ["ETH", "BCH", "BTG", "LTC", "WAVES"]
 
     assets.append("BTS")
@@ -698,7 +696,7 @@ def main():
         print(it("cyan", "Gathering FOREX Data..."))
         forex = forex_rates()
         print("\033c")
-        print_logo()        
+        print_logo()
         print(it("cyan", "\n\nCEX"))
         print(cex)
         print(it("cyan", "\n\nDEX"))
@@ -706,11 +704,11 @@ def main():
         print(it("cyan", "\n\nFOREX"))
         print(forex["medians"])
         race_write("pricefeed_cex.txt", cex)
-        race_write("pricefeed_forex.txt", forex)        
+        race_write("pricefeed_forex.txt", forex)
         prices = create_prices(cex, dex, forex)
         time.sleep(10)
         sceletus(prices, gateway, name, wif, do_sceletus)
-        time.sleep(REFRESH-100)
+        time.sleep(REFRESH - 100)
 
 
 if __name__ == "__main__":

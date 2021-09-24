@@ -99,18 +99,20 @@ def finviz(site):
     url = "https://finviz.com/api/forex_all.ashx?timeframe=m5"
     try:
         ret = requests.get(url, timeout=(15, 15)).json()
-        data = {}
-        data["AUD:USD"] = float(ret["AUDUSD"]["last"])
-        data["EUR:GBP"] = float(ret["EURGBP"]["last"])
-        data["EUR:USD"] = float(ret["EURUSD"]["last"])
-        data["GBP:JPY"] = float(ret["GBPJPY"]["last"])
-        data["GBP:USD"] = float(ret["GBPUSD"]["last"])
-        data["USD:CAD"] = float(ret["USDCAD"]["last"])
-        data["NZD:USD"] = float(ret["NZDUSD"]["last"])
-        data["USD:CHF"] = float(ret["USDCHF"]["last"])
-        data["USD:JPY"] = float(ret["USDJPY"]["last"])
-        data["XAG:USD"] = float(ret["SI"]["last"])
-        data["XAU:USD"] = float(ret["GC"]["last"])
+        data = {
+            "AUD:USD": float(ret["AUDUSD"]["last"]),
+            "EUR:GBP": float(ret["EURGBP"]["last"]),
+            "EUR:USD": float(ret["EURUSD"]["last"]),
+            "GBP:JPY": float(ret["GBPJPY"]["last"]),
+            "GBP:USD": float(ret["GBPUSD"]["last"]),
+            "USD:CAD": float(ret["USDCAD"]["last"]),
+            "NZD:USD": float(ret["NZDUSD"]["last"]),
+            "USD:CHF": float(ret["USDCHF"]["last"]),
+            "USD:JPY": float(ret["USDJPY"]["last"]),
+            "XAG:USD": float(ret["SI"]["last"]),
+            "XAU:USD": float(ret["GC"]["last"]),
+        }
+
         data = refine_data(data)
         print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
@@ -200,6 +202,7 @@ def duckduckgo(site):
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(f"{site} failed to load")
+
 
 def wocu(site):
     """
@@ -303,9 +306,9 @@ def fxrate(site):
         """
         extract data from xml
         """
-        ret = raw.split('to American Dollar Rates')[1]
+        ret = raw.split("to American Dollar Rates")[1]
         ret = ret.split("per")[0].split(";")[-1].replace(" ", "")
-        return 1/float(ret)
+        return 1 / float(ret)
 
     try:
         data = {}
@@ -315,7 +318,7 @@ def fxrate(site):
             url = uri + symbol
             raw = requests.get(url, timeout=(15, 15)).text
             data["USD:" + symbol] = parse(raw)
-        symbols = ["XAG" , "XAU"]
+        symbols = ["XAG", "XAU"]
         uri = "https://fx-rate.net/conversion.php?"
         for symbol in symbols:
             endpoint = f"currency={symbol}&currency_pair=USD"
@@ -410,7 +413,7 @@ def forexrates(site):
     """
 
     def parse(raw):
-        """ 
+        """
         remove xml tags, return list of rates split with =
         """
         lines = [i.split(";")[0] for i in raw.split("Values")]
@@ -492,7 +495,7 @@ def ino(site):
     live forex rates scraped from ino.com
     """
     uri = "https://assets.ino.com/data/history/"
-    
+
     try:
         data = {}
         symbols = ["CNY", "RUB", "EUR", "JPY", "KRW", "GBP"]
@@ -501,12 +504,12 @@ def ino(site):
             url = uri + query
             ret = requests.get(url, timeout=(15, 15)).json()[-1][-2]
             data["USD:" + symbol] = float(ret)
-        symbols =["XAG", "XAU"]
+        symbols = ["XAG", "XAU"]
         for symbol in symbols:
             query = f"?s=FOREX_{symbol}USDO&b=&f=json"
             url = uri + query
             ret = requests.get(url, timeout=(15, 15)).json()[-1][-2]
-            data["USD:" + symbol] = 1/float(ret)
+            data["USD:" + symbol] = 1 / float(ret)
         data = refine_data(data)
         print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))

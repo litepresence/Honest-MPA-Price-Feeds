@@ -1,6 +1,6 @@
 """
 A stand alone app for querying @sschiessl's custom API
-to obtain historical price feed data for HONEST mpa's 
+to obtain historical price feed data for HONEST mpa's
 """
 # import necessary modules
 from matplotlib import pyplot as plt
@@ -51,7 +51,7 @@ def get_data():
         },
         ... # additional assets
     }
-    
+
     """
     honest_feeds = {}
     # for all the HONEST mpa's
@@ -91,7 +91,7 @@ def get_data():
                     # if 20 days of no data stop searching for this asset/producer
                     if failed == 5:
                         break
-                    
+
         honest_feeds[asset] = asset_data
 
     return honest_feeds

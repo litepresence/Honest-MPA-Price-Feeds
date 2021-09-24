@@ -34,20 +34,7 @@ bitassets such as USD, CNY, BTC should NOT have the "bit" prefix
 
 def config_sceletus():
 
-    return {
-        "currencies": ["BTS", "CNY", "USD", "GDEX.BTC"],
-        "honest_assets": [
-            "HONEST.BTC",
-            "HONEST.CNY",
-            "HONEST.USD",
-            "HONEST.XAU",
-            "HONEST.XAG",
-        ],
-        "honest_to_honest": True,
-        "exclude_pairs": [],
-    }
-
-    """  
+    """
     A REQUEST:
 
     As sceletus'ing all the cross rates for any one individual would be to much to ask...
@@ -61,14 +48,14 @@ def config_sceletus():
     CURRENT RECOMMENDED SETTINGS:
 
     @litepresence 10 markets (intra honest pairings)
-    
+
     return {
         "currencies": [],
         "honest_assets": ["HONEST.CNY", "HONEST.USD", "HONEST.BTC", "HONEST.XAU", "HONEST.XAG"],
         "honest_to_honest": True,
         "exclude_pairs": [],  # currency:asset,
     }
-    
+
     @JBahai 5 markets (BTS to honest pairs)
 
     return {
@@ -95,8 +82,8 @@ def config_sceletus():
         "honest_to_honest": False,
         "exclude_pairs": [],  # currency:asset,
     }
-    
-    @KenCode 8 markets H.BTC and BTS to H.ETH, H.ETH1, H.XRP and H.XRP1
+
+    @KenCode 8 markets
     return {
     "currencies": ["HONEST.BTC", "BTS"],
         "honest_assets": [
@@ -108,4 +95,16 @@ def config_sceletus():
         "honest_to_honest": False,
         "exclude_pairs": [],
     }
+
     """
+
+    # configuration for user @litepresence
+    return {
+        "currencies": ["BTS"],
+        "honest_assets": [
+            "HONEST.USD",
+            "HONEST.BTC",
+        ],
+        "honest_to_honest": True,
+        "exclude_pairs": [],  # currency:asset,
+    }

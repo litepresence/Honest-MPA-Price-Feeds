@@ -145,14 +145,18 @@ def bloomberg(site):
     live forex rates scraped from bloomberg.com
     """
     uri = "https://www.bloomberg.com/markets/api/bulk-time-series/price/"
-    endpoint = "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR,XAUUSD%3ACUR,XAGUSD%3ACUR"
+    endpoint = (
+        "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR"
+        + ",XAUUSD%3ACUR,XAGUSD%3ACUR"
+    )
     url = uri + endpoint
     headers = {
         "authority": "www.bloomberg.com",
         "method": "GET",
         "path": (
             "/markets/api/comparison/data?securities="
-            + "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR,XAUUSD%3ACUR,XAGUSD%3ACUR"
+            + "USDCNY%3ACUR,USDRUB%3ACUR,USDJPY%3ACUR,USDEUR%3ACUR,USDKRW%3ACUR"
+            + ",XAUUSD%3ACUR,XAGUSD%3ACUR"
             + "&securityType=CURRENCY&locale=en"
         ),
         "scheme": "https",
@@ -216,9 +220,7 @@ def bitcoinaverage(site):
         session = requests.Session()
         cfscrape_requests = cfscrape.create_scraper(sess=session)
         ret = cfscrape_requests.get(url, timeout=(15, 15)).json()["rates"]
-        data = {}
-        for key, val in ret.items():
-            data["USD:" + key] = float(val["rate"])
+        data = {"USD:" + key: float(val["rate"]) for key, val in ret.items()}
         data = refine_data(data)
         print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
@@ -252,9 +254,11 @@ def investing(site):
         lines = [i.replace(" ", "").replace(",", "") for i in lines]
         lines = [i for i in lines if "askpid" in i]
         lines = [i.split("hiddenFour")[0] for i in lines]
-        data = {}
-        for item in lines:
-            data[item.split("</a>")[0].replace(">", "")] = item.split('last">')[1]
+        data = {
+            item.split("</a>")[0].replace(">", ""): item.split('last">')[1]
+            for item in lines
+        }
+
         data = {k.replace("/", ":"): v.split("</div>")[0] for k, v in data.items()}
         data = {k: float(v) for k, v in data.items()}
         data["USD:XAG"] = 1 / data.pop("XAG:USD")

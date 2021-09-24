@@ -15,25 +15,20 @@ litepresence2020
 # STANDARD PYTHON MODULES
 from binascii import hexlify  # binary text to hexidecimal
 from binascii import unhexlify  # hexidecimal to binary text
-from zlib import decompress  # aka gzip inflate; only used for logo
 from hashlib import sha256  # message digest algorithm
 from hashlib import new as hashlib_new  # access algorithm library
 from struct import pack  # convert to string representation of C struct
-from struct import unpack, unpack_from  # convert back to PY variable
-from time import time, ctime, mktime, gmtime, asctime, strptime, strftime
+from struct import unpack_from  # convert back to PY variable
+from time import time, ctime, gmtime, asctime, strptime, strftime, sleep
 from multiprocessing import Process, Value  # encapsulate processes
 from decimal import Decimal as decimal  # higher precision than float
 from json import dumps as json_dumps  # serialize object to string
 from json import loads as json_loads  # deserialize string to object
 from collections import OrderedDict
-from traceback import format_exc  # stack trace in terminal
 from datetime import datetime
 from calendar import timegm
-from getpass import getpass  # hidden input()
 from random import shuffle
 from pprint import pprint  # pretty printing
-import math
-import sys
 import os
 
 # THIRD PARTY MODULES
@@ -50,7 +45,9 @@ from ecdsa import util as ecdsa_util  # module
 from ecdsa import der as ecdsa_der  # module
 
 # HONEST PRICE FEED MODULES
-from utilities import race_write
+from utilities import race_write, trace, block_print, enable_print, it
+from config_nodes import public_nodes
+
 
 # =======================================================================
 VERSION = "Bitshares Price Feed Publisher 0.00000001"
@@ -61,121 +58,48 @@ VERSION = "Bitshares Price Feed Publisher 0.00000001"
 DEV = False  # WARN: will expose your wif in terminal
 COLOR = True
 
+# bitsharesbase/operationids.py
+OP_IDS = {
+    "Asset_update_feed_producers": 13,
+    "Asset_publish_feed": 19,
+}
+# swap keys/values to index names by number
+OP_NAMES = {v: k for k, v in OP_IDS.items()}
+# bitsharesbase/chains.py
+ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
+# bitsharesbase/objecttypes.py used by ObjectId() to confirm a.b.c
+TYPES = {
+    "account": 2,
+    "asset": 3,
+}  # 1.2.x  # 1.3.x  # 1.7.x etc.
+# base58 encoding and decoding; this is alphabet defined:
+BASE58 = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
+# hex encoding and decoding
+HEXDIGITS = "0123456789abcdefABCDEF"
+# ISO8601 timeformat; 'graphene time'
+ISO8601 = "%Y-%m-%dT%H:%M:%S%Z"
+# MAX is 4294967295; year 2106 due to 4 byte unsigned integer
+END_OF_TIME = 4 * 10 ** 9  # about 75 years in future
+# very little
+SATOSHI = decimal(0.00000001)
+# almost 1
+SIXSIG = decimal(0.999999)
 
-# PRINT CONTROL
-def blockPrint():
-    """
-    temporarily disable printing
-    """
-    sys.stdout = open(os.devnull, "w")
-
-
-def enablePrint():
-    """
-    re-enable printing
-    """
-    sys.stdout = sys.__stdout__
-
-
-def trace(e):
-    """
-    print stack trace upon exception
-    """
-    msg = str(type(e).__name__) + "\n"
-    msg += str(e.args) + "\n"
-    msg += str(format_exc()) + "\n"
-    print(msg)
-
-
-# GLOBALS
-def global_variables():
-    """
-    create an info object to pass through the script
-    (surely there are better means - but this works right now)
-    """
-    global info
-    info = {}
-    info["id"] = 1  # will be used to increment rpc request id
-
-
-def global_constants():
-    """
-    these values do not change
-    """
-    global OP_IDS, OP_NAMES, ID, TYPES, SATOSHI, SIXSIG
-    global BASE58, HEXDIGITS, ISO8601, END_OF_TIME
-    # bitsharesbase/operationids.py
-    OP_IDS = {
-        "Limit_order_create": 1,  # FIXME legacy of buy/sell/cancel
-        "Limit_order_cancel": 2,  # FIXME legacy of buy/sell/cancel
-        "Asset_update_feed_producers": 13,
-        "Asset_publish_feed": 19,
-    }
-    # swap keys/values to index names by number
-    OP_NAMES = {v: k for k, v in OP_IDS.items()}
-    # bitsharesbase/chains.py
-    ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
-    # bitsharesbase/objecttypes.py used by ObjectId() to confirm a.b.c
-    TYPES = {
-        "account": 2,
-        "asset": 3,
-        "limit_order": 7,  # FIXME legacy of buy/sell/cancel
-    }  # 1.2.x  # 1.3.x  # 1.7.x
-    # base58 encoding and decoding; this is alphabet defined:
-    BASE58 = b"123456789ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnopqrstuvwxyz"
-    # hex encoding and decoding
-    HEXDIGITS = "0123456789abcdefABCDEF"
-    # ISO8601 timeformat; 'graphene time'
-    ISO8601 = "%Y-%m-%dT%H:%M:%S%Z"
-    # MAX is 4294967295; year 2106 due to 4 byte unsigned integer
-    END_OF_TIME = 4 * 10 ** 9  # about 75 years in future
-    # very little
-    SATOSHI = decimal(0.00000001)
-    # almost 1
-    SIXSIG = decimal(0.999999)
-
-
-def control_panel():
-    """
-    advanced user controls to alter execution behaviors
-    """
-    global HANDSHAKE_TIMEOUT, PROCESS_TIMEOUT, AUTOSCALE, BTS_FEES
-    global KILL_OR_FILL, ATTEMPTS, JOIN, LIMIT, DUST
-    # timeout during websocket handshake; default 4 seconds
-    HANDSHAKE_TIMEOUT = 4
-    # multiprocessing handler lifespan, default 20 seconds
-    PROCESS_TIMEOUT = 20
-    # default False for persistent limit orders
-    KILL_OR_FILL = False  # FIXME legacy of buy/sell/cancel
-    # default True scales elements of oversize gross order to means
-    AUTOSCALE = True
-    # default True to never spend last 2 bitshares
-    BTS_FEES = True  # FIXME legacy of buy/sell/cancel
-    # multiprocessing incarnations, default 3 attempts
-    ATTEMPTS = 3
-    # prevent extreme number of AI generated edicts; default 20
-    LIMIT = 20
-    # default True to execute order in primary script process
-    JOIN = True
-    # ignore orders value less than ~X bitshares; 0 to disable
-    DUST = 20  # FIXME legacy of buy/sell/cancel
-
-
-# COLOR TERMINAL
-def it(style, text):
-    """
-    use escape sequences to colorize the printed terminal
-    """
-    # FIXME: this is redundant and can be imported from utilities.py
-    emphasis = {
-        "red": 91,
-        "green": 92,
-        "yellow": 93,
-        "blue": 94,
-        "purple": 95,
-        "cyan": 96,
-    }
-    return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
+# #################################################################
+# CONTROL PANEL
+# timeout during websocket handshake; default 4 seconds
+HANDSHAKE_TIMEOUT = 4
+# multiprocessing handler lifespan, default 20 seconds
+PROCESS_TIMEOUT = 20
+# default True scales elements of oversize gross order to means
+AUTOSCALE = True
+# multiprocessing incarnations, default 3 attempts
+ATTEMPTS = 3
+# prevent extreme number of AI generated edicts; default 20
+LIMIT = 20
+# default True to execute order in primary script process
+JOIN = True
+# #################################################################
 
 
 # REMOTE PROCEDURE CALLS TO PUBLIC API NODES
@@ -183,15 +107,14 @@ def wss_handshake():
     """
     create a wss handshake in less than X seconds, else try again
     """
-    print(it("purple", "wss_handshake - node list is hard coded"))
-    print("in production use latencyTEST.py to generate list")
-    global ws, nodes  # the websocket is created and node list shuffled
+    global nodes, ws
+    nodes = public_nodes()
     shuffle(nodes)
     handshake = 999
     while handshake > HANDSHAKE_TIMEOUT:
         try:
             try:
-                ws.close  # attempt to close open stale connection
+                ws.close  # attempt to close open connection
                 print(it("purple", "connection terminated"))
             except:
                 pass
@@ -205,13 +128,14 @@ def wss_handshake():
             continue
     print(it("purple", "connected:"), node, ws)
     print("elapsed %.3f sec" % (time() - start))
+    return ws
 
 
 def wss_query(params):
     """
     this definition will place all remote procedure calls (RPC)
     """
-    for i in range(10):
+    for _ in range(10):
         try:
             # print(it('purple','RPC ' + params[0]), it('cyan',params[1]))
             # query is 4 element dict {"method":"", "params":"", "jsonrpc":"", "id":""}
@@ -247,8 +171,7 @@ def rpc_block_number():
     """
     block number and block prefix
     """
-    ret = wss_query(["database", "get_dynamic_global_properties", []])
-    return ret
+    return wss_query(["database", "get_dynamic_global_properties", []])
 
 
 def rpc_account_id():
@@ -256,8 +179,7 @@ def rpc_account_id():
     given an account name return an account id
     """
     ret = wss_query(["database", "lookup_accounts", [account_name, 1]])
-    account_id = ret[0][1]
-    return account_id
+    return ret[0][1]
 
 
 def rpc_fees():
@@ -307,8 +229,7 @@ def rpc_key_reference(public_key):
     """
     given public key return account id
     """
-    ret = wss_query(["database", "get_key_references", [[public_key]]])
-    return ret
+    return wss_query(["database", "get_key_references", [[public_key]]])
 
 
 def rpc_get_transaction_hex_without_sig(tx):
@@ -338,65 +259,17 @@ def to_iso_date(unix):
     """
     returns iso8601 datetime given unix epoch
     """
-    iso = datetime.utcfromtimestamp(int(unix)).isoformat()
-    return iso
+    return datetime.utcfromtimestamp(int(unix)).isoformat()
 
 
 def from_iso_date(iso):
     """
     returns unix epoch given iso8601 datetime
     """
-    unix = int(timegm(strptime((iso + "UTC"), ISO8601)))
-    return unix
+    return int(timegm(strptime((iso + "UTC"), ISO8601)))
 
 
 # GRAPHENEBASE TYPES # graphenebase/types.py
-def types_README():
-    """
-    # graphenebase types use python "dunder" / "magic" methods
-    # these are a little abstract and under documented; to elucidate:
-    # bytes() is a "built in" function like str(), int(), list()
-    # it returns byte strings like: b'\x00\x00\x00'
-    # these methods will redefine the type of byte string
-    # returned by the "built in" bytes() in global space
-    # but only when bytes() is called on an object that has passed
-    # through a class with a "magic" __bytes__ method
-    # these methods are used to serialize OrderDicts of various elements
-    # graphenebase  __str__() methods have been removed
-    # as they are unused for limit order operations
-    # Set() has been merged into Array()
-    # Bool() has been merged into Uint8()
-    # Varint32() has been merged into both Id() and Array()
-    'consider the following "magic method" example'
-    # this would have no effect on the way bytes() normally behaves
-    class normal:
-        def __init__(self, d):
-            self.data = int(d)
-        def __bytes__(self):
-            return bytes(self.data)
-    # this redifines bytes() in global to pack unsigned 8 bit integers
-    # but only in the case of bytes(Uint8(x))
-    class Uint8:
-        def __init__(self, d):
-            self.data = int(d)
-        def __bytes__(self):
-            return pack("<B", self.data)
-    # this is a definition method to accomplish the same "magic"
-    def bytes_Uint8(data):
-        return pack("<B", int(data))
-    # apply each of these methods to x=3 to show what happens
-    x = 3
-    print(bytes(x))
-    print(bytes(normal(x)))
-    print(bytes(Uint8(x)))
-    print(bytes_Uint8(x))
-
-    # >>>
-    # b'\x00\x00\x00'
-    # b'\x00\x00\x00'
-    # b'\x03'
-    # b'\x03'
-    """
 
 
 class ObjectId:
@@ -504,6 +377,9 @@ class Int64:
         self.data = int(d)
 
     def __bytes__(self):
+        """
+        little endian double long
+        """
         return pack("<q", self.data)
 
 
@@ -516,7 +392,10 @@ class Signature:
         self.data = d
 
     def __bytes__(self):
-        return self.data  # note does NOT return bytes(self.data)
+        """
+        note does NOT return bytes(self.data)
+        """
+        return self.data
 
 
 class PointInTime:
@@ -528,6 +407,7 @@ class PointInTime:
         self.data = d
 
     def __bytes__(self):
+        """ # """
         return pack("<I", from_iso_date(self.data))
 
 
@@ -535,41 +415,43 @@ def fraction(num):
     """
     convert float to limited precision least common denominator fraction
     """
+    iteration = 0
     den = 1
     while True:  # move decimal place by factor of 10
+        iteration += 1
         num *= 10
         den *= 10
-        # escape when numerator is integer or denominator approaches double long int
+        # escape when numerator is integer or denomenator approaches double long int
         if (int(num) == num) or (den == 10 ** 14):
             break
     # ensure numerator is now an integer
     num = int(num)
     while True:  # remove common factors of 2
-        if int(num / 2) == num / 2 and int(den / 2) == den / 2:
-            num /= 2
-            den /= 2
-        else:
+        iteration += 1
+        if int(num / 2) != num / 2 or int(den / 2) != den / 2:
             break
+        num /= 2
+        den /= 2
     while True:  # remove common factors of 5
-        if int(num / 5) == num / 5 and int(den / 5) == den / 5:
-            num /= 5
-            den /= 5
-        else:
+        iteration += 1
+        if int(num / 5) != num / 5 or int(den / 5) != den / 5:
             break
-    return {"base": int(num), "quote": int(den)}
+        num /= 5
+        den /= 5
+    return {"base": int(num), "quote": int(den), "iteration": iteration}
 
 
 # VARINT
-def varint(n):
+def varint(num):
     """
     varint encoding normally saves memory on smaller numbers
     yet retains ability to represent numbers of any magnitude
     """
     data = b""
-    while n >= 0x80:
-        data += bytes([(n & 0x7F) | 0x80])
-        n >>= 7
-    data += bytes([n])
+    while num >= 0x80:
+        data += bytes([(num & 0x7F) | 0x80])
+        num >>= 7
+    data += bytes([num])
     return data
 
 
@@ -587,9 +469,9 @@ class Base58(object):
         self._prefix = prefix
         if all(c in HEXDIGITS for c in data):
             self._hex = data
-        elif data[0] == "5" or data[0] == "6":
+        elif data[0] in ["5", "6"]:
             self._hex = base58CheckDecode(data)
-        elif data[0] == "K" or data[0] == "L":
+        elif data[0] in ["K", "L"]:
             self._hex = base58CheckDecode(data)[:-2]
         elif data[: len(self._prefix)] == self._prefix:
             self._hex = gphBase58CheckDecode(data[len(self._prefix) :])
@@ -597,26 +479,32 @@ class Base58(object):
             raise ValueError("Error loading Base58 object")
 
     def __format__(self, _format):
-        if _format.upper() == "BTS":
-            return _format.upper() + str(self)
-        else:
+        """ # """
+        if _format.upper() != "BTS":
             print("Format %s unkown. You've been warned!\n" % _format)
-            return _format.upper() + str(self)
+        return _format.upper() + str(self)
 
-    def __repr__(self):  # hex string of data
+    def __repr__(self):
+        """
+        hex string of data
+        """
         return self._hex
 
-    def __str__(self):  # base58 string of data
+    def __str__(self):
+        """
+        base58 string of data
+        """
         return gphBase58CheckEncode(self._hex)
 
-    def __bytes__(self):  # raw bytes of data
+    def __bytes__(self):
+        """
+        raw bytes of data
+        """
         return unhexlify(self._hex)
 
 
 def base58decode(base58_str):
-    """
-
-    """
+    """ # """
     print(it("green", "base58decode"))
     base58_text = bytes(base58_str, "ascii")
     n = 0
@@ -636,8 +524,7 @@ def base58decode(base58_str):
 
 
 def base58encode(hexstring):
-    """
-    """
+    """ # """
     print(it("green", "base58encode"))
     byteseq = bytes(unhexlify(bytes(hexstring, "ascii")))
     n = 0
@@ -664,9 +551,9 @@ def ripemd160(s):
     """
     160-bit cryptographic hash function
     """
-    ripemd160 = hashlib_new("ripemd160")  # import the library
-    ripemd160.update(unhexlify(s))
-    ret = ripemd160.digest()
+    r160 = hashlib_new("ripemd160")  # import the library
+    r160.update(unhexlify(s))
+    ret = r160.digest()
     print("use hashlib to perform a ripemd160 message digest")
     print(ret)
     return ret
@@ -683,8 +570,7 @@ def doublesha256(s):
 
 
 def base58CheckEncode(version, payload):
-    """
-    """
+    """ # """
     print(it("green", "base58CheckEncode"))
     print(payload, version)
     s = ("%.2x" % version) + payload
@@ -695,8 +581,7 @@ def base58CheckEncode(version, payload):
 
 
 def gphBase58CheckEncode(s):
-    """
-    """
+    """ # """
     print(it("yellow", "gphBase58CheckEncode"))
     print(s)
     checksum = ripemd160(s)[:4]
@@ -705,8 +590,7 @@ def gphBase58CheckEncode(s):
 
 
 def base58CheckDecode(s):
-    """
-    """
+    """ # """
     print(it("green", "base58CheckDecode"))
     print(s[:4])
     s = unhexlify(base58decode(s))
@@ -717,8 +601,7 @@ def base58CheckDecode(s):
 
 
 def gphBase58CheckDecode(s):
-    """
-    """
+    """ # """
     print(it("yellow", "gphBase58CheckDecode"))
     print(s)
     s = unhexlify(base58decode(s))
@@ -735,7 +618,7 @@ class Address(object):  # cropped litepresence2019
     """
 
     # graphenebase/account.py
-    def __init__(self, address=None, pubkey=None, prefix="BTS"):
+    def __init__(self, pubkey=None, prefix="BTS"):
         print(it("red", "Address"), "pubkey", pubkey)
         self.prefix = prefix
         self._pubkey = Base58(pubkey, prefix=prefix)
@@ -811,11 +694,10 @@ class PublicKey(Address):  # graphenebase/account.py
         prefix = public_key[0:2]
         if prefix == "04":
             return public_key
-        assert prefix == "02" or prefix == "03"
+        assert prefix in ["02", "03"]
         x = int(public_key[2:], 16)
         y = self._derive_y_from_x(x, (prefix == "02"))
-        key = "04" + "%064x" % x + "%064x" % y
-        return key
+        return "04" + "%064x" % x + "%064x" % y
 
     def __repr__(self):
         """
@@ -854,8 +736,6 @@ class PrivateKey(PublicKey):
         print(it("red", "PrivateKey"))
         print(PublicKey)
         if wif is None:
-            import os
-
             self._wif = Base58(hexlify(os.urandom(32)).decode("ascii"))
         elif isinstance(wif, Base58):
             self._wif = wif
@@ -912,11 +792,8 @@ class GrapheneObject(object):
         if self.data is None:
             return bytes()
         b = b""
-        for name, value in self.data.items():
-            if isinstance(value, str):
-                b += bytes(value, "utf-8")
-            else:
-                b += bytes(value)
+        for _, value in self.data.items():
+            b += bytes(value, "utf-8") if isinstance(value, str) else bytes(value)
         return b
 
 
@@ -998,20 +875,16 @@ class Operation:
     """
 
     def __init__(self, op):
-        if not (isinstance(op, list)):
+        if not isinstance(op, list):
             raise ValueError("expecting op to be a list")
-        if not (len(op) == 2):
+        if len(op) != 2:
             raise ValueError("expecting op to be two items")
-        if not (isinstance(op[0], int)):
+        if not isinstance(op[0], int):
             raise ValueError("expecting op[0] to be integer")
         self.opId = op[0]
         name = OP_NAMES[self.opId]
         self.name = name[0].upper() + name[1:]
-        if op[0] == 1:  # FIXME legacy buy/sell/cancel
-            self.op = Limit_order_create(op[1])
-        elif op[0] == 2:  # FIXME legacy buy/sell/cancel
-            self.op = Limit_order_cancel(op[1])
-        elif op[0] == 13:
+        if op[0] == 13:
             self.op = Asset_update_feed_producers(op[1])
         elif op[0] == 19:
             self.op = Asset_publish_feed(op[1])
@@ -1045,9 +918,11 @@ class Signed_Transaction(GrapheneObject):
         else:
             if len(args) == 1 and len(kwargs) == 0:
                 kwargs = args[0]
-            if "extensions" not in kwargs:
-                kwargs["extensions"] = Array([])
-            elif not kwargs.get("extensions"):
+            if (
+                "extensions" not in kwargs
+                or "extensions" in kwargs
+                and not kwargs.get("extensions")
+            ):
                 kwargs["extensions"] = Array([])
             if "signatures" not in kwargs:
                 kwargs["signatures"] = Array([])
@@ -1057,7 +932,7 @@ class Signed_Transaction(GrapheneObject):
                 )
             if "operations" in kwargs:
                 opklass = self.getOperationKlass()
-                if all([not isinstance(a, opklass) for a in kwargs["operations"]]):
+                if all(not isinstance(a, opklass) for a in kwargs["operations"]):
                     kwargs["operations"] = Array(
                         [opklass(a) for a in kwargs["operations"]]
                     )
@@ -1078,10 +953,11 @@ class Signed_Transaction(GrapheneObject):
 
     @property
     def id(self):
-        print("Signed_Transaction.id")
+
         """
         The transaction id of this transaction
         """
+        print("Signed_Transaction.id")
         # Store signatures temporarily
         sigs = self.data["signatures"]
         self.data.pop("signatures", None)
@@ -1093,20 +969,23 @@ class Signed_Transaction(GrapheneObject):
         return hexlify(h[:20]).decode("ascii")
 
     def getOperationKlass(self):
+        """ # """
         print("Signed_Transaction.get_operationKlass")
         return Operation
 
     def derSigToHexSig(self, s):
+        """ # """
         print("Signed_Transaction.derSigToHexSig")
         s, junk = ecdsa_der.remove_sequence(unhexlify(s))
         if junk:
-            log.debug("JUNK: %s", hexlify(junk).decode("ascii"))
+            print("JUNK: %s", hexlify(junk).decode("ascii"))
         assert junk == b""
         x, s = ecdsa_der.remove_integer(s)
         y, s = ecdsa_der.remove_integer(s)
         return "%064x%064x" % (x, y)
 
     def deriveDigest(self, chain):
+        """ # """
         print("Signed_Transaction.deriveDigest")
         print(self, chain)
         # Do not serialize signatures
@@ -1120,7 +999,10 @@ class Signed_Transaction(GrapheneObject):
         # restore signatures
         self.data["signatures"] = sigs
 
-    def verify(self, pubkeys=[], chain="BTS"):
+    def verify(self, pubkeys=None, chain="BTS"):
+        """ # """
+        if pubkeys is None:
+            pubkeys = []
         print(it("green", "###############################################"))
         print("Signed_Transaction.verify")
         print(it("green", "self, pubkeys, chain"), self, pubkeys, chain)
@@ -1180,6 +1062,7 @@ class Signed_Transaction(GrapheneObject):
         """
         Sign the transaction with the provided private keys.
         """
+        # FIXME is this even used????
         print("Signed_Transaction.sign")
         self.deriveDigest(chain)
         # Get Unique private keys
@@ -1187,8 +1070,8 @@ class Signed_Transaction(GrapheneObject):
         [self.privkeys.append(item) for item in wifkeys if item not in self.privkeys]
         # Sign the message with every private key given!
         sigs = []
-        for wif in self.privkeys:
-            signature = sign_message(self.message, wif)
+        for key in self.privkeys:
+            signature = sign_message(self.message, key)
             sigs.append(Signature(signature))
         self.data["signatures"] = Array(sigs)
         return self
@@ -1256,7 +1139,7 @@ class Asset_update_feed_producers(GrapheneObject):
             )
 
 
-def verify_message(message, signature, hashfn=sha256):
+def verify_message(message, signature):
     """
     graphenebase/ecdsa.py stripped of non-secp256k1 methods
     """
@@ -1266,7 +1149,7 @@ def verify_message(message, signature, hashfn=sha256):
         message = bytes(message, "utf-8")
     if not isinstance(signature, bytes):
         signature = bytes(signature, "utf-8")
-    digest = hashfn(message).digest()
+    # digest = hashfn(message).digest()
     sig = signature[1:]
     # recover parameter only
     recoverParameter = bytearray(signature)[0] - 4 - 27
@@ -1286,8 +1169,7 @@ def verify_message(message, signature, hashfn=sha256):
     normalSig = verifyPub.ecdsa_recoverable_convert(sig)
     # verify
     verifyPub.ecdsa_verify(message, normalSig)
-    phex = verifyPub.serialize(compressed=True)
-    return phex
+    return verifyPub.serialize(compressed=True)
 
 
 def isArgsThisClass(self, args):
@@ -1296,8 +1178,7 @@ def isArgsThisClass(self, args):
     if there is only one argument and its type name is
     the same as the type name of self
     """
-    ret = len(args) == 1 and type(args[0]).__name__ == type(self).__name__
-    return ret
+    return len(args) == 1 and type(args[0]).__name__ == type(self).__name__
 
 
 # PRIMARY TRANSACTION BACKBONE
@@ -1317,11 +1198,11 @@ def build_transaction(order):
         raise ValueError("order parameter header must be dict: %s" % order["header"])
     try:
         a, b, c = account_id.split(".")
-        int(a) == 1
-        int(b) == 2
-        int(c) == float(c)
+        assert int(a) == 1
+        assert int(b) == 2
+        assert int(c) == float(c)
     except:
-        raise ValueError("invalid object id %s" % i)
+        raise ValueError("invalid object id %s" % account_id)
     # GATHER TRANSACTION HEADER DATA
     # fetch block data via websocket request
     block = rpc_block_number()
@@ -1462,16 +1343,16 @@ def serialize_transaction(tx):
     buf += bytes(varint(len(tx["operations"])))
     # add the operations list to the buffer in graphene type fashion
     for op in tx["operations"]:
-        # print(op[0])  # Int (1=create, 2=cancel, 19=publish)
+        # print(op[0])  # Int (13=update_producers, 19=publish, etc.)
         # print(op[1])  # OrderedDict of operations
         buf += varint(op[0])
-        if op[0] == 1:
-            buf += bytes(Limit_order_create(op[1]))
-        if op[0] == 2:
-            buf += bytes(Limit_order_cancel(op[1]))
         if op[0] == 13:
             buf += bytes(Asset_update_feed_producers(op[1]))
         if op[0] == 19:
+            enable_print()
+            print(op[1])
+            if not DEV:
+                block_print()
             buf += bytes(Asset_publish_feed(op[1]))
     # add legth of (empty) extensions list to buffer
     buf += bytes(varint(len(tx["extensions"])))  # effectively varint(0)
@@ -1571,7 +1452,7 @@ def sign_transaction(tx, message):
     # we format it in its hexadecimal representation
     # and add it our transactions signatures
     # note that we do not only add the signature
-    # but also the recover parameter
+    # but also the recovery parameter
     # this kind of signature is then called "compact signature"
     signature = hexlify(pack("<B", i) + signature).decode("ascii")
     tx["signatures"].append(signature)
@@ -1612,9 +1493,6 @@ def broker(order):
     up to ATTEMPTS chances; each PROCESS_TIMEOUT long: else abort
     signal is switched to 0 after execution to end the process
     """
-    global_constants()
-    global_variables()
-    control_panel()
     log_in = False
     if order["edicts"][0]["op"] == "login":
         log_in = True
@@ -1631,49 +1509,72 @@ def broker(order):
         if JOIN:  # means main script will not continue till child done
             child.join(PROCESS_TIMEOUT)
         # to parallel process a broker(order) see microDEX.py
-    if log_in:
-        if auth.value == 1:
-            return True
-        else:
-            return False
+    authorized = False
+    if log_in and auth.value == 1:
+        authorized = True
+
+    return authorized
 
 
 def execute(signal, log_in, auth, order):
     """
-    primary event backbone for build, serialize, sign, verify, and broadcast a tx
+    build, serialize, sign, verify, and broadcast the transaction; log receipt to file
     """
-    global nodes, account_name, wif, login, authenticated
+    global nodes, account_id, account_name, wif, login, authenticated
+
     login = log_in
+
     start = time()
     if not DEV:  # disable printing with DEV=False
-        blockPrint()
+        block_print()
     nodes = order["nodes"]
     account_name = order["header"]["account_name"]
     wif = order["header"]["wif"]
+    try:
+        account_id = order["header"]["account_id"]
+    except:
+        pass
     wss_handshake()
+    tx, message, signed_tx, verified_tx, broadcasted_tx = "", "", "", "", ""
     if not DEV:
-        enablePrint()
+        enable_print()
     try:
         tx = build_transaction(order)
     except Exception as e:
         trace(e)
-    if len(tx["operations"]):  # if there are any orders
+    if tx["operations"]:  # if there are any orders
         if not DEV:  # disable printing with DEV=False
-            blockPrint()
+            block_print()
         authenticated = False
         # perform ecdsa on serialized transaction
         try:
             tx, message = serialize_transaction(tx)
         except Exception as e:
-            trace(e)
+            tx = message = trace(e)
         try:
             signed_tx = sign_transaction(tx, message)
         except Exception as e:
-            trace(e)
-        signed_tx = verify_transaction(signed_tx)
-        if not DEV:
-            enablePrint()
-        broadcasted_tx = rpc_broadcast_transaction(signed_tx)
+            signed_tx = trace(e)
+        if login:
+            # PublicKey.__init__ switches "authenticated"
+            if not DEV:
+                enable_print()
+            print("authenticated", authenticated)
+            if authenticated:
+                auth.value = 1
+        else:
+            try:
+                verified_tx = verify_transaction(signed_tx)
+            except Exception as e:
+                verified_tx = trace(e)
+            if not DEV:
+                enable_print()
+            try:
+                sleep(5)
+                broadcasted_tx = rpc_broadcast_transaction(verified_tx)
+            except Exception as e:
+                broadcasted_tx = trace(e)
+
         current_time = {
             "unix": int(time()),
             "local": ctime() + " " + strftime("%Z"),
@@ -1681,13 +1582,20 @@ def execute(signal, log_in, auth, order):
         }
         receipt = {
             "time": current_time,
+            "order": order["edicts"],
+            "tx": tx,
             "message": message,
+            "signed_tx": signed_tx,
+            "verified_tx": verified_tx,
             "broadcasted_tx": broadcasted_tx,
         }
-        race_write(doc="broadcasted_tx.txt", text=receipt)
+        now = str(ctime())
+        race_write(
+            doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
+            text=receipt,
+        )
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))
     print("")
     signal.value = 1
-    return None

@@ -50,7 +50,6 @@ def barchart(site):
         print(f"{site} failed to load")
 
 
-
 def currencyconverter(site):
     """
     https://free.currconv.com/api/v7/convert?q=USD_PHP&compact=ultra&apikey=key
@@ -169,10 +168,7 @@ def openexchangerates(site):
     symbols = ["EUR", "RUB", "GBP", "KRW", "CNY", "JPY", "XAU", "XAG"]
     try:
         ret = requests.get(url, params=params, timeout=(15, 15)).json()["rates"]
-        data = {}
-        for key, val in ret.items():
-            if key in symbols:
-                data["USD:" + key] = float(val)
+        data = {"USD:" + key: float(val) for key, val in ret.items() if key in symbols}
         data = refine_data(data)
         print(site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))

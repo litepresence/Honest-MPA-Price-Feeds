@@ -19,14 +19,13 @@ from multiprocessing import Process, Value
 from statistics import median
 from datetime import datetime
 from calendar import timegm
-import traceback
 from random import random
 
 # THIRD PARTY MODULES
 import requests
 
 # PROPRIETARY MODULES
-from utilities import race_write, race_read_json
+from utilities import race_write, race_read_json, trace
 
 # GLOBAL CONSTANTS
 TIMEOUT = 10
@@ -91,19 +90,14 @@ def symbol_syntax(exchange, symbol):
         if asset == "DOGE":
             asset = "XDG"
     if exchange == "poloniex":
-
         if asset == "XLM":
             asset = "STR"
-
         if currency == "USD":
             currency = "USDT"
-
         if asset == "BCH":
             asset = "BCHABC"
-
-    if exchange == "binance":
-        if currency == "USD":
-            currency = "USDT"
+    if exchange == "binance" and currency == "USD":
+        currency = "USDT"
     if exchange == "bitfinex":
         if asset == "BCH":
             asset = "BAB"
@@ -124,29 +118,6 @@ def symbol_syntax(exchange, symbol):
     symbol = symbols[exchange]
     print(symbol, exchange)
     return symbol
-
-
-def trace(error):
-    """
-    Stack Trace Message Formatting
-    """
-    msg = str(type(error).__name__) + str(error.args) + str(traceback.format_exc())
-    return msg
-
-
-def it(style, text):  # FIXME this can be imported from utilities
-    """
-    Color printing in terminal
-    """
-    emphasis = {
-        "red": 91,
-        "green": 92,
-        "yellow": 93,
-        "blue": 94,
-        "purple": 95,
-        "cyan": 96,
-    }
-    return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
 
 
 # SUBPROCESS REMOTE PROCEDURE CALL
@@ -313,7 +284,7 @@ def aggregate(exchanges, api):
         except Exception as error:
             print(error.args)
     prices = []
-    for key, val in data.items():
+    for _, val in data.items():
         try:
             if int(time.time()) - val["time"] < 300:
                 prices.append(val["last"])
@@ -352,6 +323,7 @@ def pricefeed_cex():
     """
     api = {}
     cex = {}
+    # exchanges with bitcoin vs us dollar
     api["pair"] = "BTC:USD"
     exchanges = [
         "bittrex",
@@ -361,6 +333,7 @@ def pricefeed_cex():
         "bitstamp",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
+    # exchanges with bitshares vs bitcoin
     api["pair"] = "BTS:BTC"
     exchanges = [
         "bittrex",
@@ -370,7 +343,20 @@ def pricefeed_cex():
         "hitbtc",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
-
+    # exchanges with ripple vs bitcoin
+    exchanges = [
+        "bittrex",
+        "binance",
+        "poloniex",
+        "huobi",
+        "hitbtc",
+        "bitfinex",
+        "kraken",
+        "bitstamp",
+    ]
+    api["pair"] = "XRP:BTC"
+    cex[api["pair"]] = fetch(exchanges, api)
+    # exchanges with ethereum vs bitcoin
     exchanges = [
         "bittrex",
         "binance",
@@ -382,10 +368,6 @@ def pricefeed_cex():
         "kraken",
         "bitstamp",
     ]
-    # api["pair"] = "LTC:BTC"
-    # cex[api["pair"]] = fetch(exchanges, api)
-    api["pair"] = "XRP:BTC"
-    cex[api["pair"]] = fetch(exchanges, api)
     api["pair"] = "ETH:BTC"
     cex[api["pair"]] = fetch(exchanges, api)
 

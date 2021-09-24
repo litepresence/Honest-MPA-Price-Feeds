@@ -12,7 +12,7 @@ def config_apikeys():
     free.currencyconverterapi.com
     fxmarketapi.com
     openexchangerates.org
-    
+
     also enter your jsonbin.io key, id, and url here
     """
     return {

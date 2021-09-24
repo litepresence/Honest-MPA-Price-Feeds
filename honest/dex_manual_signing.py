@@ -1,7 +1,4 @@
-# =======================================================================
-VERSION = "Bitshares manualSIGNING 0.00000004"
-# =======================================================================
-
+"""
 # Authenticated BUY/SELL/CANCEL without Pybitshares(MIT) Architecture
 
 " litepresence 2019 "
@@ -102,45 +99,32 @@ def WTFPL_v0_March_1765():
 # citations to pybitshares(MIT) & @xeroc where pertinent
 # h/t @vvk123 @sschiessl @harukaff_bot
 # remainder WTFPL March 1765
+"""
 
-DEV = False
-COLOR = True
 
-" STANDARD PYTHON MODULES "
-
-from time import time, ctime, mktime, gmtime, asctime, strptime, strftime
+# STANDARD PYTHON MODULES
+from time import time, ctime, gmtime, asctime, strptime, strftime, sleep
 from multiprocessing import Process, Value  # encapsulate processes
 from decimal import Decimal as decimal  # higher precision than float
 from json import dumps as json_dumps  # serialize object to string
 from json import loads as json_loads  # deserialize string to object
 from collections import OrderedDict
-from traceback import format_exc  # stack trace in terminal
 from datetime import datetime
 from calendar import timegm
 from getpass import getpass  # hidden input()
 from random import shuffle
 from pprint import pprint  # pretty printing
-import math
-import sys
-import os
+from sys import platform, version_info
 
-" STANDARD CONVERSION UTILITIES "
-
+# STANDARD CONVERSION UTILITIES
 from binascii import hexlify  # binary text to hexidecimal
 from binascii import unhexlify  # hexidecimal to binary text
-from zlib import decompress  # aka gzip inflate; only used for logo
 from hashlib import sha256  # message digest algorithm
 from hashlib import new as hashlib_new  # access algorithm library
 from struct import pack  # convert to string representation of C struct
-from struct import unpack, unpack_from  # convert back to PY variable
+from struct import unpack_from  # convert back to PY variable
 
-" NON STANDARD MODULES WHICH REQUIRE INSTALLATION "
-
-print("sudo apt update")
-print("sudo apt install python3-pip")
-print("pip3 install websocket-client")
-print("pip3 install secp256k1")
-print("pip3 install ecdsa")
+# NON STANDARD MODULES WHICH REQUIRE INSTALLATION
 from websocket import create_connection as wss  # handshake to node
 from secp256k1 import PrivateKey as secp256k1_PrivateKey  # class
 from secp256k1 import PublicKey as secp256k1_PublicKey  # class
@@ -153,45 +137,30 @@ from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
 from ecdsa import util as ecdsa_util  # module
 from ecdsa import der as ecdsa_der  # module
 
-print("\033c")  # clear screen if they are all installed
 
-" litepresence/extinction-event MODULES "
-
+# EXTINCTION EVENT MODULES
 from dex_meta_node import bitshares_trustless_client
-from utilities import race_write
+from utilities import race_write, trace, it, block_print, enable_print
+from config_nodes import public_nodes
 
-" LINUX AND PYTHON 3 REQUIRED "
 
+# FIXME this script has considerable stylistic pylint issues - litepresence2020
+
+# GLOBALS
+# =======================================================================
+VERSION = "Bitshares manualSIGNING 0.00000004"
+# =======================================================================
+
+DEV = False  # WARN: will expose your wif in terminal
+COLOR = True
+
+# LINUX AND PYTHON 3 REQUIRED "
 # require a serious professional audience on linux/py3 installation
-from sys import platform, version_info
 
 if "linux" not in platform:
     raise Exception("not a linux box, format drive and try again...")
 if version_info[0] < 3:
     raise Exception("% is DED, long live Python 3.4+" % version_info[0])
-
-" PRINT CONTROL "
-
-
-def blockPrint():
-    # temporarily disable printing
-    sys.stdout = open(os.devnull, "w")
-
-
-def enablePrint():
-    # re-enable printing
-    sys.stdout = sys.__stdout__
-
-
-def trace(e):
-    # print stack trace upon exception
-    msg = str(type(e).__name__) + "\n"
-    msg += str(e.args) + "\n"
-    msg += str(format_exc()) + "\n"
-    print(msg)
-
-
-" GLOBALS "
 
 
 def sample_orders():
@@ -329,39 +298,17 @@ def control_panel():
     # default True to execute order in primary script process
     JOIN = True
     # ignore orders value less than ~X bitshares; 0 to disable
-    DUST = 0
+    DUST = 0.00002
 
 
-" COLOR TERMINAL "
-
-
-def it(style, text):
-
-    emphasis = {
-        "red": 91,
-        "green": 92,
-        "yellow": 93,
-        "blue": 94,
-        "purple": 95,
-        "cyan": 96,
-    }
-
-    return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
-
-
-" REMOTE PROCEDURE CALLS TO PUBLIC API NODES"
-
-
+# REMOTE PROCEDURE CALLS TO PUBLIC API NODES
 def wss_handshake():
 
-    # create a wss handshake in less than X seconds, else try again
-    print(it("purple", "wss_handshake - node list is hard coded"))
-    print("in production use latencyTEST.py to generate list")
     global ws, nodes  # the websocket is created and node list shuffled
-
+    nodes = public_nodes()
     shuffle(nodes)
     handshake = 999
-    while handshake > HANDSHAKE_TIMEOUT:
+    while handshake > 4:
         try:
             try:
                 ws.close  # attempt to close open stale connection
@@ -372,7 +319,7 @@ def wss_handshake():
             nodes.append(nodes.pop(0))  # rotate list
             node = nodes[0]
             print(it("purple", "connecting:"), node)
-            ws = wss(node, timeout=HANDSHAKE_TIMEOUT)
+            ws = wss(node, timeout=4)
             handshake = time() - start
         except:
             continue
@@ -383,7 +330,7 @@ def wss_handshake():
 def wss_query(params):
 
     # this definition will place all remote procedure calls (RPC)
-    for i in range(10):
+    for _ in range(10):
         try:
             # print(it('purple','RPC ' + params[0]), it('cyan',params[1]))
             # this is the 4 part format of EVERY rpc request
@@ -424,8 +371,7 @@ def rpc_block_number():
 def rpc_account_id():
     # given an account name return an account id
     ret = wss_query(["database", "lookup_accounts", [account_name, 1]])
-    account_id = ret[0][1]
-    return account_id
+    return ret[0][1]
 
 
 def rpc_fees():
@@ -510,9 +456,7 @@ def rpc_broadcast_transaction(tx):
     return ret
 
 
-" DATE FORMATTING "
-
-
+# DATE FORMATTING
 def to_iso_date(unix):
     # returns iso8601 datetime given unix epoch
     iso = datetime.utcfromtimestamp(int(unix)).isoformat()
@@ -525,10 +469,9 @@ def from_iso_date(iso):
     return unix
 
 
-" GRAPHENEBASE TYPES "  # graphenebase/types.py
-
-
+# GRAPHENEBASE TYPES
 def types_README():
+    # graphenebase/types.py
     # graphenebase types use python "dunder" / "magic" methods
     # these are a little abstract and under documented; to elucidate:
     # bytes() is a "built in" function like str(), int(), list()
@@ -728,9 +671,9 @@ class Base58(object):
         self._prefix = prefix
         if all(c in HEXDIGITS for c in data):
             self._hex = data
-        elif data[0] == "5" or data[0] == "6":
+        elif data[0] in ["5", "6"]:
             self._hex = base58CheckDecode(data)
-        elif data[0] == "K" or data[0] == "L":
+        elif data[0] in ["K", "L"]:
             self._hex = base58CheckDecode(data)[:-2]
         elif data[: len(self._prefix)] == self._prefix:
             self._hex = gphBase58CheckDecode(data[len(self._prefix) :])
@@ -739,11 +682,9 @@ class Base58(object):
 
     def __format__(self, _format):
 
-        if _format.upper() == "BTS":
-            return _format.upper() + str(self)
-        else:
+        if _format.upper() != "BTS":
             print("Format %s unkown. You've been warned!\n" % _format)
-            return _format.upper() + str(self)
+        return _format.upper() + str(self)
 
     def __repr__(self):  # hex string of data
         return self._hex
@@ -856,9 +797,7 @@ def gphBase58CheckDecode(s):
     return dec
 
 
-" ADDRESS AND KEYS "
-
-
+# ADDRESS AND KEYS
 class Address(object):  # cropped litepresence2019
 
     """
@@ -943,11 +882,10 @@ class PublicKey(Address):  # graphenebase/account.py
         prefix = public_key[0:2]
         if prefix == "04":
             return public_key
-        assert prefix == "02" or prefix == "03"
+        assert prefix in ["02", "03"]
         x = int(public_key[2:], 16)
         y = self._derive_y_from_x(x, (prefix == "02"))
-        key = "04" + "%064x" % x + "%064x" % y
-        return key
+        return "04" + "%064x" % x + "%064x" % y
 
     def __repr__(self):
         # print('PublicKey.__repr__')
@@ -1021,9 +959,7 @@ class PrivateKey(PublicKey):  # merged litepresence2019
         return bytes(self._wif)
 
 
-" SERIALIZATION "
-
-
+# SERIALIZATION
 class GrapheneObject(object):  # Bitshares(MIT) graphenebase/objects.py
     def __init__(self, data=None):
         self.data = data
@@ -1034,10 +970,7 @@ class GrapheneObject(object):  # Bitshares(MIT) graphenebase/objects.py
             return bytes()
         b = b""
         for name, value in self.data.items():
-            if isinstance(value, str):
-                b += bytes(value, "utf-8")
-            else:
-                b += bytes(value)
+            b += bytes(value, "utf-8") if isinstance(value, str) else bytes(value)
         return b
 
 
@@ -1058,6 +991,50 @@ class Asset(GrapheneObject):  # bitsharesbase/objects.py
             )
 
 
+class Limit_order_create(GrapheneObject):  # bitsharesbase/operations.py
+    def __init__(self, *args, **kwargs):
+        if isArgsThisClass(self, args):
+            self.data = args[0].data
+        else:
+            if len(args) == 1 and len(kwargs) == 0:
+                kwargs = args[0]
+            super().__init__(
+                OrderedDict(
+                    [
+                        ("fee", Asset(kwargs["fee"])),
+                        ("seller", ObjectId(kwargs["seller"], "account"),),
+                        ("amount_to_sell", Asset(kwargs["amount_to_sell"]),),
+                        ("min_to_receive", Asset(kwargs["min_to_receive"]),),
+                        ("expiration", PointInTime(kwargs["expiration"]),),
+                        ("fill_or_kill", Uint8(kwargs["fill_or_kill"])),
+                        ("extensions", Array([])),
+                    ]
+                )
+            )
+
+
+class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
+    def __init__(self, *args, **kwargs):
+        if isArgsThisClass(self, args):
+            self.data = args[0].data
+        else:
+            if len(args) == 1 and len(kwargs) == 0:
+                kwargs = args[0]
+            super().__init__(
+                OrderedDict(
+                    [
+                        ("fee", Asset(kwargs["fee"])),
+                        (
+                            "fee_paying_account",
+                            ObjectId(kwargs["fee_paying_account"], "account"),
+                        ),
+                        ("order", ObjectId(kwargs["order"], "limit_order"),),
+                        ("extensions", Array([])),
+                    ]
+                )
+            )
+
+
 class Operation:  # refactored  litepresence2019
 
     "class GPHOperation():"
@@ -1067,11 +1044,11 @@ class Operation:  # refactored  litepresence2019
 
     def __init__(self, op):
 
-        if not (isinstance(op, list)):
+        if not isinstance(op, list):
             raise ValueError("expecting op to be a list")
-        if not (len(op) == 2):
+        if len(op) != 2:
             raise ValueError("expecting op to be two items")
-        if not (isinstance(op[0], int)):
+        if not isinstance(op[0], int):
             raise ValueError("expecting op[0] to be integer")
 
         self.opId = op[0]
@@ -1112,9 +1089,11 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
         else:
             if len(args) == 1 and len(kwargs) == 0:
                 kwargs = args[0]
-            if "extensions" not in kwargs:
-                kwargs["extensions"] = Array([])
-            elif not kwargs.get("extensions"):
+            if (
+                "extensions" not in kwargs
+                or "extensions" in kwargs
+                and not kwargs.get("extensions")
+            ):
                 kwargs["extensions"] = Array([])
             if "signatures" not in kwargs:
                 kwargs["signatures"] = Array([])
@@ -1125,7 +1104,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
 
             if "operations" in kwargs:
                 opklass = self.getOperationKlass()
-                if all([not isinstance(a, opklass) for a in kwargs["operations"]]):
+                if all(not isinstance(a, opklass) for a in kwargs["operations"]):
                     kwargs["operations"] = Array(
                         [opklass(a) for a in kwargs["operations"]]
                     )
@@ -1259,6 +1238,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
         """
         Sign the transaction with the provided private keys.
         """
+        # FIXME is this even used????
         self.deriveDigest(chain)
 
         # Get Unique private keys
@@ -1273,50 +1253,6 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
 
         self.data["signatures"] = Array(sigs)
         return self
-
-
-class Limit_order_create(GrapheneObject):  # bitsharesbase/operations.py
-    def __init__(self, *args, **kwargs):
-        if isArgsThisClass(self, args):
-            self.data = args[0].data
-        else:
-            if len(args) == 1 and len(kwargs) == 0:
-                kwargs = args[0]
-            super().__init__(
-                OrderedDict(
-                    [
-                        ("fee", Asset(kwargs["fee"])),
-                        ("seller", ObjectId(kwargs["seller"], "account"),),
-                        ("amount_to_sell", Asset(kwargs["amount_to_sell"]),),
-                        ("min_to_receive", Asset(kwargs["min_to_receive"]),),
-                        ("expiration", PointInTime(kwargs["expiration"]),),
-                        ("fill_or_kill", Uint8(kwargs["fill_or_kill"])),
-                        ("extensions", Array([])),
-                    ]
-                )
-            )
-
-
-class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
-    def __init__(self, *args, **kwargs):
-        if isArgsThisClass(self, args):
-            self.data = args[0].data
-        else:
-            if len(args) == 1 and len(kwargs) == 0:
-                kwargs = args[0]
-            super().__init__(
-                OrderedDict(
-                    [
-                        ("fee", Asset(kwargs["fee"])),
-                        (
-                            "fee_paying_account",
-                            ObjectId(kwargs["fee_paying_account"], "account"),
-                        ),
-                        ("order", ObjectId(kwargs["order"], "limit_order"),),
-                        ("extensions", Array([])),
-                    ]
-                )
-            )
 
 
 def verify_message(message, signature, hashfn=sha256):
@@ -1349,9 +1285,7 @@ def verify_message(message, signature, hashfn=sha256):
     normalSig = verifyPub.ecdsa_recoverable_convert(sig)
     # verify
     verifyPub.ecdsa_verify(message, normalSig)
-    phex = verifyPub.serialize(compressed=True)
-
-    return phex
+    return verifyPub.serialize(compressed=True)
 
 
 def isArgsThisClass(self, args):  # graphenebase/objects.py
@@ -1361,10 +1295,9 @@ def isArgsThisClass(self, args):  # graphenebase/objects.py
     return ret
 
 
-" PRIMARY TRANSACTION BACKBONE "
-
-
+# PRIMARY TRANSACTION BACKBONE
 def build_transaction(order):
+    """
     # this performs incoming limit order api conversion
     # from human terms to graphene terms
     # humans speak:
@@ -1389,11 +1322,12 @@ def build_transaction(order):
     "bundled cancel/buy/sell transactions out; cancel first"
     "prevent inadvertent huge number of orders"
     "do not place orders for dust amounts"
+    """
 
     global account_id, account_name, currency_id, asset_id
     global currency_precision, asset_precision
 
-    " VALIDATE INCOMING DATA "
+    # VALIDATE INCOMING DATA
     if not isinstance(order["edicts"], list):
         raise ValueError("order parameter must be list: %s" % order["edicts"])
     if not isinstance(order["nodes"], list):
@@ -1417,7 +1351,7 @@ def build_transaction(order):
         except:
             raise ValueError("invalid object id %s" % i)
 
-    " GATHER TRANSACTION HEADER DATA "
+    # GATHER TRANSACTION HEADER DATA
     # fetch block data via websocket request
     block = rpc_block_number()
     ref_block_num = block["head_block_number"] & 0xFFFF
@@ -1429,7 +1363,7 @@ def build_transaction(order):
     # initialize tx_operations list
     tx_operations = []
 
-    " SORT INCOMING EDICTS BY TYPE AND CONVERT TO DECIMAL "
+    # SORT INCOMING EDICTS BY TYPE AND CONVERT TO DECIMAL
     buy_edicts = []
     sell_edicts = []
     cancel_edicts = []
@@ -1455,7 +1389,7 @@ def build_transaction(order):
         edicts = cancel_edicts + buy_edicts + sell_edicts
         pprint(edicts)
 
-    " TRANSLATE CANCEL ORDERS TO GRAPHENE "
+    # TRANSLATE CANCEL ORDERS TO GRAPHENE
     for edict in cancel_edicts:
         if "ids" not in edict.keys():
             edict["ids"] = ["1.7.X"]
@@ -1491,7 +1425,7 @@ def build_transaction(order):
         edicts = cancel_edicts + buy_edicts + sell_edicts
         pprint(edicts)
 
-    " SCALE ORDER SIZE TO FUNDS ON HAND "
+    # SCALE ORDER SIZE TO FUNDS ON HAND
     if (AUTOSCALE or BTS_FEES) and not login:
         currency, assets, bitshares = rpc_balances()
         if AUTOSCALE and len(buy_edicts + sell_edicts):
@@ -1531,7 +1465,7 @@ def build_transaction(order):
             edicts = cancel_edicts + buy_edicts + sell_edicts
             pprint(edicts)
 
-        " ALWAYS SAVE LAST 2 BITSHARES FOR FEES "
+        # ALWAYS SAVE LAST 2 BITSHARES FOR FEES
         if BTS_FEES and (
             len(buy_edicts + sell_edicts) and ("1.3.0" in [asset_id, currency_id])
         ):
@@ -1574,7 +1508,7 @@ def build_transaction(order):
     # after scaling recombine buy and sell
     create_edicts = buy_edicts + sell_edicts
 
-    " REMOVE DUST EDICTS "
+    # REMOVE DUST EDICTS
     if DUST and len(create_edicts):
         ce = []
         dust = DUST * 100000 / 10 ** asset_precision
@@ -1593,7 +1527,7 @@ def build_transaction(order):
         edicts = cancel_edicts + buy_edicts + sell_edicts
         pprint(edicts)
 
-    " TRANSLATE LIMIT ORDERS TO GRAPHENE "
+    # TRANSLATE LIMIT ORDERS TO GRAPHENE
     for i in range(len(create_edicts)):
         price = create_edicts[i]["price"]
         amount = create_edicts[i]["amount"]
@@ -1740,8 +1674,7 @@ def sign_transaction(tx, message):
             and not (int(sig[32]) & 0x80)
             and not (sig[32] == 0 and not (int(sig[33]) & 0x80))
         )
-        print(it("green", "canonical"), it("cyan", str(ret)))
-        print(sig)
+        print(it("green", "canonical"), it("cyan", str(ret)), "/n", sig)
         return ret  # true/false
 
     # create fixed length representation of arbitrary length data
@@ -1834,9 +1767,7 @@ def verify_transaction(tx):
     return tx
 
 
-" THE BROKER METHOD"
-
-
+# THE BROKER METHOD
 def broker(order):
     "broker(order) --> execute(signal, order)"
     # insistent timed multiprocess wrapper for authorized ops
@@ -1868,10 +1799,7 @@ def broker(order):
             child.join(PROCESS_TIMEOUT)
         # to parallel process a broker(order) see microDEX.py
     if log_in:
-        if auth.value == 1:
-            return True
-        else:
-            return False
+        return auth.value == 1
 
 
 def execute(signal, log_in, auth, order):
@@ -1882,44 +1810,55 @@ def execute(signal, log_in, auth, order):
 
     start = time()
     if not DEV:  # disable printing with DEV=False
-        blockPrint()
+        block_print()
     nodes = order["nodes"]
-    account_id = order["header"]["account_id"]
     account_name = order["header"]["account_name"]
     wif = order["header"]["wif"]
+    try:
+        account_id = order["header"]["account_id"]
+    except:
+        pass
     wss_handshake()
-
+    tx, message, signed_tx, verified_tx, broadcasted_tx = "", "", "", "", ""
     if not DEV:
-        enablePrint()
+        enable_print()
     try:
         tx = build_transaction(order)
     except Exception as e:
         trace(e)
-    if len(tx["operations"]):  # if there are any orders
+    if tx["operations"]:  # if there are any orders
         if not DEV:  # disable printing with DEV=False
-            blockPrint()
+            block_print()
         authenticated = False
         # perform ecdsa on serialized transaction
         try:
             tx, message = serialize_transaction(tx)
         except Exception as e:
-            trace(e)
+            tx = message = trace(e)
         try:
             signed_tx = sign_transaction(tx, message)
         except Exception as e:
-            trace(e)
+            signed_tx = trace(e)
         if login:
             # PublicKey.__init__ switches "authenticated"
             if not DEV:
-                enablePrint()
+                enable_print()
             print("authenticated", authenticated)
             if authenticated:
                 auth.value = 1
         else:
-            signed_tx = verify_transaction(signed_tx)
+            try:
+                verified_tx = verify_transaction(signed_tx)
+            except Exception as e:
+                verified_tx = trace(e)
             if not DEV:
-                enablePrint()
-            broadcasted_tx = rpc_broadcast_transaction(signed_tx)
+                enable_print()
+            try:
+                sleep(5)
+                broadcasted_tx = rpc_broadcast_transaction(verified_tx)
+            except Exception as e:
+                broadcasted_tx = trace(e)
+
         current_time = {
             "unix": int(time()),
             "local": ctime() + " " + strftime("%Z"),
@@ -1927,10 +1866,18 @@ def execute(signal, log_in, auth, order):
         }
         receipt = {
             "time": current_time,
+            "order": order["edicts"],
+            "tx": tx,
             "message": message,
+            "signed_tx": signed_tx,
+            "verified_tx": verified_tx,
             "broadcasted_tx": broadcasted_tx,
         }
-        race_write(doc="broadcasted_tx.txt", text=receipt)
+        now = str(ctime())
+        race_write(
+            doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
+            text=receipt,
+        )
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))
@@ -1960,20 +1907,20 @@ def prototype_order():
     metaNODE = bitshares_trustless_client()
     proto["op"] = ""
     proto["nodes"] = metaNODE["whitelist"]
-    proto["header"] = {}
-    proto["header"]["asset_id"] = metaNODE["asset_id"]
-    proto["header"]["currency_id"] = metaNODE["currency_id"]
-    proto["header"]["asset_precision"] = metaNODE["asset_precision"]
-    proto["header"]["currency_precision"] = metaNODE["currency_precision"]
-    proto["header"]["account_id"] = metaNODE["account_id"]
-    proto["header"]["account_name"] = metaNODE["account_name"]
+    proto["header"] = {
+        "asset_id": metaNODE["asset_id"],
+        "currency_id": metaNODE["currency_id"],
+        "asset_precision": metaNODE["asset_precision"],
+        "currency_precision": metaNODE["currency_precision"],
+        "account_id": metaNODE["account_id"],
+        "account_name": metaNODE["account_name"],
+    }
+
     del metaNODE
     return json_dumps(proto)
 
 
-" IN SCRIPT DEMONSTRATION "
-
-
+# IN SCRIPT DEMONSTRATION
 def log_in():
 
     global wif, account_name, account_id
@@ -2044,9 +1991,9 @@ def log_in():
         select = int(input("1, 2, or 3? "))
     if select == 1:
         order = order1
-    if select == 2:
+    elif select == 2:
         order = order2
-    if select == 3:
+    elif select == 3:
         order = order3
 
 
@@ -2060,6 +2007,11 @@ def demo():
     verify transaction
     broadcast transaction
     """
+    sample_orders()
+    global_constants()
+    global_variables()
+    control_panel()
+    log_in()
 
     try:
         print(it("purple", "======================================"))
@@ -2079,7 +2031,7 @@ def demo():
         print("")
     except Exception as e:
         trace(e)
-    if len(tx["operations"]):
+    if tx["operations"]:
         try:
             print(it("purple", "======================================"))
             print(it("purple", "serialize transaction bytes string    "))
@@ -2088,7 +2040,7 @@ def demo():
             pprint(tx)
             print("")
         except Exception as e:
-            trace(e)
+            tx = message = trace(e)
 
         try:
             print(it("purple", "======================================"))
@@ -2098,7 +2050,7 @@ def demo():
             pprint(signed_tx)
             print("")
         except Exception as e:
-            trace(e)
+            signed_tx = trace(e)
 
         try:
             print(it("purple", "======================================"))
@@ -2131,16 +2083,6 @@ def demo():
     print("END")
 
 
-def main():
-
-    sample_orders()
-    global_constants()
-    global_variables()
-    control_panel()
-    log_in()
-    demo()
-
-
 if __name__ == "__main__":
 
-    main()
+    demo()

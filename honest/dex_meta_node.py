@@ -46,6 +46,7 @@ from requests import get as requests_get
 from psutil import Process as psutil_Process
 from websocket import create_connection as wss
 from websocket import enableTrace
+from config_nodes import public_nodes
 
 
 # ======================================================================
@@ -53,65 +54,20 @@ VERSION = "Bitshares metaNODE 0.00000020"
 # ======================================================================
 DEV = False
 COLOR = True
-MAVENS = 7  # 7
+MAVENS = 1  # 7
 TIMEOUT = 100  # 100
-PROCESSES = 20  # 20
-MIN_NODES = 15  # 15
-BOOK_DEPTH = 30  # 30
-THRESH_PAUSE = 4  # 4
+PROCESSES = 1  # 20 (slower than metanode)
+MIN_NODES = 9  # 15
+BOOK_DEPTH = 2  # 30
+THRESH_PAUSE = 20  # 10  # 4 (slower than metanode)
 UTILIZATIONS = 30  # 30
-HISTORY_DEPTH = 30  # 30
+HISTORY_DEPTH = 2  # 30
 LATENCY_REPEAT = 900  # 900
 LATENCY_TIMEOUT = 5  # 5
-BIFURCATION_PAUSE = 2  # 2
+BIFURCATION_PAUSE = 20  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
 # ======================================================================
-
-
-# GLOBAL USER DEFINED WHITELIST
-# ======================================================================
-def public_nodes():
-    """
-    Static list of RPC nodes
-    """
-    # SEEN LIVE SINCE 181127
-    return [
-        "wss://siliconvalley.us.api.bitshares.org/ws",
-        "wss://us.nodes.bitshares.ws/wss",
-        "wss://dallas.us.api.bitshares.org/wss",
-        "wss://blockzms.xyz/wss",
-        "wss://api.bitshares.bhuz.info/wss",
-        "wss://hk.nodes.bitshares.ws/wss",
-        "wss://ws.gdex.io/wss",
-        "wss://btsfullnode.bangzi.info/wss",
-        "wss://sg.nodes.bitshares.ws",
-        "wss://eu.openledger.info/wss",
-        "wss://bts.open.icowallet.net/ws",
-        "wss://eu.nodes.bitshares.ws/ws",
-        "wss://bitshares.openledger.info/wss",
-        "wss://api.dex.trading",
-        "wss://btsws.roelandp.nl/wss",
-        "wss://citadel.li/node/ws",
-        "wss://node.bitshares.eu/wss",
-        "wss://api.bts.ai/ws",
-        "wss://kimziv.com/wss",
-        "wss://openledger.hk/wss",
-        "wss://api.weaccount.cn/wss",
-        "wss://api.61bts.com/ws",
-        "wss://dex.iobanker.com:9090/ws",
-        "wss://api.bts.mobi/ws",
-        "wss://node1.deexnet.com/ws",
-        "wss://node4.deexnet.com/ws",
-        "wss://node5.deexnet.com/ws",
-        "wss://node2.deexnodes.net/ws",
-        "wss://node3.deexnodes.net/ws",
-        "wss://node6.deexnodes.net/ws",
-        "wss://node7.deexnodes.net/ws",
-        "wss://node1.deex.exchange/ws",
-        "wss://node6.deex.exchange/ws",
-    ]
-
 
 # INTER PROCESS COMMUNICATION VIA TEXT
 # ======================================================================
@@ -130,7 +86,7 @@ def bitshares_trustless_client():
         except Exception as error:
             msg = trace(error)
             race_condition = ["Unterminated", "Expecting"]
-            if any([x in str(error.args) for x in race_condition]):
+            if any(x in str(error.args) for x in race_condition):
                 print("metaNODE = bitshares_trustless_client() RACE READ")
             elif "metaNODE is blank" in str(error.args):
                 continue
@@ -231,10 +187,7 @@ def race_read(doc=""):
                             ret = json_load(ret)
                         except BaseException:
                             print("race_read() failed %s" % str(ret))
-                            if "{" in ret:
-                                ret = {}
-                            else:
-                                ret = []
+                            ret = {} if "{" in ret else []
                 break
         except FileNotFoundError:
             ret = []
@@ -271,7 +224,7 @@ def watchdog():
                 latency = now - response
                 if identity == 0:
                     msg = str([response, now])
-                if identity == 1:
+                elif identity == 1:
                     msg = str([now, response])
                 with open("watchdog.txt", "w+") as handle:
                     handle.write(msg)
@@ -342,9 +295,7 @@ def rpc_account_balances(rpc, cache, asset_ids, asset_precisions):
         rpc,
         ["database", "get_named_account_balances", [cache["account_name"], asset_ids]],
     )
-    balances = {}
-    for _, asset_id in enumerate(asset_ids):
-        balances[asset_id] = 0
+    balances = {asset_id: 0 for _, asset_id in enumerate(asset_ids)}
     for item, asset_id in enumerate(asset_ids):
         for _, balance in enumerate(ret):
             if balance["asset_id"] == asset_id:
@@ -495,7 +446,7 @@ def rpc_open_orders(rpc, cache):
             if base_id == cache["asset_id"]:
                 order_type = "sell"
                 price = quote_amount / base_amount
-                amount = amount / 10 ** base_precision
+                amount /= 10 ** base_precision
             else:
                 order_type = "buy"
                 price = base_amount / quote_amount
@@ -829,10 +780,12 @@ def thresh(storage, process, epoch, pid, cache):
                 # send the maven dictionary to nascent_trend()
                 # Must be JSON type
                 # 'STRING', 'INT', 'FLOAT', '{DICT}', or '[LIST]'
-                maven = {}
-                maven["ping"] = (19 * storage["mean_ping"] + ping_latency) / 20  # FLOAT
-                maven["bidv"] = bidv  # LIST of precision() STRINGS
-                maven["askv"] = askv  # LIST of precision() STRINGS
+                maven = {
+                    "ping": (19 * storage["mean_ping"] + ping_latency) / 20,
+                    "bidv": bidv,
+                    "askv": askv,
+                }
+
                 maven["bidp"] = bidp  # LIST of precision() STRINGS
                 maven["askp"] = askp  # LIST of precision() STRINGS
                 maven["bts_balance"] = bts_balance  # FLOAT
@@ -901,15 +854,14 @@ def thresh(storage, process, epoch, pid, cache):
                     and ("result" not in msg)
                     and ("timeout" not in msg)
                     and ("SSL" not in msg)
+                ) and (
+                    ("WebSocketTimeoutException" not in msg)
+                    and ("WebSocketBadStatusException" not in msg)
+                    and ("WebSocketAddressException" not in msg)
+                    and ("ConnectionResetError" not in msg)
+                    and ("ConnectionRefusedError" not in msg)
                 ):
-                    if (
-                        ("WebSocketTimeoutException" not in msg)
-                        and ("WebSocketBadStatusException" not in msg)
-                        and ("WebSocketAddressException" not in msg)
-                        and ("ConnectionResetError" not in msg)
-                        and ("ConnectionRefusedError" not in msg)
-                    ):
-                        msg += "\n" + str(format_exc())
+                    msg += "\n" + str(format_exc())
                 if DEV:  # or ((time() - cache["begin"]) > 60):
                     print(msg)
                 if "listed" not in msg:
@@ -1460,7 +1412,7 @@ def remove_chars(string, chars):
     """
     Return string without given characters
     """
-    return "".join([c for c in string if c not in set(chars)])
+    return "".join(c for c in string if c not in set(chars))
 
 
 def precision(number, places):
@@ -1603,10 +1555,7 @@ def initialize():
     Clear text IPC channels
     Initialize storage and cache
     """
-    storage = {}
-    storage["data_latency"] = 0
-    storage["access"] = 0
-    storage["mean_ping"] = 0.5
+    storage = {"data_latency": 0, "access": 0, "mean_ping": 0.5}
     now = int(time())
     cache = {"begin": now}
     if DEV:
