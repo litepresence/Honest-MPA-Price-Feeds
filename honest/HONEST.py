@@ -39,9 +39,9 @@ from dex_manual_signing import broker as broker2
 from config_nodes import public_nodes
 
 CER = 1.5  # encourage payment of fees in bts, else 1.5X profit for HONEST producers
-MCR = 150  # min declared by FINRA is 125
-MSSR = 113  # liquidate default immediately to as low as 100/113 = 20% below market rate
-REFRESH = 2750  # maintain accurate timely price feeds; approximately on the hour
+MCR = 150  # min. DEBT/Collateral = 1.5
+MSSR = 1125  # liquidate immediately to as low as 1000/1125 = 12.5% below price feed
+REFRESH = 2750  # maintain accurate timely price feeds; approximately on 55 min
 # ######################################################################################
 # TRADEMARK HONEST MPA litepresence2020 - BDFL
 # ######################################################################################
