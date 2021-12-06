@@ -518,8 +518,7 @@ def base58decode(base58_str):
         div, mod = divmod(n, 256)
         res.insert(0, mod)
         n = div
-    else:
-        res.insert(0, n)
+    res.insert(0, n)
     return hexlify(bytearray(1) * leading_zeroes_count + res).decode("ascii")
 
 
@@ -538,9 +537,8 @@ def base58encode(hexstring):
         div, mod = divmod(n, 58)
         res.insert(0, BASE58[mod])
         n = div
-    else:
-        res.insert(0, BASE58[n])
-    ret = (BASE58[0:1] * leading_zeroes_count + res).decode("ascii")
+    res.insert(0, BASE58[n])
+    ret = (BASE58[:1] * leading_zeroes_count + res).decode("ascii")
     # public_key = 'BTS' + str(ret)
     # print(it('purple',public_key), "public key")
     print("len(ret)", len(ret))
@@ -679,11 +677,9 @@ class PublicKey(Address):  # graphenebase/account.py
             bytes(self), curve=ecdsa_SECP256k1
         ).pubkey.point
         x_str = ecdsa_util.number_to_string(p.x(), order)
-        # y_str = ecdsa_util.number_to_string(p.y(), order)
-        compressed = hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
+        return hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
             "ascii"
         )
-        return compressed
 
     def unCompressed(self):
         """
@@ -691,7 +687,7 @@ class PublicKey(Address):  # graphenebase/account.py
         """
         print("PublicKey.unCompressed")
         public_key = repr(self._pk)
-        prefix = public_key[0:2]
+        prefix = public_key[:2]
         if prefix == "04":
             return public_key
         assert prefix in ["02", "03"]
@@ -1307,9 +1303,7 @@ def build_transaction(order):
             ),
         ]
         tx_operations.append(operation)
-    # the tx is just a regular dictionary we will convert to json later
-    # the operations themselves must still be an OrderedDict
-    tx = {
+    return {
         "ref_block_num": ref_block_num,
         "ref_block_prefix": ref_block_prefix,
         "expiration": tx_expiration,
@@ -1317,7 +1311,6 @@ def build_transaction(order):
         "signatures": [],
         "extensions": [],
     }
-    return tx
 
 
 def serialize_transaction(tx):
@@ -1493,9 +1486,7 @@ def broker(order):
     up to ATTEMPTS chances; each PROCESS_TIMEOUT long: else abort
     signal is switched to 0 after execution to end the process
     """
-    log_in = False
-    if order["edicts"][0]["op"] == "login":
-        log_in = True
+    log_in = order["edicts"][0]["op"] == "login"
     signal = Value("i", 0)
     auth = Value("i", 0)
     i = 0
