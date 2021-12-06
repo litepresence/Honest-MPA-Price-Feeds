@@ -1271,9 +1271,9 @@ def build_transaction(order):
                     ("settlement_price", settlement_price),
                     (
                         "maintenance_collateral_ratio",
-                        edict["MCR"] * 10,  # to convert to graphene multiply by 10
+                        edict["MCR"]  # use graphene precision
                     ),
-                    ("maximum_short_squeeze_ratio", edict["MSSR"] * 10,),
+                    ("maximum_short_squeeze_ratio", edict["MSSR"]),
                     ("core_exchange_rate", core_exchange_rate),
                 ]
             )
