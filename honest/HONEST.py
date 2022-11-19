@@ -102,9 +102,27 @@ def publish_feed(prices, name, wif):
     btsxrp1["currency_name"] = "HONEST.BTC"
     btsxrp1["core_price"] = prices["feed"]["BTS:XRP"]
     btsxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
-
+    # these are fed reciprocal price feeds
+    btsusdshort = dict(pub_dict)
+    btsusdshort["asset_name"] = "HONEST.USDSHORT"
+    btsusdshort["settlement_price"] = 1.0/prices["feed"]["BTS:USD"]
+    btsbtcshort = dict(pub_dict)
+    btsbtcshort["asset_name"] = "HONEST.BTCSHORT"
+    btsbtcshort["settlement_price"] = 1.0/prices["feed"]["BTS:BTC"]
     # add each publication edict to the edicts list
-    edicts = [btscny, btsusd, btsbtc, btsxag, btsxau, btseth, btsxrp, btseth1, btsxrp1]
+    edicts = [
+        btscny,
+        btsusd,
+        btsbtc,
+        btsxag,
+        btsxau,
+        btseth,
+        btsxrp,
+        btseth1,
+        btsxrp1,
+        btsusdshort,
+        btsbtcshort,
+    ]
     # attempt to publish them all at once
     try:
         order = {

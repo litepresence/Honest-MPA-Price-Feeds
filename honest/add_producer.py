@@ -30,9 +30,6 @@ PRODUCER_IDS = [  # BITSHARES NAME             # TELEGRAM           # ASSOCIATIO
     "1.2.1691170",  # bitshares-robot          @AmmarYousef         iobanker.com
     "1.2.20638",  # datasecuritynode           @JBahai              peerplays.com
     "1.2.1790240",  # piga-mifupa              @christophersanborn  bitshares-core
-    "1.2.35770",  # teiva                      @Teiva
-    #"1.2.390320",  # agorise                  @KenCode             palmpay.io
-    #"1.2.1060824",  # bitshares-notifications @murda_ra            bitshares.org
 ]
 
 ASSET_IDS = [
@@ -45,6 +42,8 @@ ASSET_IDS = [
     "1.3.5660",  # HONEST.XRP
     "1.3.5661",  # HONEST.ETH1
     "1.3.5662",  # HONEST.XRP1
+    "1.3.6289",  # HONEST.USDSHORT
+    "1.3.6290",  # HONEST.BTCSHORT
 ]
 # 1.19.43   1.3.5901    HONEST.USDBTSMM
 # 1.19.65   1.3.5938    HONEST.BTCUSDMM
@@ -55,7 +54,7 @@ def add_producer(name, wif):
     update authorized feed producers with broker(order) method
     """
     for asset_id in ASSET_IDS:
-        nodes = race_read_json("nodes.txt")
+        nodes = ["wss://api.bts.mobi/wss",]
         header = {
             "account_name": name,
             "wif": wif,
