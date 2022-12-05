@@ -14,6 +14,7 @@ median pricing for all gatewayBTC:BTS (plus gatewayUSD:BTS - for reference only)
 litepresence2020
 """
 
+
 # DISABLE SELECT PYLINT TESTS
 # pylint: disable=too-many-statements, too-many-locals, too-many-branches
 # pylint: disable=too-many-arguments, broad-except, bare-except, invalid-name
@@ -61,7 +62,7 @@ LATENCY_TIMEOUT = 5  # 5
 BIFURCATION_PAUSE = 20  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
+PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
 # ======================================================================
 
 CURRENCIES = [
@@ -80,7 +81,7 @@ def bitshares_trustless_client():
     Include this definition in your script to storage['access'] pricefeed_dex.txt
     Deploy your bot script in the same folder as pricefeed_dex.py
     """
-    doc = PATH + "pipe/pricefeed_dex.txt"
+    doc = f"{PATH}pipe/pricefeed_dex.txt"
 
     while True:
         try:
@@ -97,7 +98,7 @@ def bitshares_trustless_client():
             elif "pricefeed_dex is blank" in str(error.args):
                 continue
             else:
-                print("pricefeed_dex = bitshares_trustless_client() " + msg)
+                print(f"pricefeed_dex = bitshares_trustless_client() {msg}")
             try:
                 handle.close()
             except BaseException:
@@ -110,11 +111,11 @@ def bitshares_trustless_client():
     return data
 
 
-def race_append(doc="", text=""):  # DONE
+def race_append(doc="", text=""):    # DONE
     """
     Concurrent Append to File Operation
     """
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     iteration = 0
     while True:
         sleep(0.0001 * iteration**2)
@@ -139,11 +140,11 @@ def race_append(doc="", text=""):  # DONE
                 pass
 
 
-def race_write(doc="", text=""):  # DONE
+def race_write(doc="", text=""):    # DONE
     """
     Concurrent Write to File Operation
     """
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     if not isinstance(text, str):
         text = str(text)
     iteration = 0
@@ -172,7 +173,7 @@ def race_read(doc=""):
     """
     Concurrent Read from File Operation
     """
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     iteration = 0
     while True:
         sleep(0.0001 * iteration**2)
@@ -192,7 +193,7 @@ def race_read(doc=""):
                             ret = ret.split("}")[0] + "}"
                             ret = json_load(ret)
                         except BaseException:
-                            print("race_read() failed %s" % str(ret))
+                            print(f"race_read() failed {str(ret)}")
                             ret = {} if "{" in ret else []
                 break
         except FileNotFoundError:

@@ -60,9 +60,7 @@ def main():
     account_id = rpc_account_id(rpc, account_name)
     print("\n\n", account_name, account_id, "\n\n")
     orders = rpc_open_orders(rpc, account_name)
-    orders = list(set(orders))
-    orders.sort()
-    if orders:
+    if orders := sorted(set(orders)):
         print(orders, "\n\n")
         user_resp = input("proceed to cancel these orders? y/n ").lower()
         if user_resp == "y":
@@ -100,9 +98,7 @@ def cancel_all_markets(account_name, wif):
         rpc = reconnect(None)
         account_id = rpc_account_id(rpc, account_name)
         orders = rpc_open_orders(rpc, account_name)
-        orders = list(set(orders))
-        orders.sort()
-        if orders:
+        if orders := sorted(set(orders)):
             order = {
                 "edicts": [
                     {"op": "cancel", "ids": orders},

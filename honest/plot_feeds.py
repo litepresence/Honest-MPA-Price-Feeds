@@ -72,7 +72,7 @@ def get_data():
                     "to_date": to_date,
                 }
                 print(params, PUBLISHER_IDS[publisher])
-                params.update({"as_list": True})
+                params["as_list"] = True
                 # pause to respect api limits then make external request
                 time.sleep(2)
                 data = get(URL, params=params).json()
@@ -102,18 +102,17 @@ def plot_data(honest_feeds):
     each subplot will contain a line for each producer
     """
     plt.figure()
-    plot_num = 1
-    for asset, publishers in honest_feeds.items():
+    for plot_num, (asset, publishers) in enumerate(honest_feeds.items(), start=1):
         plt.subplot(len(list(honest_feeds.keys())), 1, plot_num)
         plt.ylabel(ASSET_IDS[asset])
         for publisher, feeds in publishers.items():
             plt.plot(
                 feeds[1],
                 feeds[0],
-                label=(PUBLISHER_IDS[publisher] + " " + str(len(feeds[0]))),
+                label=f"{PUBLISHER_IDS[publisher]} {len(feeds[0])}",
             )
+
         plt.legend(loc="upper left")
-        plot_num += 1
     plt.show()
 
 
@@ -127,7 +126,7 @@ def main():
     print("GATHERING HONEST PRICE FEED HISTORICAL DATA...\n")
     honest_feeds = get_data()
     # print(honest_feeds, "\n")
-    doc = str(int(time.time())) + "_" + str(DAYS) + ".txt"
+    doc = f"{int(time.time())}_{str(DAYS)}.txt"
     print("\nPRINTING DATA TO FILE:", doc, "\n")
     with open(doc, "w+") as handle:
         handle.write(json.dumps(honest_feeds))

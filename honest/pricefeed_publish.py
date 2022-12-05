@@ -271,7 +271,7 @@ def from_iso_date(iso):
     """
     returns unix epoch given iso8601 datetime
     """
-    return int(timegm(strptime((iso + "UTC"), ISO8601)))
+    return int(timegm(strptime(f"{iso}UTC", ISO8601)))
 
 
 # GRAPHENEBASE TYPES # graphenebase/types.py
@@ -330,7 +330,7 @@ class Array:
 
     def __init__(self, d):
         self.data = d
-        self.length = int(len(self.data))
+        self.length = len(self.data)
 
     def __bytes__(self):
         return bytes(varint(self.length)) + b"".join([bytes(a) for a in self.data])
@@ -426,9 +426,7 @@ def fraction(num):
         iteration += 1
         num *= 10
         den *= 10
-        # escape when numerator is integer or denomenator approaches double long int
-        if (int(num) == num) or (den == 10**14):
-            break
+        break
     # ensure numerator is now an integer
     num = int(num)
     while True:  # remove common factors of 2
@@ -649,8 +647,8 @@ class PublicKey(Address):  # graphenebase/account.py
                 print(public_key)
                 print(len(public_key))
                 account = rpc_key_reference(public_key)
-                print(str(account[0][0]))
-                print(str(account_id))
+                print(account[0][0])
+                print(account_id)
                 if str(account[0][0]) == str(account_id):
                     authenticated = True
                 print("authenticated:", authenticated)
@@ -805,7 +803,7 @@ class Asset(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -829,7 +827,7 @@ class Price(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -847,7 +845,7 @@ class PriceFeed(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -918,7 +916,7 @@ class Signed_Transaction(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             if (
                 "extensions" not in kwargs
@@ -1066,7 +1064,7 @@ class Signed_Transaction(GrapheneObject):
                 f = format(k, "BTS")  # chain_params["prefix"]) # 'BTS'
                 print("")
                 print(it("red", "FIXME"))
-                raise Exception("Signature for %s missing!" % f)
+                raise Exception(f"Signature for {f} missing!")
         return pubKeysFound
 
     def sign(self, wifkeys, chain="BTS"):
@@ -1097,7 +1095,7 @@ class Asset_publish_feed(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -1121,7 +1119,7 @@ class Asset_update_feed_producers(GrapheneObject):
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             kwargs["new_feed_producers"] = sorted(
                 kwargs["new_feed_producers"], key=lambda x: float(x.split(".")[2])
@@ -1202,18 +1200,18 @@ def build_transaction(order):
     account_id = rpc_account_id()
     # VALIDATE INCOMING DATA
     if not isinstance(order["edicts"], list):
-        raise ValueError("order parameter edicts must be list: %s" % order["edicts"])
+        raise ValueError(f'order parameter edicts must be list: {order["edicts"]}')
     if not isinstance(order["nodes"], list):
-        raise ValueError("order parameter nodes must be list: %s" % order["nodes"])
+        raise ValueError(f'order parameter nodes must be list: {order["nodes"]}')
     if not isinstance(order["header"], dict):
-        raise ValueError("order parameter header must be dict: %s" % order["header"])
+        raise ValueError(f'order parameter header must be dict: {order["header"]}')
     try:
         a, b, c = account_id.split(".")
         assert int(a) == 1
         assert int(b) == 2
         assert int(c) == float(c)
     except:
-        raise ValueError("invalid object id %s" % account_id)
+        raise ValueError(f"invalid object id {account_id}")
     # GATHER TRANSACTION HEADER DATA
     # fetch block data via websocket request
     block = rpc_block_number()
@@ -1520,11 +1518,7 @@ def broker(order):
         if JOIN:  # means main script will not continue till child done
             child.join(PROCESS_TIMEOUT)
         # to parallel process a broker(order) see microDEX.py
-    authorized = False
-    if log_in and auth.value == 1:
-        authorized = True
-
-    return authorized
+    return log_in and auth.value == 1
 
 
 def execute(signal, log_in, auth, order):
@@ -1588,9 +1582,10 @@ def execute(signal, log_in, auth, order):
 
         current_time = {
             "unix": int(time()),
-            "local": ctime() + " " + strftime("%Z"),
-            "utc": asctime(gmtime()) + " UTC",
+            "local": f"{ctime()} " + strftime("%Z"),
+            "utc": f"{asctime(gmtime())} UTC",
         }
+
         receipt = {
             "time": current_time,
             "order": order["edicts"],

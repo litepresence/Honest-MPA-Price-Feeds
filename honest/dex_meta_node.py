@@ -91,7 +91,7 @@ def bitshares_trustless_client():
             elif "metaNODE is blank" in str(error.args):
                 continue
             else:
-                print("metaNODE = bitshares_trustless_client() " + msg)
+                print(f"metaNODE = bitshares_trustless_client() {msg}")
             try:
                 handle.close()
             except BaseException:
@@ -186,7 +186,7 @@ def race_read(doc=""):
                             # ret = ljson_load(ret)
                             ret = json_load(ret)
                         except BaseException:
-                            print("race_read() failed %s" % str(ret))
+                            print(f"race_read() failed {str(ret)}")
                             ret = {} if "{" in ret else []
                 break
         except FileNotFoundError:
@@ -295,9 +295,9 @@ def rpc_account_balances(rpc, cache, asset_ids, asset_precisions):
         rpc,
         ["database", "get_named_account_balances", [cache["account_name"], asset_ids]],
     )
-    balances = {asset_id: 0 for _, asset_id in enumerate(asset_ids)}
+    balances = {asset_id: 0 for asset_id in asset_ids}
     for item, asset_id in enumerate(asset_ids):
-        for _, balance in enumerate(ret):
+        for balance in ret:
             if balance["asset_id"] == asset_id:
                 balances[asset_id] += (
                     float(balance["amount"]) / 10 ** asset_precisions[item]

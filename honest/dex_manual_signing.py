@@ -251,8 +251,7 @@ def global_variables():
 
     global info
 
-    info = {}
-    info["id"] = 1  # will be used to increment rpc request id
+    info = {"id": 1}
 
 
 def global_constants():
@@ -378,9 +377,7 @@ def wss_query(params):
 
 
 def rpc_block_number():
-    # block number and block prefix
-    ret = wss_query(["database", "get_dynamic_global_properties", []])
-    return ret
+    return wss_query(["database", "get_dynamic_global_properties", []])
 
 
 def rpc_account_id():
@@ -450,10 +447,7 @@ def rpc_open_orders():
 
 def rpc_key_reference(public_key):
 
-    # given public key return account id
-    ret = wss_query(["database", "get_key_references", [[public_key]]])
-
-    return ret
+    return wss_query(["database", "get_key_references", [[public_key]]])
 
 
 def rpc_get_transaction_hex_without_sig(tx):
@@ -476,15 +470,11 @@ def rpc_broadcast_transaction(tx):
 
 # DATE FORMATTING
 def to_iso_date(unix):
-    # returns iso8601 datetime given unix epoch
-    iso = datetime.utcfromtimestamp(int(unix)).isoformat()
-    return iso
+    return datetime.utcfromtimestamp(int(unix)).isoformat()
 
 
 def from_iso_date(iso):
-    # returns unix epoch given iso8601 datetime
-    unix = int(timegm(strptime((iso + "UTC"), ISO8601)))
-    return unix
+    return int(timegm(strptime(f"{iso}UTC", ISO8601)))
 
 
 # GRAPHENEBASE TYPES
@@ -590,7 +580,7 @@ class Array:
 
     def __init__(self, d):
         self.data = d
-        self.length = int(len(self.data))
+        self.length = len(self.data)
 
     def __bytes__(self):
         return bytes(varint(self.length)) + b"".join([bytes(a) for a in self.data])
@@ -728,8 +718,7 @@ def base58decode(base58_str):
         div, mod = divmod(n, 256)
         res.insert(0, mod)
         n = div
-    else:
-        res.insert(0, n)
+    res.insert(0, n)
     return hexlify(bytearray(1) * leading_zeroes_count + res).decode("ascii")
 
 
@@ -747,9 +736,8 @@ def base58encode(hexstring):
         div, mod = divmod(n, 58)
         res.insert(0, BASE58[mod])
         n = div
-    else:
-        res.insert(0, BASE58[n])
-    ret = (BASE58[0:1] * leading_zeroes_count + res).decode("ascii")
+    res.insert(0, BASE58[n])
+    ret = (BASE58[:1] * leading_zeroes_count + res).decode("ascii")
 
     # public_key = 'BTS' + str(ret)
     # print(it('purple',public_key), "public key")
@@ -858,8 +846,8 @@ class PublicKey(Address):  # graphenebase/account.py
                 print(public_key)
                 print(len(public_key))
                 account = rpc_key_reference(public_key)
-                print(str(account[0][0]))
-                print(str(account_id))
+                print(account[0][0])
+                print(account_id)
                 if str(account[0][0]) == str(account_id):
                     authenticated = True
                 print("authenticated:", authenticated)
@@ -887,17 +875,15 @@ class PublicKey(Address):  # graphenebase/account.py
             bytes(self), curve=ecdsa_SECP256k1
         ).pubkey.point
         x_str = ecdsa_util.number_to_string(p.x(), order)
-        # y_str = ecdsa_util.number_to_string(p.y(), order)
-        compressed = hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
+        return hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
             "ascii"
         )
-        return compressed
 
     def unCompressed(self):
         print("PublicKey.unCompressed")
         """ Derive uncompressed key """
         public_key = repr(self._pk)
-        prefix = public_key[0:2]
+        prefix = public_key[:2]
         if prefix == "04":
             return public_key
         assert prefix in ["02", "03"]
@@ -997,7 +983,7 @@ class Asset(GrapheneObject):  # bitsharesbase/objects.py
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -1017,7 +1003,7 @@ class Limit_order_create(GrapheneObject):  # bitsharesbase/operations.py
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -1051,7 +1037,7 @@ class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             super().__init__(
                 OrderedDict(
@@ -1123,7 +1109,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
         if isArgsThisClass(self, args):
             self.data = args[0].data
         else:
-            if len(args) == 1 and len(kwargs) == 0:
+            if len(args) == 1 and not kwargs:
                 kwargs = args[0]
             if (
                 "extensions" not in kwargs
@@ -1274,7 +1260,7 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
                 f = format(k, "BTS")  # chain_params["prefix"]) # 'BTS'
                 print("")
                 print(it("red", "FIXME"))
-                raise Exception("Signature for %s missing!" % f)
+                raise Exception(f"Signature for {f} missing!")
 
         return pubKeysFound
 
@@ -1334,10 +1320,7 @@ def verify_message(message, signature, hashfn=sha256):
 
 
 def isArgsThisClass(self, args):  # graphenebase/objects.py
-    # if there is only one argument and its type name is
-    # the same as the type name of self
-    ret = len(args) == 1 and type(args[0]).__name__ == type(self).__name__
-    return ret
+    return len(args) == 1 and type(args[0]).__name__ == type(self).__name__
 
 
 # PRIMARY TRANSACTION BACKBONE
@@ -1374,11 +1357,11 @@ def build_transaction(order):
 
     # VALIDATE INCOMING DATA
     if not isinstance(order["edicts"], list):
-        raise ValueError("order parameter must be list: %s" % order["edicts"])
+        raise ValueError(f'order parameter must be list: {order["edicts"]}')
     if not isinstance(order["nodes"], list):
-        raise ValueError("order parameter must be list: %s" % order["nodes"])
+        raise ValueError(f'order parameter must be list: {order["nodes"]}')
     if not isinstance(order["header"], dict):
-        raise ValueError("order parameter must be list: %s" % order["header"])
+        raise ValueError(f'order parameter must be list: {order["header"]}')
     # the location of the decimal place must be provided by order
     currency_precision = int(order["header"]["currency_precision"])
     asset_precision = int(order["header"]["asset_precision"])
@@ -1391,10 +1374,10 @@ def build_transaction(order):
         try:
             a, b, c = i.split(".")
             int(a) == 1
-            int(b) in [2, 3]
+            int(b) in {2, 3}
             int(c) == float(c)
         except:
-            raise ValueError("invalid object id %s" % i)
+            raise ValueError(f"invalid object id {i}")
 
     # GATHER TRANSACTION HEADER DATA
     # fetch block data via websocket request
@@ -1423,12 +1406,12 @@ def build_transaction(order):
             elif edict["op"] == "sell":
                 print(it("yellow", str({k: str(v) for k, v in edict.items()})))
                 sell_edicts.append(edict)
-    for i in range(len(buy_edicts)):
-        buy_edicts[i]["amount"] = decimal(buy_edicts[i]["amount"])
-        buy_edicts[i]["price"] = decimal(buy_edicts[i]["price"])
-    for i in range(len(sell_edicts)):
-        sell_edicts[i]["amount"] = decimal(sell_edicts[i]["amount"])
-        sell_edicts[i]["price"] = decimal(sell_edicts[i]["price"])
+    for buy_edict in buy_edicts:
+        buy_edict["amount"] = decimal(buy_edict["amount"])
+        buy_edict["price"] = decimal(buy_edict["price"])
+    for sell_edict in sell_edicts:
+        sell_edict["amount"] = decimal(sell_edict["amount"])
+        sell_edict["price"] = decimal(sell_edict["price"])
     if DEV:
         print("early edicts")
         edicts = cancel_edicts + buy_edicts + sell_edicts
@@ -1476,10 +1459,11 @@ def build_transaction(order):
         if AUTOSCALE and len(buy_edicts + sell_edicts):
             # autoscale buy edicts
             if len(buy_edicts):
-                currency_value = 0
-                # calculate total value of each amount in the order
-                for i in range(len(buy_edicts)):
-                    currency_value += buy_edicts[i]["amount"] * buy_edicts[i]["price"]
+                currency_value = sum(
+                    buy_edicts[i]["amount"] * buy_edicts[i]["price"]
+                    for i in range(len(buy_edicts))
+                )
+
                 # scale the order amounts to means
                 scale = SIXSIG * currency / (currency_value + SATOSHI)
                 if scale < 1:
@@ -1490,10 +1474,7 @@ def build_transaction(order):
                         buy_edicts[i]["amount"] *= scale
             # autoscale sell edicts
             if len(sell_edicts):
-                asset_total = 0
-                # calculate total amount in the order
-                for i in range(len(sell_edicts)):
-                    asset_total += sell_edicts[i]["amount"]
+                asset_total = sum(sell_edicts[i]["amount"] for i in range(len(sell_edicts)))
                 scale = SIXSIG * assets / (asset_total + SATOSHI)
                 # scale the order amounts to means
                 if scale < 1:
@@ -1517,10 +1498,11 @@ def build_transaction(order):
             # print(bitshares, 'BTS balance')
             # when BTS is the currency don't spend the last 2
             if currency_id == "1.3.0" and len(buy_edicts):
-                bts_value = 0
-                # calculate total bts value of each amount in the order
-                for i in range(len(buy_edicts)):
-                    bts_value += buy_edicts[i]["amount"] * buy_edicts[i]["price"]
+                bts_value = sum(
+                    buy_edicts[i]["amount"] * buy_edicts[i]["price"]
+                    for i in range(len(buy_edicts))
+                )
+
                 # scale the order amounts to save last two bitshares
                 scale = SIXSIG * max(0, (bitshares - 2)) / (bts_value + SATOSHI)
                 if scale < 1:
@@ -1531,10 +1513,7 @@ def build_transaction(order):
                         buy_edicts[i]["amount"] *= scale
             # when BTS is the asset don't sell the last 2
             if asset_id == "1.3.0" and len(sell_edicts):
-                bts_total = 0
-                # calculate total of each bts amount in the order
-                for i in range(len(sell_edicts)):
-                    bts_total += sell_edicts[i]["amount"]
+                bts_total = sum(sell_edicts[i]["amount"] for i in range(len(sell_edicts)))
                 scale = SIXSIG * max(0, (bitshares - 2)) / (bts_total + SATOSHI)
                 # scale the order amounts to save last two bitshares
                 if scale < 1:
@@ -1562,9 +1541,10 @@ def build_transaction(order):
                 ce.append(create_edicts[i])
             else:
                 print(
-                    it("red", "WARN: removing dust threshold %s order" % dust),
+                    it("red", f"WARN: removing dust threshold {dust} order"),
                     create_edicts[i],
                 )
+
         create_edicts = ce[:]  # copy as new list
         del ce
     if DEV:
@@ -1637,11 +1617,7 @@ def build_transaction(order):
         ]
         tx_operations.append(operation)
 
-    # prevent inadvertent huge number of orders
-    # tx_operations = tx_operations[:LIMIT]
-    # the tx is just a regular dictionary we will convert to json later
-    # the operations themselves must still be an OrderedDict
-    tx = {
+    return {
         "ref_block_num": ref_block_num,
         "ref_block_prefix": ref_block_prefix,
         "expiration": tx_expiration,
@@ -1649,8 +1625,6 @@ def build_transaction(order):
         "signatures": [],
         "extensions": [],
     }
-
-    return tx
 
 
 def serialize_transaction(tx):
@@ -1829,10 +1803,7 @@ def broker(order):
     global_variables()
     control_panel()
 
-    log_in = False
-    if order["edicts"][0]["op"] == "login":
-        log_in = True
-
+    log_in = order["edicts"][0]["op"] == "login"
     signal = Value("i", 0)
     auth = Value("i", 0)
     i = 0
@@ -1909,9 +1880,10 @@ def execute(signal, log_in, auth, order):
 
         current_time = {
             "unix": int(time()),
-            "local": ctime() + " " + strftime("%Z"),
-            "utc": asctime(gmtime()) + " UTC",
+            "local": f"{ctime()} " + strftime("%Z"),
+            "utc": f"{asctime(gmtime())} UTC",
         }
+
         receipt = {
             "time": current_time,
             "order": order["edicts"],
@@ -1951,17 +1923,18 @@ def prototype_order():
     broker(order)
     """
 
-    proto = {}
     metaNODE = bitshares_trustless_client()
-    proto["op"] = ""
-    proto["nodes"] = metaNODE["whitelist"]
-    proto["header"] = {
-        "asset_id": metaNODE["asset_id"],
-        "currency_id": metaNODE["currency_id"],
-        "asset_precision": metaNODE["asset_precision"],
-        "currency_precision": metaNODE["currency_precision"],
-        "account_id": metaNODE["account_id"],
-        "account_name": metaNODE["account_name"],
+    proto = {
+        "op": "",
+        "nodes": metaNODE["whitelist"],
+        "header": {
+            "asset_id": metaNODE["asset_id"],
+            "currency_id": metaNODE["currency_id"],
+            "asset_precision": metaNODE["asset_precision"],
+            "currency_precision": metaNODE["currency_precision"],
+            "account_id": metaNODE["account_id"],
+            "account_name": metaNODE["account_name"],
+        },
     }
 
     del metaNODE
@@ -2005,7 +1978,7 @@ def log_in():
     print("")
     if account_name == "":
         account_name = "fd"  # some random acct
-        print("using mock account for demo: %s" % account_name)
+        print(f"using mock account for demo: {account_name}")
     nodes = order1["nodes"]
     # create a websocket connection
     wss_handshake()

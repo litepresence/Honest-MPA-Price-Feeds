@@ -11,6 +11,7 @@ data formatting and text pipe IPC utilities
 litepresence2020
 """
 
+
 # STANDARD PYTHON MODULES
 import os
 import sys
@@ -21,7 +22,7 @@ from traceback import format_exc
 
 # GLOBAL VARIABLES
 ATTEMPTS = 3
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
+PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
 
 
 def it(style, text):
@@ -77,7 +78,7 @@ def race_write(doc="", text=""):
     """
     text = str(text)
     i = 0
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     while True:
         try:
             time.sleep(0.05 * i**2)
@@ -106,7 +107,7 @@ def race_read_json(doc=""):
     """
     Concurrent Read JSON from File Operation
     """
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     i = 0
     while True:
         try:
@@ -167,7 +168,7 @@ def refine_data(data):
     data2 = {}
     for key, val in data.items():
         if key[-3:] == "USD":
-            data2[key[-3:] + ":" + key[:3]] = 1 / val
+            data2[f"{key[-3:]}:{key[:3]}"] = 1 / val
         else:
             data2[key] = val
     data = {}
