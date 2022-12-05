@@ -49,12 +49,15 @@ ASSET_IDS = [
 # 1.19.65   1.3.5938    HONEST.BTCUSDMM
 # 1.19.66   1.3.5939    HONEST.BTCBTSMM
 
+
 def add_producer(name, wif):
     """
     update authorized feed producers with broker(order) method
     """
     for asset_id in ASSET_IDS:
-        nodes = ["wss://api.bts.mobi/wss",]
+        nodes = [
+            "wss://api.bts.mobi/wss",
+        ]
         header = {
             "account_name": name,
             "wif": wif,

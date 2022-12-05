@@ -34,7 +34,6 @@ ASSET_IDS = {
 DAYS = 275
 
 
-
 def get_data():
     """
     Using multiple requests,
@@ -85,7 +84,7 @@ def get_data():
                     asset_data[publisher][1] += blocks
                     failed = 0
                 except KeyError:
-                    failed +=1
+                    failed += 1
                     print(data["detail"], "failed", failed)
                     print(ASSET_IDS[asset], PUBLISHER_IDS[publisher])
                     # if 20 days of no data stop searching for this asset/producer
@@ -127,7 +126,7 @@ def main():
     print("\033c")
     print("GATHERING HONEST PRICE FEED HISTORICAL DATA...\n")
     honest_feeds = get_data()
-    #print(honest_feeds, "\n")
+    # print(honest_feeds, "\n")
     doc = str(int(time.time())) + "_" + str(DAYS) + ".txt"
     print("\nPRINTING DATA TO FILE:", doc, "\n")
     with open(doc, "w+") as handle:

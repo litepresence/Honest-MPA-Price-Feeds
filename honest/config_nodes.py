@@ -27,7 +27,7 @@ def public_nodes():
         "wss://node1.deex.exchange/wss",
         "wss://api.btslebin.com/wss",
         "wss://api.bts.btspp.io:10100/ws",
-        "wss://singapore.bitshares.im/ws"
+        "wss://singapore.bitshares.im/ws",
     ]
 
 

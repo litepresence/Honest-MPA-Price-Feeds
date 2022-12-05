@@ -117,7 +117,7 @@ def race_append(doc="", text=""):  # DONE
     doc = PATH + "pipe/" + doc
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             if iteration > 10:
@@ -148,7 +148,7 @@ def race_write(doc="", text=""):  # DONE
         text = str(text)
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             with open(doc, "w+") as handle:
@@ -175,7 +175,7 @@ def race_read(doc=""):
     doc = PATH + "pipe/" + doc
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             with open(doc, "r") as handle:
@@ -549,7 +549,9 @@ def thresh(storage, process, epoch, pid, cache):
                         it("purple", btc_dict),
                     )  # json_dump(btc_dict, indent=0, sort_keys=True)))
                     print(
-                        "DEX BTS:USD", "%.16f" % usd, it("purple", usd_dict),
+                        "DEX BTS:USD",
+                        "%.16f" % usd,
+                        it("purple", usd_dict),
                     )
                     print(
                         "DEX BTC:USD",
@@ -593,7 +595,8 @@ def thresh(storage, process, epoch, pid, cache):
                         pass
                     try:
                         print(
-                            "SCELETUS  ", it("purple", sceletus_output),
+                            "SCELETUS  ",
+                            it("purple", sceletus_output),
                         )
                     except:
                         pass
