@@ -70,7 +70,9 @@ def main():
             print("           *****************")
             time.sleep(2)
             order = {
-                "edicts": [{"op": "cancel", "ids": orders},],
+                "edicts": [
+                    {"op": "cancel", "ids": orders},
+                ],
                 "header": {
                     "asset_id": "1.3.1",  # placeholder
                     "currency_id": "1.3.1",  # placeholder
@@ -102,7 +104,9 @@ def cancel_all_markets(account_name, wif):
         orders.sort()
         if orders:
             order = {
-                "edicts": [{"op": "cancel", "ids": orders},],
+                "edicts": [
+                    {"op": "cancel", "ids": orders},
+                ],
                 "header": {
                     "asset_id": "1.3.1",  # placeholder
                     "currency_id": "1.3.1",  # placeholder

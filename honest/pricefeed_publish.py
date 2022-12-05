@@ -79,7 +79,7 @@ HEXDIGITS = "0123456789abcdefABCDEF"
 # ISO8601 timeformat; 'graphene time'
 ISO8601 = "%Y-%m-%dT%H:%M:%S%Z"
 # MAX is 4294967295; year 2106 due to 4 byte unsigned integer
-END_OF_TIME = 4 * 10 ** 9  # about 75 years in future
+END_OF_TIME = 4 * 10**9  # about 75 years in future
 # very little
 SATOSHI = decimal(0.00000001)
 # almost 1
@@ -141,7 +141,12 @@ def wss_query(params):
             # query is 4 element dict {"method":"", "params":"", "jsonrpc":"", "id":""}
             # params is 3 element list ["location", "object", []]
             query = json_dumps(
-                {"method": "call", "params": params, "jsonrpc": "2.0", "id": 1,}
+                {
+                    "method": "call",
+                    "params": params,
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                }
             )
             # print(query)
             # ws is the websocket connection created by wss_handshake()
@@ -407,7 +412,7 @@ class PointInTime:
         self.data = d
 
     def __bytes__(self):
-        """ # """
+        """#"""
         return pack("<I", from_iso_date(self.data))
 
 
@@ -422,7 +427,7 @@ def fraction(num):
         num *= 10
         den *= 10
         # escape when numerator is integer or denomenator approaches double long int
-        if (int(num) == num) or (den == 10 ** 14):
+        if (int(num) == num) or (den == 10**14):
             break
     # ensure numerator is now an integer
     num = int(num)
@@ -479,7 +484,7 @@ class Base58(object):
             raise ValueError("Error loading Base58 object")
 
     def __format__(self, _format):
-        """ # """
+        """#"""
         if _format.upper() != "BTS":
             print("Format %s unkown. You've been warned!\n" % _format)
         return _format.upper() + str(self)
@@ -504,7 +509,7 @@ class Base58(object):
 
 
 def base58decode(base58_str):
-    """ # """
+    """#"""
     print(it("green", "base58decode"))
     base58_text = bytes(base58_str, "ascii")
     n = 0
@@ -523,7 +528,7 @@ def base58decode(base58_str):
 
 
 def base58encode(hexstring):
-    """ # """
+    """#"""
     print(it("green", "base58encode"))
     byteseq = bytes(unhexlify(bytes(hexstring, "ascii")))
     n = 0
@@ -568,7 +573,7 @@ def doublesha256(s):
 
 
 def base58CheckEncode(version, payload):
-    """ # """
+    """#"""
     print(it("green", "base58CheckEncode"))
     print(payload, version)
     s = ("%.2x" % version) + payload
@@ -579,7 +584,7 @@ def base58CheckEncode(version, payload):
 
 
 def gphBase58CheckEncode(s):
-    """ # """
+    """#"""
     print(it("yellow", "gphBase58CheckEncode"))
     print(s)
     checksum = ripemd160(s)[:4]
@@ -588,7 +593,7 @@ def gphBase58CheckEncode(s):
 
 
 def base58CheckDecode(s):
-    """ # """
+    """#"""
     print(it("green", "base58CheckDecode"))
     print(s[:4])
     s = unhexlify(base58decode(s))
@@ -599,7 +604,7 @@ def base58CheckDecode(s):
 
 
 def gphBase58CheckDecode(s):
-    """ # """
+    """#"""
     print(it("yellow", "gphBase58CheckDecode"))
     print(s)
     s = unhexlify(base58decode(s))
@@ -677,9 +682,7 @@ class PublicKey(Address):  # graphenebase/account.py
             bytes(self), curve=ecdsa_SECP256k1
         ).pubkey.point
         x_str = ecdsa_util.number_to_string(p.x(), order)
-        return hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode(
-            "ascii"
-        )
+        return hexlify(bytes(chr(2 + (p.y() & 1)), "ascii") + x_str).decode("ascii")
 
     def unCompressed(self):
         """
@@ -808,7 +811,10 @@ class Asset(GrapheneObject):
                 OrderedDict(
                     [
                         ("amount", Int64(kwargs["amount"])),
-                        ("asset_id", ObjectId(kwargs["asset_id"], "asset"),),
+                        (
+                            "asset_id",
+                            ObjectId(kwargs["asset_id"], "asset"),
+                        ),
                     ]
                 )
             )
@@ -937,9 +943,18 @@ class Signed_Transaction(GrapheneObject):
             super().__init__(
                 OrderedDict(
                     [
-                        ("ref_block_num", Uint16(kwargs["ref_block_num"]),),
-                        ("ref_block_prefix", Uint32(kwargs["ref_block_prefix"]),),
-                        ("expiration", PointInTime(kwargs["expiration"]),),
+                        (
+                            "ref_block_num",
+                            Uint16(kwargs["ref_block_num"]),
+                        ),
+                        (
+                            "ref_block_prefix",
+                            Uint32(kwargs["ref_block_prefix"]),
+                        ),
+                        (
+                            "expiration",
+                            PointInTime(kwargs["expiration"]),
+                        ),
                         ("operations", kwargs["operations"]),
                         ("extensions", kwargs["extensions"]),
                         ("signatures", kwargs["signatures"]),
@@ -965,12 +980,12 @@ class Signed_Transaction(GrapheneObject):
         return hexlify(h[:20]).decode("ascii")
 
     def getOperationKlass(self):
-        """ # """
+        """#"""
         print("Signed_Transaction.get_operationKlass")
         return Operation
 
     def derSigToHexSig(self, s):
-        """ # """
+        """#"""
         print("Signed_Transaction.derSigToHexSig")
         s, junk = ecdsa_der.remove_sequence(unhexlify(s))
         if junk:
@@ -981,7 +996,7 @@ class Signed_Transaction(GrapheneObject):
         return "%064x%064x" % (x, y)
 
     def deriveDigest(self, chain):
-        """ # """
+        """#"""
         print("Signed_Transaction.deriveDigest")
         print(self, chain)
         # Do not serialize signatures
@@ -996,7 +1011,7 @@ class Signed_Transaction(GrapheneObject):
         self.data["signatures"] = sigs
 
     def verify(self, pubkeys=None, chain="BTS"):
-        """ # """
+        """#"""
         if pubkeys is None:
             pubkeys = []
         print(it("green", "###############################################"))
@@ -1228,12 +1243,12 @@ def build_transaction(order):
         )
         # adjust settlment price to graphene asset and currency precisions
         adj_settlement = (
-            edict["settlement_price"] * 10 ** asset_precision / 10 ** currency_precision
+            edict["settlement_price"] * 10**asset_precision / 10**currency_precision
         )
         if edict["currency_name"] == "BTS":
             adj_core = adj_settlement
         else:
-            adj_core = edict["core_price"] * 10 ** asset_precision / 10 ** 5
+            adj_core = edict["core_price"] * 10**asset_precision / 10**5
         # FEE ORDERED DICT
         # create publication fee ordered dict
         fee = OrderedDict([("amount", fees["publish"]), ("asset_id", "1.3.0")])
@@ -1254,7 +1269,12 @@ def build_transaction(order):
         c_base = int(fraction(adj_core)["base"] * edict["CER"])
         c_quote = fraction(adj_core)["quote"]
         # create a core-base price ordered dict
-        core_base = OrderedDict([("amount", c_base), ("asset_id", asset_id),])
+        core_base = OrderedDict(
+            [
+                ("amount", c_base),
+                ("asset_id", asset_id),
+            ]
+        )
         # create a quote price ordered dict used w/ core base
         core_quote = OrderedDict([("amount", c_quote), ("asset_id", "1.3.0")])
         # combine core base and quote price
@@ -1267,7 +1287,7 @@ def build_transaction(order):
                     ("settlement_price", settlement_price),
                     (
                         "maintenance_collateral_ratio",
-                        edict["MCR"]  # use graphene precision
+                        edict["MCR"],  # use graphene precision
                     ),
                     ("maximum_short_squeeze_ratio", edict["MSSR"]),
                     ("core_exchange_rate", core_exchange_rate),

@@ -28,7 +28,7 @@ import requests
 from utilities import race_write, race_read_json, trace
 
 # GLOBAL CONSTANTS
-TIMEOUT = 10
+TIMEOUT = 15
 ATTEMPTS = 10
 DETAIL = False
 BEGIN = int(time.time())
@@ -40,8 +40,9 @@ def return_urls():
     dictionary of api domain names
     """
     return {
+        "gateio": "https://api.gateio.ws",
         "coinbase": "https://api.pro.coinbase.com",
-        "bittrex": "https://bittrex.com",
+        "bittrex": "https://api.bittrex.com",
         "bitfinex": "https://api-pub.bitfinex.com",
         "kraken": "https://api.kraken.com",
         "poloniex": "https://www.poloniex.com",
@@ -104,7 +105,8 @@ def symbol_syntax(exchange, symbol):
         if asset == "DASH":
             asset = "DSH"
     symbols = {
-        "bittrex": (currency + "-" + asset),
+        "gateio": (asset + "_" + currency),
+        "bittrex": (asset + "-" + currency),
         "bitfinex": (asset + currency),
         "binance": (asset + currency),
         "poloniex": (currency + "_" + asset),
@@ -150,7 +152,7 @@ def request(api, signal):
     doc = (
         api["exchange"]
         + api["pair"]
-        + str(int(10 ** 6 * api["nonce"]))
+        + str(int(10**6 * api["nonce"]))
         + "_{}_public.txt".format(api["exchange"])
     )
     race_write(doc, json_dumps(data))
@@ -183,12 +185,12 @@ def process_request(api):
         child.start()
         child.join(TIMEOUT)
         child.terminate()
-        time.sleep(i ** 2)
+        time.sleep(i**2)
     # the doc was created by the subprocess; read and destroy it
     doc = (
         api["exchange"]
         + api["pair"]
-        + str(int(10 ** 6 * api["nonce"]))
+        + str(int(10**6 * api["nonce"]))
         + "_{}_public.txt".format(api["exchange"])
     )
     data = race_read_json(doc)
@@ -213,7 +215,8 @@ def get_price(api):
     exchange = api["exchange"]
     symbol = symbol_syntax(exchange, api["pair"])
     endpoints = {
-        "bittrex": "/api/v1.1/public/getticker",
+        "gateio": "/api/v4/spot/tickers",
+        "bittrex": "/v3/markets/tickers",
         "bitfinex": "/v2/ticker/t{}".format(symbol),
         "binance": "/api/v1/ticker/allPrices",
         "poloniex": "/public",
@@ -224,7 +227,8 @@ def get_price(api):
         "hitbtc": f"/api/2/public/ticker/{symbol}",
     }
     params = {
-        "bittrex": {"market": symbol},
+        "gateio": {},
+        "bittrex": {},
         "bitfinex": {"market": symbol},
         "binance": {},
         "poloniex": {"command": "returnTicker"},
@@ -239,8 +243,12 @@ def get_price(api):
     while 1:
         try:
             data = process_request(api)
-            if exchange == "bittrex":
-                last = float(data["result"]["Last"])
+            if exchange == "gateio":
+                data = {d["currency_pair"]: float(d["last"]) for d in data}
+                last = float(data[symbol])
+            elif exchange == "bittrex":
+                data = {d["symbol"]: float(d["lastTradeRate"]) for d in data}
+                last = float(data[symbol])
             elif exchange == "bitfinex":
                 last = float(data[6])
             elif exchange == "binance":
@@ -331,15 +339,16 @@ def pricefeed_cex():
         "coinbase",
         "kraken",
         "bitstamp",
+        "gateio",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
     # exchanges with bitshares vs bitcoin
     api["pair"] = "BTS:BTC"
     exchanges = [
+        "gateio",
         "bittrex",
-        "binance",
+        "binance",  # WARN: requires NON-US VPN
         "poloniex",
-        "huobi",
         "hitbtc",
     ]
     cex[api["pair"]] = fetch(exchanges, api)
@@ -350,6 +359,7 @@ def pricefeed_cex():
         "poloniex",
         "huobi",
         "hitbtc",
+        "gateio",
         "bitfinex",
         "kraken",
         "bitstamp",
@@ -362,6 +372,7 @@ def pricefeed_cex():
         "binance",
         "poloniex",
         "huobi",
+        "gateio",
         "hitbtc",
         "bitfinex",
         "coinbase",

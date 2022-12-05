@@ -80,7 +80,7 @@ def race_write(doc="", text=""):
     doc = PATH + "pipe/" + doc
     while True:
         try:
-            time.sleep(0.05 * i ** 2)
+            time.sleep(0.05 * i**2)
             i += 1
             with open(doc, "w+") as handle:
                 handle.write(text)
@@ -110,7 +110,7 @@ def race_read_json(doc=""):
     i = 0
     while True:
         try:
-            time.sleep(0.05 * i ** 2)
+            time.sleep(0.05 * i**2)
             i += 1
             with open(doc, "r") as handle:
                 data = json_loads(handle.read())

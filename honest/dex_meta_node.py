@@ -110,7 +110,7 @@ def race_append(doc="", text=""):
     """
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             if iteration > 10:
@@ -140,7 +140,7 @@ def race_write(doc="", text=""):
         text = str(text)
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             with open(doc, "w+") as handle:
@@ -166,7 +166,7 @@ def race_read(doc=""):
     """
     iteration = 0
     while True:
-        sleep(0.0001 * iteration ** 2)
+        sleep(0.0001 * iteration**2)
         iteration += 1
         try:
             with open(doc, "r") as handle:
@@ -441,16 +441,16 @@ def rpc_open_orders(rpc, cache):
             else:
                 base_precision = cache["asset_precision"]
                 quote_precision = cache["currency_precision"]
-            base_amount /= 10 ** base_precision
-            quote_amount /= 10 ** quote_precision
+            base_amount /= 10**base_precision
+            quote_amount /= 10**quote_precision
             if base_id == cache["asset_id"]:
                 order_type = "sell"
                 price = quote_amount / base_amount
-                amount /= 10 ** base_precision
+                amount /= 10**base_precision
             else:
                 order_type = "buy"
                 price = base_amount / quote_amount
-                amount = (amount / 10 ** base_precision) / price
+                amount = (amount / 10**base_precision) / price
             orders.append(
                 {
                     "orderNumber": order["id"],

@@ -2,6 +2,7 @@
 this will be imported by various forex scripts which require api keys
 """
 
+
 def config_apikeys():
     """
     enter your api keys here for additional data sources, get keys at:
@@ -16,17 +17,15 @@ def config_apikeys():
     also enter your jsonbin.io key, id, and url here
     """
     return {
-
         "barchart": "",
         "fscapi": "",
         "fixerio": "",
         "currencyconverter": "",
         "fxmarket": "",
-        "openexchangerates":"",
-
-        "jsonbin":{
-            "key":"",
-            "id":"",
-            "url":"https://api.jsonbin.io/b/<your id here>/latest" # just for reference
+        "openexchangerates": "",
+        "jsonbin": {
+            "key": "",
+            "id": "",
+            "url": "https://api.jsonbin.io/b/<your id here>/latest",  # just for reference
         },
     }

@@ -105,10 +105,10 @@ def publish_feed(prices, name, wif):
     # these are fed reciprocal price feeds
     btsusdshort = dict(pub_dict)
     btsusdshort["asset_name"] = "HONEST.USDSHORT"
-    btsusdshort["settlement_price"] = 1.0/prices["feed"]["BTS:USD"]
+    btsusdshort["settlement_price"] = 1.0 / prices["feed"]["BTS:USD"]
     btsbtcshort = dict(pub_dict)
     btsbtcshort["asset_name"] = "HONEST.BTCSHORT"
-    btsbtcshort["settlement_price"] = 1.0/prices["feed"]["BTS:BTC"]
+    btsbtcshort["settlement_price"] = 1.0 / prices["feed"]["BTS:BTC"]
     # add each publication edict to the edicts list
     edicts = [
         btscny,
@@ -166,6 +166,8 @@ def gather_data(name, wif, trigger):
     dex = {}
     # wait until the first dex pricefeed writes to file
     while dex == {}:
+        time.sleep(0.5)
+        # Above prevents hard drive strain and allows `pricefeed_dex` to actually start
         dex = race_read_json("pricefeed_dex.txt")
     updates = 1
     while True:
@@ -273,7 +275,9 @@ def gather_data(name, wif, trigger):
                 sceletus_orders, sceletus_output = sceletus(
                     prices, name, wif, trigger["sceletus"]
                 )
-                race_append("sceletus_orders.txt", ("\n\n" + json_dumps(sceletus_orders)))
+                race_append(
+                    "sceletus_orders.txt", ("\n\n" + json_dumps(sceletus_orders))
+                )
                 race_write("sceletus_output.txt", json_dumps(sceletus_output))
 
             appendage = (

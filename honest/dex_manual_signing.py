@@ -170,8 +170,18 @@ def sample_orders():
     # cancel all and place two buy orders
     order1 = {
         "edicts": [
-            {"op": "buy", "amount": 10.0, "price": 0.00000100, "expiration": 0,},
-            {"op": "buy", "amount": 30.0, "price": 0.00000150, "expiration": 0,},
+            {
+                "op": "buy",
+                "amount": 10.0,
+                "price": 0.00000100,
+                "expiration": 0,
+            },
+            {
+                "op": "buy",
+                "amount": 30.0,
+                "price": 0.00000150,
+                "expiration": 0,
+            },
         ],
         "header": {
             "asset_id": "1.3.0",
@@ -268,7 +278,7 @@ def global_constants():
     # ISO8601 timeformat; 'graphene time'
     ISO8601 = "%Y-%m-%dT%H:%M:%S%Z"
     # MAX is 4294967295; year 2106 due to 4 byte unsigned integer
-    END_OF_TIME = 4 * 10 ** 9  # about 75 years in future
+    END_OF_TIME = 4 * 10**9  # about 75 years in future
     # very little
     SATOSHI = decimal(0.00000001)
     # almost 1
@@ -336,7 +346,12 @@ def wss_query(params):
             # this is the 4 part format of EVERY rpc request
             # params format is ["location", "object", []]
             query = json_dumps(
-                {"method": "call", "params": params, "jsonrpc": "2.0", "id": 1,}
+                {
+                    "method": "call",
+                    "params": params,
+                    "jsonrpc": "2.0",
+                    "id": 1,
+                }
             )
             # print(query)
             # ws is the websocket connection created by wss_handshake()
@@ -380,7 +395,10 @@ def rpc_fees():
         "database",
         "get_required_fees",
         [
-            [["1", {"from": str(account_id)}], ["2", {"from": str(account_id)}],],
+            [
+                ["1", {"from": str(account_id)}],
+                ["2", {"from": str(account_id)}],
+            ],
             "1.3.0",
         ],
     ]
@@ -403,11 +421,11 @@ def rpc_balances():
     # print(balances)
     for balance in balances:
         if balance["asset_id"] == currency_id:
-            currency = decimal(balance["amount"]) / 10 ** currency_precision
+            currency = decimal(balance["amount"]) / 10**currency_precision
         if balance["asset_id"] == asset_id:
-            assets = decimal(balance["amount"]) / 10 ** asset_precision
+            assets = decimal(balance["amount"]) / 10**asset_precision
         if balance["asset_id"] == "1.3.0":
-            bitshares = decimal(balance["amount"]) / 10 ** 5
+            bitshares = decimal(balance["amount"]) / 10**5
 
     # print(currency, assets, bitshares)
     return currency, assets, bitshares
@@ -889,18 +907,18 @@ class PublicKey(Address):  # graphenebase/account.py
 
     def __repr__(self):
         # print('PublicKey.__repr__')
-        """ Gives the hex representation of the Graphene public key. """
+        """Gives the hex representation of the Graphene public key."""
         return repr(self._pk)
 
     def __format__(self, _format):
         # print('PublicKey.__format__')
-        """ Formats the instance of:doc:`Base58 <base58>
-        ` according to ``_format`` """
+        """Formats the instance of:doc:`Base58 <base58>
+        ` according to ``_format``"""
         return format(self._pk, _format)
 
     def __bytes__(self):
         # print('PublicKey.__bytes__')
-        """ Returns the raw public key (has length 33)"""
+        """Returns the raw public key (has length 33)"""
         return bytes(self._pk)
 
 
@@ -909,8 +927,8 @@ class PrivateKey(PublicKey):  # merged litepresence2019
     # Bitshares(MIT) graphenebase/account.py
     # Bitshares(MIT) bitsharesbase/account.py
 
-    """ Derives the compressed and uncompressed public keys and
-        constructs two instances of ``PublicKey``:
+    """Derives the compressed and uncompressed public keys and
+    constructs two instances of ``PublicKey``:
     """
 
     def __init__(self, wif=None, prefix="BTS"):
@@ -955,7 +973,7 @@ class PrivateKey(PublicKey):  # merged litepresence2019
 
     def __bytes__(self):
         # print('PrivateKey.__bytes__')
-        """ Returns the raw private key """
+        """Returns the raw private key"""
         return bytes(self._wif)
 
 
@@ -985,7 +1003,10 @@ class Asset(GrapheneObject):  # bitsharesbase/objects.py
                 OrderedDict(
                     [
                         ("amount", Int64(kwargs["amount"])),
-                        ("asset_id", ObjectId(kwargs["asset_id"], "asset"),),
+                        (
+                            "asset_id",
+                            ObjectId(kwargs["asset_id"], "asset"),
+                        ),
                     ]
                 )
             )
@@ -1002,10 +1023,22 @@ class Limit_order_create(GrapheneObject):  # bitsharesbase/operations.py
                 OrderedDict(
                     [
                         ("fee", Asset(kwargs["fee"])),
-                        ("seller", ObjectId(kwargs["seller"], "account"),),
-                        ("amount_to_sell", Asset(kwargs["amount_to_sell"]),),
-                        ("min_to_receive", Asset(kwargs["min_to_receive"]),),
-                        ("expiration", PointInTime(kwargs["expiration"]),),
+                        (
+                            "seller",
+                            ObjectId(kwargs["seller"], "account"),
+                        ),
+                        (
+                            "amount_to_sell",
+                            Asset(kwargs["amount_to_sell"]),
+                        ),
+                        (
+                            "min_to_receive",
+                            Asset(kwargs["min_to_receive"]),
+                        ),
+                        (
+                            "expiration",
+                            PointInTime(kwargs["expiration"]),
+                        ),
                         ("fill_or_kill", Uint8(kwargs["fill_or_kill"])),
                         ("extensions", Array([])),
                     ]
@@ -1028,7 +1061,10 @@ class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
                             "fee_paying_account",
                             ObjectId(kwargs["fee_paying_account"], "account"),
                         ),
-                        ("order", ObjectId(kwargs["order"], "limit_order"),),
+                        (
+                            "order",
+                            ObjectId(kwargs["order"], "limit_order"),
+                        ),
                         ("extensions", Array([])),
                     ]
                 )
@@ -1114,9 +1150,18 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
             super().__init__(
                 OrderedDict(
                     [
-                        ("ref_block_num", Uint16(kwargs["ref_block_num"]),),
-                        ("ref_block_prefix", Uint32(kwargs["ref_block_prefix"]),),
-                        ("expiration", PointInTime(kwargs["expiration"]),),
+                        (
+                            "ref_block_num",
+                            Uint16(kwargs["ref_block_num"]),
+                        ),
+                        (
+                            "ref_block_prefix",
+                            Uint32(kwargs["ref_block_prefix"]),
+                        ),
+                        (
+                            "expiration",
+                            PointInTime(kwargs["expiration"]),
+                        ),
                         ("operations", kwargs["operations"]),
                         ("extensions", kwargs["extensions"]),
                         ("signatures", kwargs["signatures"]),
@@ -1511,7 +1556,7 @@ def build_transaction(order):
     # REMOVE DUST EDICTS
     if DUST and len(create_edicts):
         ce = []
-        dust = DUST * 100000 / 10 ** asset_precision
+        dust = DUST * 100000 / 10**asset_precision
         for i in range(len(create_edicts)):
             if create_edicts[i]["amount"] > dust:
                 ce.append(create_edicts[i])
@@ -1542,17 +1587,17 @@ def build_transaction(order):
         # derive min_to_receive & amount_to_sell from price & amount
         # means SELLING currency RECEIVING assets
         if create_edicts[i]["op"] == "buy":
-            min_to_receive["amount"] = int(amount * 10 ** asset_precision)
+            min_to_receive["amount"] = int(amount * 10**asset_precision)
             min_to_receive["asset_id"] = asset_id
 
-            amount_to_sell["amount"] = int(amount * price * 10 ** currency_precision)
+            amount_to_sell["amount"] = int(amount * price * 10**currency_precision)
             amount_to_sell["asset_id"] = currency_id
         # means SELLING assets RECEIVING currency
         if create_edicts[i]["op"] == "sell":
-            min_to_receive["amount"] = int(amount * price * 10 ** currency_precision)
+            min_to_receive["amount"] = int(amount * price * 10**currency_precision)
             min_to_receive["asset_id"] = currency_id
 
-            amount_to_sell["amount"] = int(amount * 10 ** asset_precision)
+            amount_to_sell["amount"] = int(amount * 10**asset_precision)
             amount_to_sell["asset_id"] = asset_id
         # Limit_order_create fee ordered dictionary
         fee = OrderedDict([("amount", fees["create"]), ("asset_id", "1.3.0")])
@@ -1567,7 +1612,10 @@ def build_transaction(order):
                     ("min_to_receive", min_to_receive),  # OrderedDict
                     ("expiration", op_expiration),  # ISO8601
                     ("fill_or_kill", KILL_OR_FILL),  # bool
-                    ("extensions", [],),  # always empty list for our purpose
+                    (
+                        "extensions",
+                        [],
+                    ),  # always empty list for our purpose
                 ]
             ),
         ]
