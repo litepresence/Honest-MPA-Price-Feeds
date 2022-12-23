@@ -145,11 +145,11 @@ def ret_markets():
     """
     return [
         "USD:CNY",
-        # "USD:EUR",
-        # "USD:GBP",
-        # "USD:RUB",
-        # "USD:JPY",
-        # "USD:KRW",
+        "USD:EUR",
+        "USD:GBP",
+        "USD:RUB",
+        "USD:JPY",
+        "USD:KRW",
         "USD:XAG",
         "USD:XAU",
     ]
@@ -161,27 +161,44 @@ def refine_data(data):
     sort dictionaries by key
     return only data in specified forex markets
     ensure values are all float format and to matching precision
+    EPIC ONE LINER:
+    return {
+    k: v
+    for k, v in {
+      k: sigfig(v)
+      for k, v in dict(
+        sorted(
+          {
+            k if k[-3:] != "RUR" else "USD:RUB": v
+            for k, v in {
+              k if k[-3:] != "CNH" else "USD:CNY": v
+              for k, v in {
+                k[-3:] + ":" + k[:3] if k[-3:] == "USD" else k: v
+                for k, v in {
+                  k: 1 / v if k[-3:] == "USD" else v
+                  for k, v in data.items()
+                }.items()
+              }.items()
+            }.items()
+          }.items()
+        )
+      ).items()
+    }.items()
+    if k in ret_markets()
+    }
     """
-
     markets = ret_markets()
-    data2 = {}
-    for key, val in data.items():
-        if key[-3:] == "USD":
-            data2[key[-3:] + ":" + key[:3]] = 1 / val
-        else:
-            data2[key] = val
-    data = {}
-    for key, val in data2.items():
-        if key[-3:] == "CNH":
-            data["USD:CNY"] = val
-        else:
-            data[key] = val
-    for key, val in data2.items():
-        if key[-3:] == "RUR":
-            data["USD:RUB"] = val
-        else:
-            data[key] = val
+    # if pair is backwards, invert price
+    data = {k: 1 / v if k[-3:] == "USD" else v for k, v in data.items()}
+    # flip backwards pairs
+    data = {k[-3:] + ":" + k[:3] if k[-3:] == "USD" else k: v for k, v in data.items()}
+    # correct exchange eccentricities, CNH == CNY, RUR == RUB
+    data = {k if k[-3:] != "CNH" else "USD:CNY": v for k, v in data.items()}
+    data = {k if k[-3:] != "RUR" else "USD:RUB": v for k, v in data.items()}
+    # sort the dict
     data = dict(sorted(data.items()))
+    # ensure that all values are in float format and to the correct precision
     data = {k: sigfig(v) for k, v in data.items()}
+    # ensure all pairs exist in configured pairs
     data = {k: v for k, v in data.items() if k in markets}
     return data

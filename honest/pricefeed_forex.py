@@ -99,17 +99,15 @@ def aggregate_rates():
     aggregate = {}
     for source, prices in sources.items():
         for pair, price in prices.items():
-            if pair in aggregate:
-                aggregate[pair].append((price, source))
-            else:
-                aggregate[pair] = [(price, source)]
+            aggregate.setdefault(pair, []).append((price, source))
+
     medians = {
-        k: (
-            sigfig(median([i[0] for i in v])),
-            len([i[0] for i in v]),
-            [i[1] for i in v],
+        pair: (
+            sigfig(median([price for price, _ in prices])),
+            len([price for price, _ in prices]),
+            [source for _, source in prices]
         )
-        for k, v in aggregate.items()
+        for pair, prices in aggregate.items()
     }
     return {
         "sources": sources,
