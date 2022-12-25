@@ -1,0 +1,831 @@
+{
+    "AlexChien": {
+        "contributions": {
+            "bitshares/bitshares-ui": 183
+        },
+        "total_contrib": 183,
+        "log_contrib": 5.214935757608986,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "Algruun": {
+        "contributions": {
+            "bitshares/python-bitshares": 2
+        },
+        "total_contrib": 2,
+        "log_contrib": 1.0986122886681098,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "AmmarYousefM": {
+        "contributions": {
+            "bitshares/bitsharesjs": 9
+        },
+        "total_contrib": 9,
+        "log_contrib": 2.302585092994046,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ChronosCrypto": {
+        "contributions": {
+            "bitshares/bitshares-core": 4,
+            "bitshares/bitshares-ui": 42,
+            "graphene-blockchain/graphene-core": 4
+        },
+        "total_contrib": 50,
+        "log_contrib": 3.9318256327243257,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "HarukaMa": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "Metizik": {
+        "contributions": {
+            "bitshares/bitshares-ui": 145
+        },
+        "total_contrib": 145,
+        "log_contrib": 4.983606621708336,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "MichelSantos": {
+        "contributions": {
+            "bitshares/bitshares-core": 80
+        },
+        "total_contrib": 80,
+        "log_contrib": 4.394449154672439,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "OpenLedgerApp": {
+        "contributions": {
+            "bitshares/bitshares-core": 20,
+            "graphene-blockchain/graphene-core": 20
+        },
+        "total_contrib": 40,
+        "log_contrib": 3.713572066704308,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "RichardWeiYang": {
+        "contributions": {
+            "graphene-blockchain/graphene-core": 4
+        },
+        "total_contrib": 4,
+        "log_contrib": 1.6094379124341003,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "RuneStone0": {
+        "contributions": {
+            "bitshares/bitsharesjs": 2,
+            "bitshares/python-bitshares": 5
+        },
+        "total_contrib": 7,
+        "log_contrib": 2.0794415416798357,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "SmileyChris": {
+        "contributions": {
+            "bitshares/python-bitshares": 4
+        },
+        "total_contrib": 4,
+        "log_contrib": 1.6094379124341003,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "TBAPI-0KA": {
+        "contributions": {
+            "bitshares/bitshares-ui": 45
+        },
+        "total_contrib": 45,
+        "log_contrib": 3.828641396489095,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "TheTaconator": {
+        "contributions": {
+            "bitshares/bitshares-core": 6,
+            "graphene-blockchain/graphene-core": 6
+        },
+        "total_contrib": 12,
+        "log_contrib": 2.5649493574615367,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "Tydus": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "VerevkinAlexander": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1,
+            "bitshares/bitshares-ui": 203
+        },
+        "total_contrib": 204,
+        "log_contrib": 5.3230099791384085,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "Zapata": {
+        "contributions": {
+            "bitshares/python-bitshares": 2,
+            "graphene-blockchain/graphene-core": 4
+        },
+        "total_contrib": 6,
+        "log_contrib": 1.9459101490553132,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "aautushka": {
+        "contributions": {
+            "bitshares/bitshares-core": 4
+        },
+        "total_contrib": 4,
+        "log_contrib": 1.6094379124341003,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "abitmore": {
+        "contributions": {
+            "bitshares/bitshares-core": 2174,
+            "bitshares/bitsharesjs": 7,
+            "bitshares/python-bitshares": 4,
+            "bitshares/bitshares-ui": 149,
+            "graphene-blockchain/graphene-core": 751
+        },
+        "total_contrib": 3085,
+        "log_contrib": 8.034631032923107,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "actions-user": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ahdigital": {
+        "contributions": {
+            "bitshares/bitshares-ui": 67
+        },
+        "total_contrib": 67,
+        "log_contrib": 4.219507705176107,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "anzhy-chernyavski": {
+        "contributions": {
+            "graphene-blockchain/graphene-core": 3
+        },
+        "total_contrib": 3,
+        "log_contrib": 1.3862943611198906,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "avral": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "bitphage": {
+        "contributions": {
+            "bitshares/python-bitshares": 127
+        },
+        "total_contrib": 127,
+        "log_contrib": 4.852030263919617,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "bitsacer": {
+        "contributions": {
+            "bitshares/bitshares-ui": 52
+        },
+        "total_contrib": 52,
+        "log_contrib": 3.970291913552122,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "brickgao": {
+        "contributions": {
+            "bitshares/python-bitshares": 2
+        },
+        "total_contrib": 2,
+        "log_contrib": 1.0986122886681098,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "broncotc": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "btcinshares": {
+        "contributions": {
+            "graphene-blockchain/graphene-core": 4
+        },
+        "total_contrib": 4,
+        "log_contrib": 1.6094379124341003,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "bytemaster": {
+        "contributions": {
+            "bitshares/bitshares-core": 443,
+            "bitshares/bitshares-ui": 197,
+            "graphene-blockchain/graphene-core": 439
+        },
+        "total_contrib": 1079,
+        "log_contrib": 6.984716320118266,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "c055": {
+        "contributions": {
+            "bitshares/bitshares-ui": 41
+        },
+        "total_contrib": 41,
+        "log_contrib": 3.7376696182833684,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "calvinfroedge": {
+        "contributions": {
+            "bitshares/bitshares-ui": 71
+        },
+        "total_contrib": 71,
+        "log_contrib": 4.276666119016055,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "christophersanborn": {
+        "contributions": {
+            "bitshares/bitshares-core": 32,
+            "bitshares/python-bitshares": 11,
+            "graphene-blockchain/graphene-core": 5
+        },
+        "total_contrib": 48,
+        "log_contrib": 3.8918202981106265,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "cifer76": {
+        "contributions": {
+            "bitshares/bitshares-core": 72,
+            "graphene-blockchain/graphene-core": 60
+        },
+        "total_contrib": 132,
+        "log_contrib": 4.890349128221754,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "clayop": {
+        "contributions": {
+            "bitshares/bitshares-ui": 29
+        },
+        "total_contrib": 29,
+        "log_contrib": 3.4011973816621555,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "clockworkgr": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "cogutvalera": {
+        "contributions": {
+            "bitshares/bitshares-core": 82,
+            "graphene-blockchain/graphene-core": 57
+        },
+        "total_contrib": 139,
+        "log_contrib": 4.941642422609304,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "crypto-ape": {
+        "contributions": {
+            "bitshares/bitshares-core": 31,
+            "graphene-blockchain/graphene-core": 10
+        },
+        "total_contrib": 41,
+        "log_contrib": 3.7376696182833684,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "cwyyprog": {
+        "contributions": {
+            "bitshares/bitshares-core": 5,
+            "graphene-blockchain/graphene-core": 5
+        },
+        "total_contrib": 10,
+        "log_contrib": 2.3978952727983707,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "dependabot[bot]": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "destenson": {
+        "contributions": {
+            "bitshares/bitsharesjs": 2
+        },
+        "total_contrib": 2,
+        "log_contrib": 1.0986122886681098,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "dev25519": {
+        "contributions": {
+            "bitshares/bitshares-core": 19
+        },
+        "total_contrib": 19,
+        "log_contrib": 2.995732273553991,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "dot5enko": {
+        "contributions": {
+            "bitshares/bitsharesjs": 7,
+            "bitshares/bitshares-ui": 49
+        },
+        "total_contrib": 56,
+        "log_contrib": 4.04305126783455,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "elmato": {
+        "contributions": {
+            "bitshares/bitshares-core": 20,
+            "graphene-blockchain/graphene-core": 20
+        },
+        "total_contrib": 40,
+        "log_contrib": 3.713572066704308,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "emfrias": {
+        "contributions": {
+            "bitshares/bitshares-core": 99,
+            "bitshares/python-bitshares": 1,
+            "bitshares/bitshares-ui": 51,
+            "graphene-blockchain/graphene-core": 99
+        },
+        "total_contrib": 250,
+        "log_contrib": 5.5254529391317835,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "fgdfkgndj": {
+        "contributions": {
+            "bitshares/bitsharesjs": 2
+        },
+        "total_contrib": 2,
+        "log_contrib": 1.0986122886681098,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "gades": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "gibbsfromncis": {
+        "contributions": {
+            "bitshares/bitshares-ui": 297
+        },
+        "total_contrib": 297,
+        "log_contrib": 5.697093486505405,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "grctest": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "happyconcepts": {
+        "contributions": {
+            "bitshares/bitshares-ui": 78
+        },
+        "total_contrib": 78,
+        "log_contrib": 4.3694478524670215,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "henryw2019": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "hldzlk": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ioBanker": {
+        "contributions": {
+            "bitshares/bitshares-core": 9,
+            "bitshares/bitsharesjs": 7
+        },
+        "total_contrib": 16,
+        "log_contrib": 2.833213344056216,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "jhtitor": {
+        "contributions": {
+            "bitshares/python-bitshares": 27
+        },
+        "total_contrib": 27,
+        "log_contrib": 3.332204510175204,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "jmjatlanta": {
+        "contributions": {
+            "bitshares/bitshares-core": 525,
+            "graphene-blockchain/graphene-core": 387
+        },
+        "total_contrib": 912,
+        "log_contrib": 6.816735880594968,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "kapeer42": {
+        "contributions": {
+            "bitshares/bitshares-ui": 37
+        },
+        "total_contrib": 37,
+        "log_contrib": 3.6375861597263857,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "lanhaoxiang": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "manikey123": {
+        "contributions": {
+            "bitshares/bitshares-core": 38,
+            "graphene-blockchain/graphene-core": 32
+        },
+        "total_contrib": 70,
+        "log_contrib": 4.2626798770413155,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "mikakoi": {
+        "contributions": {
+            "bitshares/python-bitshares": 4
+        },
+        "total_contrib": 4,
+        "log_contrib": 1.6094379124341003,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "mironovdm": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "mvandeberg": {
+        "contributions": {
+            "bitshares/bitshares-core": 14
+        },
+        "total_contrib": 14,
+        "log_contrib": 2.70805020110221,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "nanomobile": {
+        "contributions": {
+            "graphene-blockchain/graphene-core": 25
+        },
+        "total_contrib": 25,
+        "log_contrib": 3.258096538021482,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "nathanielhourt": {
+        "contributions": {
+            "bitshares/bitshares-core": 259,
+            "graphene-blockchain/graphene-core": 205
+        },
+        "total_contrib": 464,
+        "log_contrib": 6.142037405587356,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "oxarbitrage": {
+        "contributions": {
+            "bitshares/bitshares-core": 820,
+            "graphene-blockchain/graphene-core": 722
+        },
+        "total_contrib": 1542,
+        "log_contrib": 7.341483852363161,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "pluswave": {
+        "contributions": {
+            "bitshares/bitsharesjs": 9
+        },
+        "total_contrib": 9,
+        "log_contrib": 2.302585092994046,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "pmconrad": {
+        "contributions": {
+            "bitshares/bitshares-core": 485,
+            "graphene-blockchain/graphene-core": 381
+        },
+        "total_contrib": 866,
+        "log_contrib": 6.7650389767805414,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "pnomolos": {
+        "contributions": {
+            "bitshares/bitshares-ui": 39
+        },
+        "total_contrib": 39,
+        "log_contrib": 3.6888794541139363,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ppitonak": {
+        "contributions": {
+            "bitshares/bitsharesjs": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "pyup-bot": {
+        "contributions": {
+            "bitshares/python-bitshares": 68
+        },
+        "total_contrib": 68,
+        "log_contrib": 4.23410650459726,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "react-cat": {
+        "contributions": {
+            "bitshares/bitshares-ui": 30
+        },
+        "total_contrib": 30,
+        "log_contrib": 3.4339872044851463,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "rngl4b": {
+        "contributions": {
+            "bitshares/bitshares-ui": 228
+        },
+        "total_contrib": 228,
+        "log_contrib": 5.43372200355424,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ruslansalikhov": {
+        "contributions": {
+            "bitshares/bitshares-ui": 79
+        },
+        "total_contrib": 79,
+        "log_contrib": 4.382026634673881,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "ryanRfox": {
+        "contributions": {
+            "bitshares/bitshares-core": 26,
+            "graphene-blockchain/graphene-core": 14
+        },
+        "total_contrib": 40,
+        "log_contrib": 3.713572066704308,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "serdrdoor": {
+        "contributions": {
+            "graphene-blockchain/graphene-core": 9
+        },
+        "total_contrib": 9,
+        "log_contrib": 2.302585092994046,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "sschiessl-bcp": {
+        "contributions": {
+            "bitshares/bitsharesjs": 16,
+            "bitshares/bitshares-ui": 157
+        },
+        "total_contrib": 173,
+        "log_contrib": 5.159055299214529,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "startailcoon": {
+        "contributions": {
+            "bitshares/bitsharesjs": 2,
+            "bitshares/bitshares-ui": 405
+        },
+        "total_contrib": 407,
+        "log_contrib": 6.0112671744041615,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "svk31": {
+        "contributions": {
+            "bitshares/bitshares-core": 19,
+            "bitshares/bitsharesjs": 126,
+            "bitshares/bitshares-ui": 3080,
+            "graphene-blockchain/graphene-core": 19
+        },
+        "total_contrib": 3244,
+        "log_contrib": 8.08487062913819,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "syalon": {
+        "contributions": {
+            "bitshares/bitshares-core": 7
+        },
+        "total_contrib": 7,
+        "log_contrib": 2.0794415416798357,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "szechem": {
+        "contributions": {
+            "bitshares/bitshares-ui": 46
+        },
+        "total_contrib": 46,
+        "log_contrib": 3.8501476017100584,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "takaaki7": {
+        "contributions": {
+            "bitshares/bitshares-core": 7,
+            "graphene-blockchain/graphene-core": 7
+        },
+        "total_contrib": 14,
+        "log_contrib": 2.70805020110221,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "technologiespro": {
+        "contributions": {
+            "bitshares/bitshares-ui": 53
+        },
+        "total_contrib": 53,
+        "log_contrib": 3.9889840465642745,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "testzcrypto": {
+        "contributions": {
+            "bitshares/bitshares-ui": 332
+        },
+        "total_contrib": 332,
+        "log_contrib": 5.808142489980444,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "theoreticalbts": {
+        "contributions": {
+            "bitshares/bitshares-core": 500,
+            "graphene-blockchain/graphene-core": 500
+        },
+        "total_contrib": 1000,
+        "log_contrib": 6.90875477931522,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "tianyekuo": {
+        "contributions": {
+            "bitshares/python-bitshares": 1
+        },
+        "total_contrib": 1,
+        "log_contrib": 0.6931471805599453,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "vikramrajkumar": {
+        "contributions": {
+            "bitshares/bitshares-core": 172,
+            "bitshares/bitsharesjs": 1,
+            "graphene-blockchain/graphene-core": 172
+        },
+        "total_contrib": 345,
+        "log_contrib": 5.846438775057725,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "wackou": {
+        "contributions": {
+            "bitshares/bitshares-core": 6,
+            "graphene-blockchain/graphene-core": 6
+        },
+        "total_contrib": 12,
+        "log_contrib": 2.5649493574615367,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "wmbutler": {
+        "contributions": {
+            "bitshares/bitshares-ui": 39
+        },
+        "total_contrib": 39,
+        "log_contrib": 3.6888794541139363,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "xeroc": {
+        "contributions": {
+            "bitshares/bitshares-core": 70,
+            "bitshares/bitsharesjs": 4,
+            "bitshares/python-bitshares": 744,
+            "bitshares/bitshares-ui": 49,
+            "graphene-blockchain/graphene-core": 70
+        },
+        "total_contrib": 937,
+        "log_contrib": 6.843749949006225,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    },
+    "xiangxn": {
+        "contributions": {
+            "bitshares/bitsharesjs": 3,
+            "bitshares/bitshares-ui": 36
+        },
+        "total_contrib": 39,
+        "log_contrib": 3.6888794541139363,
+        "bitshares_name": "",
+        "bitshares_id": ""
+    }
+}
