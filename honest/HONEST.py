@@ -14,6 +14,7 @@ litepresence2020
 # STANDARD PYTHON MODULES
 import os
 import time
+import sys
 from statistics import median
 from multiprocessing import Process
 from json import dumps as json_dumps
@@ -69,6 +70,9 @@ def publish_feed(prices, name, wif):
     }
     # create publication edict for each MPA
     # include standard publication dictionary parameters with unique name and price
+    print(it("yellow", "NODES + PUB_DICT"))
+    print(nodes)
+    print(pub_dict)
 
     edicts = []
     # Regular tokens, then shorts.
@@ -78,6 +82,8 @@ def publish_feed(prices, name, wif):
             edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
             edict["settlement_price"] = 1 / feed if short else feed
             edicts.append(edict)
+    print("EDICTS BEFORE BTC COLLATERAL")
+    print(edicts)
 
     # these are a little different; they're backed by HONEST.BTC collateral
     # we'll override currency name and add core price
@@ -93,27 +99,32 @@ def publish_feed(prices, name, wif):
     btcxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
     # add each publication edict to the edicts list
     edicts = [*edicts, btceth1, btcxrp1]
+
+    print("EDICTS:\n")
+    print(json_dumps(edicts, indent=4))
+
     # attempt to publish them all at once
-    try:
-        order = {
-            "header": header,
-            "edicts": edicts,
-            "nodes": nodes,
-        }
-        broker(order)
-    # otherwise attempt each mpa indvidually
-    except Exception as error:
-        trace(error)
-        for edict in edicts:
-            try:
-                order = {
-                    "header": header,
-                    "edicts": [edict],
-                    "nodes": nodes,
-                }
-                broker(order)
-            except Exception as error:
-                trace(error)
+    # try:
+    #     order = {
+    #         "header": header,
+    #         "edicts": edicts,
+    #         "nodes": nodes,
+    #     }
+    #     broker(order)
+    # # otherwise attempt each mpa indvidually
+    # except Exception as error:
+    # print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
+    # trace(error)
+    for edict in edicts:
+        try:
+            order = {
+                "header": header,
+                "edicts": [edict],
+                "nodes": nodes,
+            }
+            broker(order)
+        except Exception as error:
+            trace(error)
 
 
 def gather_data(name, wif, trigger):
@@ -141,6 +152,9 @@ def gather_data(name, wif, trigger):
         dex = race_read_json("pricefeed_dex.txt")
     updates = 1
     while True:
+        # print("REDIRECTING STDOUT TO LOG")
+        # sys.stdout.close()
+        # sys.stdout = open(f"pipe/log{int(time.time())}.txt", "w")
         try:
             # collect forex and cex data
             forex = pricefeed_forex()  # takes about 30 seconds
@@ -179,9 +193,9 @@ def gather_data(name, wif, trigger):
                 for pair, value in cryptofeedbtc.items()
             }
             cryptofeedbtc = {
-                coin: value
+                coin: 1/value
                 for coin, value in cryptofeedbtc.items()
-                if coin in ["XRP:BTC", "ETH:BTC"]
+                if coin in ["BTC:XRP", "BTC:ETH"]
             }
 
             # create implied bts priced in forex terms
