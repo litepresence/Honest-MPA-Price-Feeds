@@ -11,6 +11,7 @@ data formatting and text pipe IPC utilities
 litepresence2020
 """
 
+
 # STANDARD PYTHON MODULES
 import os
 import sys
@@ -21,7 +22,7 @@ from traceback import format_exc
 
 # GLOBAL VARIABLES
 ATTEMPTS = 3
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
+PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
 
 
 def it(style, text):
@@ -77,7 +78,7 @@ def race_write(doc="", text=""):
     """
     text = str(text)
     i = 0
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     while True:
         try:
             time.sleep(0.05 * i**2)
@@ -106,7 +107,7 @@ def race_read_json(doc=""):
     """
     Concurrent Read JSON from File Operation
     """
-    doc = PATH + "pipe/" + doc
+    doc = f"{PATH}pipe/{doc}"
     i = 0
     while True:
         try:
@@ -191,7 +192,10 @@ def refine_data(data):
     # if pair is backwards, invert price
     data = {k: 1 / v if k[-3:] == "USD" else v for k, v in data.items()}
     # flip backwards pairs
-    data = {k[-3:] + ":" + k[:3] if k[-3:] == "USD" else k: v for k, v in data.items()}
+    data = {
+        f"{k[-3:]}:{k[:3]}" if k[-3:] == "USD" else k: v
+        for k, v in data.items()
+    }
     # correct exchange eccentricities, CNH == CNY, RUR == RUB
     data = {k if k[-3:] != "CNH" else "USD:CNY": v for k, v in data.items()}
     data = {k if k[-3:] != "RUR" else "USD:RUB": v for k, v in data.items()}

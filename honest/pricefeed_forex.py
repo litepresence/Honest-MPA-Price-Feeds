@@ -79,15 +79,11 @@ def refresh_forex_rates():
             processes[site].terminate()
             time.sleep(5)
     if not SAVE_RAM:
-        for site in processes.keys():
-            processes[site].join(TIMEOUT)
-        for site in processes.keys():
-            processes[site].terminate()
-    # read the text pipe ipc results of each process
-    sources = {}
-    for site in processes.keys():
-        sources[site] = race_read_json(f"{site}_forex.txt")
-    return sources
+        for value in processes.values():
+            value.join(TIMEOUT)
+        for value_ in processes.values():
+            value_.terminate()
+    return {site: race_read_json(f"{site}_forex.txt") for site in processes}
 
 
 def aggregate_rates():

@@ -10,6 +10,7 @@ CEX BTC:USD and BTS:BTC data aggregation script
 
 litepresence2020
 """
+
 # STANDARD MODULES
 import os
 import time
@@ -33,7 +34,7 @@ TIMEOUT = 15
 ATTEMPTS = 10
 DETAIL = False
 BEGIN = int(time.time())
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
+PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
 
 
 def return_urls():
@@ -60,7 +61,7 @@ def print_results(cex):
     log the cex price feed to terminal
     """
     runtime = int(time.time() - BEGIN)
-    print(f"Centralized Exchange", time.ctime(), "runtime:", runtime)
+    print("Centralized Exchange", time.ctime(), "runtime:", runtime)
     pprint(cex)
 
 
@@ -106,16 +107,16 @@ def symbol_syntax(exchange, symbol):
         if asset == "DASH":
             asset = "DSH"
     symbols = {
-        "gateio": (asset + "_" + currency),
-        "bittrex": (asset + "-" + currency),
-        "bitfinex": (asset + currency),
-        "binance": (asset + currency),
-        "poloniex": (currency + "_" + asset),
-        "coinbase": (asset + "-" + currency),
-        "kraken": (asset.lower() + currency.lower()),
-        "bitstamp": (asset.lower() + currency.lower()),
-        "huobi": (asset.lower() + currency.lower()),
-        "hitbtc": (asset + currency),
+        "gateio": f"{asset}_{currency}",
+        "bittrex": f"{asset}-{currency}",
+        "bitfinex": asset + currency,
+        "binance": asset + currency,
+        "poloniex": f"{currency}_{asset}",
+        "coinbase": f"{asset}-{currency}",
+        "kraken": asset.lower() + currency.lower(),
+        "bitstamp": asset.lower() + currency.lower(),
+        "huobi": asset.lower() + currency.lower(),
+        "hitbtc": asset + currency,
     }
 
     symbol = symbols[exchange]
@@ -154,7 +155,7 @@ def request(api, signal):
         api["exchange"]
         + api["pair"]
         + str(int(10**6 * api["nonce"]))
-        + "_{}_public.txt".format(api["exchange"])
+        + f'_{api["exchange"]}_public.txt'
     )
     race_write(doc, json_dumps(data))
     signal.value = 1
@@ -176,7 +177,7 @@ def process_request(api):
         i += 1
         if i > 1:
             print(
-                "{} {} PUBLIC attempt:".format(api["exchange"], api["pair"]),
+                f'{api["exchange"]} {api["pair"]} PUBLIC attempt:',
                 i,
                 time.ctime(),
                 int(time.time()),
@@ -192,16 +193,16 @@ def process_request(api):
         api["exchange"]
         + api["pair"]
         + str(int(10**6 * api["nonce"]))
-        + "_{}_public.txt".format(api["exchange"])
+        + f'_{api["exchange"]}_public.txt'
     )
     data = race_read_json(doc)
-    path = PATH + "pipe/"
+    path = f"{PATH}pipe/"
     if os.path.isfile(path + doc):
         os.remove(path + doc)
     if i > 1:
         print(
-            "{} {} PUBLIC elapsed:".format(api["exchange"], api["pair"]),
-            ("%.2f" % (time.time() - begin)),
+            f'{api["exchange"]} {api["pair"]} PUBLIC elapsed:',
+            "%.2f" % (time.time() - begin),
         )
     return data
 
@@ -218,12 +219,12 @@ def get_price(api):
     endpoints = {
         "gateio": "/api/v4/spot/tickers",
         "bittrex": "/v3/markets/tickers",
-        "bitfinex": "/v2/ticker/t{}".format(symbol),
+        "bitfinex": f"/v2/ticker/t{symbol}",
         "binance": "/api/v1/ticker/allPrices",
         "poloniex": "/public",
-        "coinbase": "/products/{}/ticker".format(symbol),
+        "coinbase": f"/products/{symbol}/ticker",
         "kraken": "/0/public/Ticker",
-        "bitstamp": f"/api/v2/ticker/{symbol}",  # "bitstamp": "/api/ticker",
+        "bitstamp": f"/api/v2/ticker/{symbol}",
         "huobi": "/market/trade",
         "hitbtc": f"/api/2/public/ticker/{symbol}",
     }
@@ -287,13 +288,12 @@ def aggregate(exchanges, api):
         try:
             doc = exchange + api["pair"] + ".txt"
             print("reading", doc)
-            json_data = race_read_json(doc)
-            if json_data:
+            if json_data := race_read_json(doc):
                 data[exchange] = json_data
         except Exception as error:
             print(error.args)
     prices = []
-    for _, val in data.items():
+    for val in data.values():
         try:
             if int(time.time()) - val["time"] < 300:
                 prices.append(val["last"])
@@ -343,11 +343,7 @@ def pricefeed_cex():
     "HONEST.XRP"
     create a cex price feed, write it to disk, and return it
     """
-    cex = {}
-
-    for pair in EXCHANGES:
-        cex[pair] = fetch(EXCHANGES[pair], {"pair": pair})
-
+    cex = {pair: fetch(EXCHANGES[pair], {"pair": pair}) for pair in EXCHANGES}
     race_write("pricefeed_cex.txt", cex)
     return cex
 
