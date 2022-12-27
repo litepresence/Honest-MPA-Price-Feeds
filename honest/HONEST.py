@@ -14,6 +14,7 @@ litepresence2020
 # STANDARD PYTHON MODULES
 import os
 import time
+import sys
 from statistics import median
 from multiprocessing import Process
 from json import dumps as json_dumps
@@ -69,81 +70,61 @@ def publish_feed(prices, name, wif):
     }
     # create publication edict for each MPA
     # include standard publication dictionary parameters with unique name and price
-    btscny = dict(pub_dict)
-    btscny["asset_name"] = "HONEST.CNY"
-    btscny["settlement_price"] = prices["feed"]["BTS:CNY"]
-    btsusd = dict(pub_dict)
-    btsusd["asset_name"] = "HONEST.USD"
-    btsusd["settlement_price"] = prices["feed"]["BTS:USD"]
-    btsbtc = dict(pub_dict)
-    btsbtc["asset_name"] = "HONEST.BTC"
-    btsbtc["settlement_price"] = prices["feed"]["BTS:BTC"]
-    btsxag = dict(pub_dict)
-    btsxag["asset_name"] = "HONEST.XAG"
-    btsxag["settlement_price"] = prices["feed"]["BTS:XAG"]
-    btsxau = dict(pub_dict)
-    btsxau["asset_name"] = "HONEST.XAU"
-    btsxau["settlement_price"] = prices["feed"]["BTS:XAU"]
-    btseth = dict(pub_dict)
-    btseth["asset_name"] = "HONEST.ETH"
-    btseth["settlement_price"] = prices["feed"]["BTS:ETH"]
-    btsxrp = dict(pub_dict)
-    btsxrp["asset_name"] = "HONEST.XRP"
-    btsxrp["settlement_price"] = prices["feed"]["BTS:XRP"]
-    btseth1 = dict(pub_dict)
+    print(it("yellow", "NODES + PUB_DICT"))
+    print(nodes)
+    print(pub_dict)
+
+    edicts = []
+    # Regular tokens, then shorts.
+    for short in ["SHORT", ""]:
+        for coin, feed in prices["feed"].items():
+            edict = dict(pub_dict)
+            edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
+            edict["settlement_price"] = 1 / feed if short else feed
+            edicts.append(edict)
+    print("EDICTS BEFORE BTC COLLATERAL")
+    print(edicts)
+
     # these are a little different; they're backed by HONEST.BTC collateral
     # we'll override currency name and add core price
-    btseth1["asset_name"] = "HONEST.ETH1"
-    btseth1["currency_name"] = "HONEST.BTC"
-    btseth1["core_price"] = prices["feed"]["BTS:ETH"]
-    btseth1["settlement_price"] = prices["feed"]["BTC:ETH"]
-    btsxrp1 = dict(pub_dict)
-    btsxrp1["asset_name"] = "HONEST.XRP1"
-    btsxrp1["currency_name"] = "HONEST.BTC"
-    btsxrp1["core_price"] = prices["feed"]["BTS:XRP"]
-    btsxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
-    # these are fed reciprocal price feeds
-    btsusdshort = dict(pub_dict)
-    btsusdshort["asset_name"] = "HONEST.USDSHORT"
-    btsusdshort["settlement_price"] = 1.0 / prices["feed"]["BTS:USD"]
-    btsbtcshort = dict(pub_dict)
-    btsbtcshort["asset_name"] = "HONEST.BTCSHORT"
-    btsbtcshort["settlement_price"] = 1.0 / prices["feed"]["BTS:BTC"]
+    btceth1 = dict(pub_dict)
+    btceth1["asset_name"] = "HONEST.ETH1"
+    btceth1["currency_name"] = "HONEST.BTC"
+    btceth1["core_price"] = prices["feed"]["BTS:ETH"]
+    btceth1["settlement_price"] = prices["feed"]["BTC:ETH"]
+    btcxrp1 = dict(pub_dict)
+    btcxrp1["asset_name"] = "HONEST.XRP1"
+    btcxrp1["currency_name"] = "HONEST.BTC"
+    btcxrp1["core_price"] = prices["feed"]["BTS:XRP"]
+    btcxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
     # add each publication edict to the edicts list
-    edicts = [
-        btscny,
-        btsusd,
-        btsbtc,
-        btsxag,
-        btsxau,
-        btseth,
-        btsxrp,
-        btseth1,
-        btsxrp1,
-        btsusdshort,
-        btsbtcshort,
-    ]
+    edicts = [*edicts, btceth1, btcxrp1]
+
+    print("EDICTS:\n")
+    print(json_dumps(edicts, indent=4))
+
     # attempt to publish them all at once
-    try:
-        order = {
-            "header": header,
-            "edicts": edicts,
-            "nodes": nodes,
-        }
-        broker(order)
-    # otherwise attempt each mpa indvidually
-    except Exception as error:
-        trace(error)
-        for edict in edicts:
-            try:
-                order = {
-                    "header": header,
-                    "edicts": [edict],
-                    "nodes": nodes,
-                }
-                broker(order)
-            except Exception as error:
-                trace(error)
+    # try:
+    #     order = {
+    #         "header": header,
+    #         "edicts": edicts,
+    #         "nodes": nodes,
+    #     }
+    #     broker(order)
+    # # otherwise attempt each mpa indvidually
+    # except Exception as error:
+    # print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
+    # trace(error)
+    for edict in edicts:
+        try:
+            order = {
+                "header": header,
+                "edicts": [edict],
+                "nodes": nodes,
+            }
+            broker(order)
+        except Exception as error:
+            trace(error)
 
 
 def gather_data(name, wif, trigger):
@@ -171,23 +152,16 @@ def gather_data(name, wif, trigger):
         dex = race_read_json("pricefeed_dex.txt")
     updates = 1
     while True:
+        # print("REDIRECTING STDOUT TO LOG")
+        # sys.stdout.close()
+        # sys.stdout = open(f"pipe/log{int(time.time())}.txt", "w")
         try:
             # collect forex and cex data
             forex = pricefeed_forex()  # takes about 30 seconds
             cex = pricefeed_cex()  # takes about 30 seconds
             # read the latest dex data
             dex = race_read_json("pricefeed_dex.txt")
-            # localize forex rates
-            usdcny = forex["medians"]["USD:CNY"][0]
-            # usdeur = forex["medians"]["USD:EUR"][0]
-            # usdgbp = forex["medians"]["USD:GBP"][0]
-            # usdrub = forex["medians"]["USD:RUB"][0]
-            # usdjpy = forex["medians"]["USD:JPY"][0]
-            # usdkrw = forex["medians"]["USD:KRW"][0]
-            usdxau = forex["medians"]["USD:XAU"][0]
-            usdxag = forex["medians"]["USD:XAG"][0]
             # localize cex rates
-            btcusd = cex["BTC:USD"]["median"]
             # cex_btsbtc = cex["BTS:BTC"]["median"]
             cex_btsbtc_list = [val["last"] for _, val in cex["BTS:BTC"]["data"].items()]
             # attain dex BTS:BTC median
@@ -196,30 +170,41 @@ def gather_data(name, wif, trigger):
             # finalize btsbtc by taking median of all cex and dex btsbtc prices
             btsbtc = median(dex_btsbtc_list + cex_btsbtc_list)
             # create feed prices for crypto altcoins: LTC, ETH, XRP
-            # btcltc = 1/cex["LTC:BTC"]["median"]
-            btceth = 1 / cex["ETH:BTC"]["median"]
-            btcxrp = 1 / cex["XRP:BTC"]["median"]
-            # btsltc = btsbtc * btcltc
-            btseth = btsbtc * btceth
-            btsxrp = btsbtc * btcxrp
+
+            btcusd = cex["BTC:USD"]["median"]
             # create implied bts us dollar price
             btsusd = btsbtc * btcusd
+
+            forexfeedusd = {pair: value[0] for pair, value in forex["medians"].items()}
+            print(forexfeedusd)
+            forexfeedbts = {
+                "BTS:" + pair.split(":")[1]: btsusd * value
+                for pair, value in forexfeedusd.items()
+            }
+            print(forexfeedbts)
+            cryptofeedbtc = {
+                ":".join(coin.split(":")[::-1]): price["median"]
+                for coin, price in cex.items()
+                if coin not in ["BTC:USD", "BTS:BTC"]
+            }
+            print(cryptofeedbtc)
+            cryptofeedbts = {
+                "BTS:" + pair.split(":")[1]: btsbtc / value
+                for pair, value in cryptofeedbtc.items()
+            }
+            cryptofeedbtc = {
+                coin: 1/value
+                for coin, value in cryptofeedbtc.items()
+                if coin in ["BTC:XRP", "BTC:ETH"]
+            }
+
             # create implied bts priced in forex terms
             feed = {
-                "BTC:ETH": btceth,
-                "BTC:XRP": btcxrp,
-                "BTS:ETH": btseth,
-                "BTS:XRP": btsxrp,
-                "BTS:BTC": btsbtc,
+                **cryptofeedbtc,
+                **cryptofeedbts,
+                **forexfeedbts,
                 "BTS:USD": btsusd,
-                "BTS:CNY": (btsusd * usdcny),
-                # "BTS:EUR": (btsusd * usdeur),
-                # "BTS:GBP": (btsusd * usdgbp),
-                # "BTS:RUB": (btsusd * usdrub),
-                # "BTS:JPY": (btsusd * usdjpy),
-                # "BTS:KRW": (btsusd * usdkrw),
-                "BTS:XAU": (btsusd * usdxau),
-                "BTS:XAG": (btsusd * usdxag),
+                "BTS:BTC": btsbtc,
             }
             feed = {k: sigfig(v) for k, v in feed.items()}
             # forex priced in bts terms; switch symbol and 1/price
@@ -269,6 +254,7 @@ def gather_data(name, wif, trigger):
             time.sleep(3)
             print("\n", it("red", msg))
             time.sleep(5)
+
 
             if not updates % 24:
 

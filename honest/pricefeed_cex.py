@@ -25,6 +25,7 @@ from random import random
 import requests
 
 # PROPRIETARY MODULES
+from exchanges import EXCHANGES
 from utilities import race_write, race_read_json, trace
 
 # GLOBAL CONSTANTS
@@ -327,60 +328,25 @@ def fetch(exchanges, api):
 
 def pricefeed_cex():
     """
+    "HONEST.ADA", # Cardano
+    "HONEST.DOT", # Polkadot
+    "HONEST.LTC", # Litecoin
+    "HONEST.SOL", # Solana
+    "HONEST.XMR", # Monero
+    "HONEST.ATOM", # Cosmos
+    "HONEST.XLM", # Stellar
+    "HONEST.ALGO", # Algorand
+    "HONEST.FIL", # Filecoin
+    "HONEST.EOS", # EOS
+    "HONEST.BTC"
+    "HONEST.USD"
+    "HONEST.XRP"
     create a cex price feed, write it to disk, and return it
     """
-    api = {}
     cex = {}
-    # exchanges with bitcoin vs us dollar
-    api["pair"] = "BTC:USD"
-    exchanges = [
-        "bittrex",
-        "bitfinex",
-        "coinbase",
-        "kraken",
-        "bitstamp",
-        "gateio",
-    ]
-    cex[api["pair"]] = fetch(exchanges, api)
-    # exchanges with bitshares vs bitcoin
-    api["pair"] = "BTS:BTC"
-    exchanges = [
-        "gateio",
-        "bittrex",
-        "binance",  # WARN: requires NON-US VPN
-        "poloniex",
-        "hitbtc",
-    ]
-    cex[api["pair"]] = fetch(exchanges, api)
-    # exchanges with ripple vs bitcoin
-    exchanges = [
-        "bittrex",
-        "binance",
-        "poloniex",
-        "huobi",
-        "hitbtc",
-        "gateio",
-        "bitfinex",
-        "kraken",
-        "bitstamp",
-    ]
-    api["pair"] = "XRP:BTC"
-    cex[api["pair"]] = fetch(exchanges, api)
-    # exchanges with ethereum vs bitcoin
-    exchanges = [
-        "bittrex",
-        "binance",
-        "poloniex",
-        "huobi",
-        "gateio",
-        "hitbtc",
-        "bitfinex",
-        "coinbase",
-        "kraken",
-        "bitstamp",
-    ]
-    api["pair"] = "ETH:BTC"
-    cex[api["pair"]] = fetch(exchanges, api)
+
+    for pair in EXCHANGES:
+        cex[pair] = fetch(EXCHANGES[pair], {"pair": pair})
 
     race_write("pricefeed_cex.txt", cex)
     return cex
