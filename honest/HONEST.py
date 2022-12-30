@@ -78,10 +78,11 @@ def publish_feed(prices, name, wif):
     # Regular tokens, then shorts.
     for short in ["SHORT", ""]:
         for coin, feed in prices["feed"].items():
-            edict = dict(pub_dict)
-            edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
-            edict["settlement_price"] = 1 / feed if short else feed
-            edicts.append(edict)
+            if coin.split(':')[0] != "BTC":
+                edict = dict(pub_dict)
+                edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
+                edict["settlement_price"] = 1 / feed if short else feed
+                edicts.append(edict)
     print("EDICTS BEFORE BTC COLLATERAL")
     print(edicts)
 
