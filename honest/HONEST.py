@@ -78,10 +78,11 @@ def publish_feed(prices, name, wif):
     # Regular tokens, then shorts.
     for short in ["SHORT", ""]:
         for coin, feed in prices["feed"].items():
-            edict = dict(pub_dict)
-            edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
-            edict["settlement_price"] = 1 / feed if short else feed
-            edicts.append(edict)
+            if coin.split(':')[0] != "BTC":
+                edict = dict(pub_dict)
+                edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
+                edict["settlement_price"] = 1 / feed if short else feed
+                edicts.append(edict)
     print("EDICTS BEFORE BTC COLLATERAL")
     print(edicts)
 
@@ -146,7 +147,7 @@ def gather_data(name, wif, trigger):
     # dex_process.join(10)
     dex = {}
     # wait until the first dex pricefeed writes to file
-    while dex == {}:
+    while not dex:
         time.sleep(0.5)
         # Above prevents hard drive strain and allows `pricefeed_dex` to actually start
         dex = race_read_json("pricefeed_dex.txt")
@@ -208,14 +209,12 @@ def gather_data(name, wif, trigger):
             }
             feed = {k: sigfig(v) for k, v in feed.items()}
             # forex priced in bts terms; switch symbol and 1/price
-            inverse_feed = {
-                (k[-3:] + ":" + k[:3]): sigfig(1 / v) for k, v in feed.items()
-            }
+            inverse_feed = {f"{k[-3:]}:{k[:3]}": sigfig(1 / v) for k, v in feed.items()}
             # aggregate full price calculation for jsonbin.io
             current_time = {
                 "unix": int(time.time()),
-                "local": time.ctime() + " " + time.strftime("%Z"),
-                "utc": time.asctime(time.gmtime()) + " UTC",
+                "local": f"{time.ctime()} " + time.strftime("%Z"),
+                "utc": f"{time.asctime(time.gmtime())} UTC",
                 "runtime": int(time.time() - BEGIN),
                 "updates": updates,
             }
@@ -283,8 +282,8 @@ def main():
     """
     print("\033c")
     print_logo()
-    PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
-    os.makedirs(PATH + "pipe", exist_ok=True)
+    PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
+    os.makedirs(f"{PATH}pipe", exist_ok=True)
     trigger = {
         "feed": input(
             "\n  to PUBLISH"
