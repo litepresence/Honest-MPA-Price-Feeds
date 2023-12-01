@@ -9,7 +9,6 @@ EXCHANGES = {
         "hitbtc",
         "huobi",
         "kraken",
-        "poloniex",
     ],
     "DOT:BTC": [
         "binance",
@@ -110,19 +109,22 @@ EXCHANGES = {
         "coinbase",
         "kraken",
         "bitstamp",
-        "gateio",
     ],
-    "BTS:BTC": [
+    "BTC:USDT": [
         "gateio",
-        "bittrex",
-        "binance",  # WARN: requires NON-US VPN
-        "poloniex",
-        "hitbtc",
+        "mexc",
+        "xtcom",
+        "latoken",
+    ],
+    "BTS:USDT": [
+        "gateio",
+        "mexc",
+        "xtcom",
+        "latoken",
     ],
     "XRP:BTC": [
         "bittrex",
         "binance",
-        "poloniex",
         "huobi",
         "hitbtc",
         "gateio",

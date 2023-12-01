@@ -312,6 +312,34 @@ def rpc_last(rpc, cache):  # DONE
     return last
 
 
+def rpc_pool_last(rpc, cache):
+    last = {}
+    # get asset ids and precisions
+    currency_objs = wss_query(
+        rpc, ["database", "lookup_asset_symbols", [CURRENCIES] + [cache["asset"]]]
+    )
+    # for all currency names and data pairs
+    for currency, get_obj in zip(CURRENCIES, currency_objs[:-1]):
+        # get all the pools for this pair
+        # choose pool with the maximum amount of BTS staked
+        pool = max(
+            [
+                i
+                for i in wss_query(
+                    rpc, ["database", "get_liquidity_pools_by_asset_b", [get_obj["id"]]]
+                )
+                if i["asset_a"] == "1.3.0"
+            ],
+            key=lambda x: int(x["balance_a"]),
+        )
+        # calculate the last price given a and b balances w/ respective percision
+        bal_a = int(pool["balance_a"]) / 10 ** currency_objs[-1]["precision"]
+        bal_b = int(pool["balance_b"]) / 10 ** get_obj["precision"]
+        last[currency + "_at_pool"] = bal_b / bal_a
+    # a dictionary of pool prices
+    return last
+
+
 # STATISTICAL DATA CURATION
 # ======================================================================
 def thresh(storage, process, epoch, pid, cache):
@@ -406,6 +434,7 @@ def thresh(storage, process, epoch, pid, cache):
                     optimizing = "".ljust(7)
                 # last, history, orderbook, balances, orders
                 last = rpc_last(rpc, cache)
+                last = {**last, **rpc_pool_last(rpc, cache)}
                 # print(last)
                 now = to_iso_date(time())
                 then = to_iso_date(time() - 3 * 86400)

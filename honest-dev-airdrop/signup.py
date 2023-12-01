@@ -19,7 +19,7 @@ for repo in repos:
     for user in data:
         if user["login"] not in final_data:
             final_data[user["login"]] = {
-                "contributions": {repo:user["contributions"]},
+                "contributions": {repo: user["contributions"]},
                 "total_contrib": user["contributions"],
                 "log_contrib": math.log(user["contributions"] + 1),
                 "bitshares_name": "",
@@ -28,7 +28,9 @@ for repo in repos:
         else:
             final_data[user["login"]]["contributions"][repo] = user["contributions"]
             final_data[user["login"]]["total_contrib"] += user["contributions"]
-            final_data[user["login"]]["log_contrib"] = math.log(final_data[user["login"]]["total_contrib"]+1)
+            final_data[user["login"]]["log_contrib"] = math.log(
+                final_data[user["login"]]["total_contrib"] + 1
+            )
 
 sorted_keys = sorted(list(final_data.keys()))
 final_data = {i: final_data[i] for i in sorted_keys}

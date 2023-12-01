@@ -41,12 +41,15 @@ def return_urls():
     dictionary of api domain names
     """
     return {
+        "latoken": "https://api.latoken.com/v2",
+        "xtcom": "https://www.xt.com",
+        "mexc": "https://api.mexc.com",
         "gateio": "https://api.gateio.ws",
         "coinbase": "https://api.pro.coinbase.com",
         "bittrex": "https://api.bittrex.com",
         "bitfinex": "https://api-pub.bitfinex.com",
         "kraken": "https://api.kraken.com",
-        "poloniex": "https://www.poloniex.com",
+        "poloniex": "https://api.poloniex.com",
         "binance": "https://api.binance.com",
         "bitstamp": "https://www.bitstamp.net",
         "huobi": "https://api.huobi.pro",
@@ -106,6 +109,10 @@ def symbol_syntax(exchange, symbol):
         if asset == "DASH":
             asset = "DSH"
     symbols = {
+        "mexc": (asset + currency),
+        "tokocrypto": (asset + "_" + currency),
+        "xtcom": (asset + "_" + currency).lower(),
+        "latoken": (asset + "/" + currency),
         "gateio": (asset + "_" + currency),
         "bittrex": (asset + "-" + currency),
         "bitfinex": (asset + currency),
@@ -216,11 +223,14 @@ def get_price(api):
     exchange = api["exchange"]
     symbol = symbol_syntax(exchange, api["pair"])
     endpoints = {
+        "latoken": f"/ticker/{symbol}",
+        "xtcom": "/sapi/v4/market/public/trade/recent",
+        "mexc": "/api/v3/ticker/price",
         "gateio": "/api/v4/spot/tickers",
         "bittrex": "/v3/markets/tickers",
         "bitfinex": "/v2/ticker/t{}".format(symbol),
         "binance": "/api/v1/ticker/allPrices",
-        "poloniex": "/public",
+        "poloniex": f"/markets/{symbol}/price",
         "coinbase": "/products/{}/ticker".format(symbol),
         "kraken": "/0/public/Ticker",
         "bitstamp": f"/api/v2/ticker/{symbol}",  # "bitstamp": "/api/ticker",
@@ -228,11 +238,14 @@ def get_price(api):
         "hitbtc": f"/api/2/public/ticker/{symbol}",
     }
     params = {
+        "latoken": {},
+        "xtcom": {"symbol": symbol, "limit": 1},
+        "mexc": {"symbol": symbol},
         "gateio": {},
         "bittrex": {},
         "bitfinex": {"market": symbol},
         "binance": {},
-        "poloniex": {"command": "returnTicker"},
+        "poloniex": {"symbol": symbol},
         "coinbase": {"market": symbol},
         "kraken": {"pair": [symbol]},
         "bitstamp": {},
@@ -244,7 +257,13 @@ def get_price(api):
     while 1:
         try:
             data = process_request(api)
-            if exchange == "gateio":
+            if exchange == "latoken":
+                last = float(data["lastPrice"])
+            elif exchange == "xtcom":
+                last = float(data["result"][0]["p"])
+            elif exchange == "mexc":
+                last = float(data["price"])
+            elif exchange == "gateio":
                 data = {d["currency_pair"]: float(d["last"]) for d in data}
                 last = float(data[symbol])
             elif exchange == "bittrex":
@@ -256,7 +275,8 @@ def get_price(api):
                 data = {d["symbol"]: float(d["price"]) for d in data}
                 last = float(data[symbol])
             elif exchange == "poloniex":
-                last = float(data[symbol]["last"])
+                print(data)
+                last = float(data["price"])
             elif exchange == "coinbase":
                 last = float(data["price"])
             elif exchange == "kraken":
@@ -270,7 +290,7 @@ def get_price(api):
             elif exchange == "hitbtc":
                 last = float(data["last"])
         except Exception as error:
-            print(trace(error), {k: v for k, v in api.items() if k != "secret"})
+            print(trace(error), {k: v for k, v in api.items() if k != "secret"}, data)
         break
     now = int(time.time())
     print("writing", doc)

@@ -22,6 +22,7 @@ def sudos():
     print("\n\n")
     print("pkg-config and libsecp256k1 indicator package installs complete")
 
+
 __VERSION__ = "0.00000001"
 __AUTHOR__ = "litepresence"
 __AUTHOR_EMAIL__ = "finitestate@tutamail.com"
@@ -35,9 +36,7 @@ print("\n\nInstalling requirements.txt...\n\n")
 setup(
     name=__NAME__,
     version=__VERSION__,
-    description=(
-        "HONEST MPA PRICE FEEDS FOR BITSHARES DEX"
-    ),
+    description=("HONEST MPA PRICE FEEDS FOR BITSHARES DEX"),
     long_description=open("README.md").read(),
     download_url="https://github.com/litepresence/extinction-event/tarball/"
     + __VERSION__,
@@ -47,8 +46,7 @@ setup(
     keywords=[
         "bts",
         "bitshares",
-        "palmpay"
-        "btc",
+        "palmpay" "btc",
         "bitcoin",
         "crypto",
         "altcoin",

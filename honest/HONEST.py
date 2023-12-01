@@ -78,7 +78,7 @@ def publish_feed(prices, name, wif):
     # Regular tokens, then shorts.
     for short in ["SHORT", ""]:
         for coin, feed in prices["feed"].items():
-            if coin.split(':')[0] != "BTC":
+            if coin.split(":")[0] != "BTC":
                 edict = dict(pub_dict)
                 edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
                 edict["settlement_price"] = 1 / feed if short else feed
@@ -162,9 +162,18 @@ def gather_data(name, wif, trigger):
             cex = pricefeed_cex()  # takes about 30 seconds
             # read the latest dex data
             dex = race_read_json("pricefeed_dex.txt")
-            # localize cex rates
-            # cex_btsbtc = cex["BTS:BTC"]["median"]
-            cex_btsbtc_list = [val["last"] for _, val in cex["BTS:BTC"]["data"].items()]
+
+            # Get BTS:BTC price for each exchange
+            cex_btsbtc_dict = {}
+            for exchange, btsusd_price in cex["BTS:USDT"]["data"].items():
+                if exchange in cex["BTC:USDT"]["data"]:
+                    cex_btsbtc_dict[exchange] = btsusd_price["last"] * (
+                        1 / cex["BTC:USDT"]["data"][exchange]["last"]
+                    )
+            print(cex_btsbtc_dict)
+            # Remove exchange keys after printing
+            cex_btsbtc_list = list(cex_btsbtc_dict.values())
+
             # attain dex BTS:BTC median
             dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
             # dex_btsbtc = median(dex_btsbtc_list)
@@ -186,7 +195,7 @@ def gather_data(name, wif, trigger):
             cryptofeedbtc = {
                 ":".join(coin.split(":")[::-1]): price["median"]
                 for coin, price in cex.items()
-                if coin not in ["BTC:USD", "BTS:BTC"]
+                if coin not in ["BTC:USD", "BTS:BTC", "BTS:USDT"]
             }
             print(cryptofeedbtc)
             cryptofeedbts = {
@@ -194,7 +203,7 @@ def gather_data(name, wif, trigger):
                 for pair, value in cryptofeedbtc.items()
             }
             cryptofeedbtc = {
-                coin: 1/value
+                coin: 1 / value
                 for coin, value in cryptofeedbtc.items()
                 if coin in ["BTC:XRP", "BTC:ETH"]
             }
@@ -254,7 +263,6 @@ def gather_data(name, wif, trigger):
             print("\n", it("red", msg))
             time.sleep(5)
 
-
             if not updates % 24:
 
                 sceletus_orders, sceletus_output = sceletus(
@@ -272,7 +280,7 @@ def gather_data(name, wif, trigger):
             updates += 1
             time.sleep(REFRESH)
         except Exception as error:
-            print(error)
+            print(trace(error))
             time.sleep(10)  # try again in 10 seconds
 
 

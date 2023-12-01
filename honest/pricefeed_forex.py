@@ -105,7 +105,7 @@ def aggregate_rates():
         pair: (
             sigfig(median([price for price, _ in prices])),
             len([price for price, _ in prices]),
-            [source for _, source in prices]
+            [source for _, source in prices],
         )
         for pair, prices in aggregate.items()
     }

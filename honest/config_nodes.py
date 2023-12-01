@@ -8,26 +8,21 @@ def public_nodes():
     use these nodes for all operations
     """
     return [
+        "wss://dex.iobanker.com/ws",
         "wss://api.bts.mobi/wss",
-        "wss://newyork.bitshares.im/wss",
-        "wss://bts.open.icowallet.net/ws",
-        "wss://api.dex.trading",
-        "wss://eu.nodes.bitshares.ws/wss",
-        "wss://dex.iobanker.com/wss",
-        "wss://api.bitshares.bhuz.info",
-        "wss://public.xbts.io/ws",
-        "wss://api-us.61bts.com",
+        "wss://bitsharesapi.loclx.io/ws",
+        "wss://api-us.61bts.com/ws",
+        "wss://btsapi.magicw.net/wss",
+        "wss://api.dex.trading/ws",
         "wss://btsws.roelandp.nl/ws",
-        "wss://node.xbts.io/wss",
-        "wss://hongkong.bitshares.im",
-        "wss://bts.mypi.win/wss",
-        "wss://cloud.xbts.io/ws",
-        "wss://api.bitshares.info",
-        "wss://api.61bts.com",
-        "wss://node1.deex.exchange/wss",
+        "wss://eu.nodes.bitshares.ws/ws",
+        "wss://public.xbts.io/ws",
+        "wss://node.xbts.io/ws",
+        "wss://bts.mypi.win/ws",
+        "wss://cloud.xbts.io/wss",
+        "wss://api.61bts.com/wss",
         "wss://api.btslebin.com/wss",
         "wss://api.bts.btspp.io:10100/ws",
-        "wss://singapore.bitshares.im/ws",
     ]
 
 
