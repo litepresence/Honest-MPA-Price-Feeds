@@ -12,6 +12,7 @@ litepresence2020
 """
 
 # STANDARD PYTHON MODULES
+import math
 import os
 import sys
 import time
@@ -64,11 +65,14 @@ def trace(error):
     return msg
 
 
-def sigfig(price):
+def sigfig(number, n=8):
     """
-    format price to max 8 significant figures, return as float
+    :usage: print([sigfig(123456.789, i) for i in range(1, 10)])
+    :param float(number):
+    :param int(precision):
+    :return:
     """
-    return float("{:g}".format(float("{:.8g}".format(price))))
+    return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
 
 
 def race_write(doc="", text=""):

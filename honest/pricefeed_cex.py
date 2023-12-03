@@ -38,7 +38,7 @@ PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
 
 def return_urls():
     """
-    dictionary of api domain names
+    dictionary of exchanges to their API base url
     """
     return {
         "latoken": "https://api.latoken.com/v2",
@@ -54,6 +54,7 @@ def return_urls():
         "bitstamp": "https://www.bitstamp.net",
         "huobi": "https://api.huobi.pro",
         "hitbtc": "https://api.hitbtc.com",
+        "coinex": "https://api.coinex.com/v1",
     }
 
 
@@ -95,8 +96,8 @@ def symbol_syntax(exchange, symbol):
         if asset == "DOGE":
             asset = "XDG"
     if exchange == "poloniex":
-        if asset == "XLM":
-            asset = "STR"
+        # if asset == "XLM":
+        #     asset = "STR"
         if currency == "USD":
             currency = "USDT"
         if asset == "BCH":
@@ -117,12 +118,13 @@ def symbol_syntax(exchange, symbol):
         "bittrex": (asset + "-" + currency),
         "bitfinex": (asset + currency),
         "binance": (asset + currency),
-        "poloniex": (currency + "_" + asset),
+        "poloniex": (asset + "_" + currency),
         "coinbase": (asset + "-" + currency),
         "kraken": (asset.lower() + currency.lower()),
         "bitstamp": (asset.lower() + currency.lower()),
         "huobi": (asset.lower() + currency.lower()),
         "hitbtc": (asset + currency),
+        "coinex": (asset + currency),
     }
 
     symbol = symbols[exchange]
@@ -236,6 +238,7 @@ def get_price(api):
         "bitstamp": f"/api/v2/ticker/{symbol}",  # "bitstamp": "/api/ticker",
         "huobi": "/market/trade",
         "hitbtc": f"/api/2/public/ticker/{symbol}",
+        "coinex": "/market/deals",
     }
     params = {
         "latoken": {},
@@ -251,6 +254,7 @@ def get_price(api):
         "bitstamp": {},
         "huobi": {"symbol": symbol},
         "hitbtc": {},
+        "coinex": {"market": symbol, "limit": 1},
     }
     api["endpoint"] = endpoints[exchange]
     api["params"] = params[exchange]
@@ -275,7 +279,6 @@ def get_price(api):
                 data = {d["symbol"]: float(d["price"]) for d in data}
                 last = float(data[symbol])
             elif exchange == "poloniex":
-                print(data)
                 last = float(data["price"])
             elif exchange == "coinbase":
                 last = float(data["price"])
@@ -289,6 +292,8 @@ def get_price(api):
                 last = float(data["tick"]["data"][-1]["price"])
             elif exchange == "hitbtc":
                 last = float(data["last"])
+            elif exchange == "coinex":
+                last = float(data["data"][0]["price"])
         except Exception as error:
             print(trace(error), {k: v for k, v in api.items() if k != "secret"}, data)
         break

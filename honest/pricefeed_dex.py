@@ -69,6 +69,8 @@ CURRENCIES = [
     "XBTSX.BTC",
     "GDEX.USDT",
     "XBTSX.USDT",
+    "IOB.XRP",
+    "BTWTY.EOS",
 ]
 ASSET = "BTS"
 
@@ -315,26 +317,29 @@ def rpc_last(rpc, cache):  # DONE
 def rpc_pool_last(rpc, cache):
     last = {}
     # get asset ids and precisions
-    currency_objs = wss_query(
-        rpc, ["database", "lookup_asset_symbols", [CURRENCIES] + [cache["asset"]]]
-    )
+    currency_objs = wss_query(rpc, ["database", "lookup_asset_symbols", [CURRENCIES]])
     # for all currency names and data pairs
-    for currency, get_obj in zip(CURRENCIES, currency_objs[:-1]):
+    for currency, get_obj in zip(CURRENCIES, currency_objs):
         # get all the pools for this pair
+        pools = [
+            i
+            for i in wss_query(
+                rpc, ["database", "get_liquidity_pools_by_asset_b", [get_obj["id"]]]
+            )
+            if i["asset_a"] == "1.3.0"
+        ]
+        if not pools:
+            continue
         # choose pool with the maximum amount of BTS staked
         pool = max(
-            [
-                i
-                for i in wss_query(
-                    rpc, ["database", "get_liquidity_pools_by_asset_b", [get_obj["id"]]]
-                )
-                if i["asset_a"] == "1.3.0"
-            ],
+            pools,
             key=lambda x: int(x["balance_a"]),
         )
         # calculate the last price given a and b balances w/ respective percision
-        bal_a = int(pool["balance_a"]) / 10 ** currency_objs[-1]["precision"]
+        bal_a = int(pool["balance_a"]) / 10**5
         bal_b = int(pool["balance_b"]) / 10 ** get_obj["precision"]
+        if not bal_a or not bal_b:
+            continue
         last[currency + "_at_pool"] = bal_b / bal_a
     # a dictionary of pool prices
     return last
@@ -433,8 +438,10 @@ def thresh(storage, process, epoch, pid, cache):
                 if (time() - cache["begin"]) > 200:
                     optimizing = "".ljust(7)
                 # last, history, orderbook, balances, orders
-                last = rpc_last(rpc, cache)
-                last = {**last, **rpc_pool_last(rpc, cache)}
+                # last = rpc_last(rpc, cache)
+                last = rpc_pool_last(
+                    rpc, cache
+                )  # {**last, **rpc_pool_last(rpc, cache)}
                 # print(last)
                 now = to_iso_date(time())
                 then = to_iso_date(time() - 3 * 86400)
@@ -481,13 +488,13 @@ def thresh(storage, process, epoch, pid, cache):
                     for key, val in m_last.items():
                         if "BTC" in key:
                             btcs.append(val)
-                            btc_dict[key] = val
+                            btc_dict[key] = sigfig(val, 4)
                         elif "USD" in key:
                             usds.append(val)
-                            usd_dict[key] = val
+                            usd_dict[key] = sigfig(val, 4)
                     # eliminate outliers
-                    usd = median(usds)
-                    btc = median(btcs)
+                    usd = sigfig(median(usds), 4)
+                    btc = sigfig(median(btcs), 4)
                     # calculate the gateway btcusd for reference only
                     implied_btcusd = usd / btc
                 except:
@@ -574,68 +581,106 @@ def thresh(storage, process, epoch, pid, cache):
                 try:
                     print(
                         "DEX BTS:BTC",
-                        it("cyan", ("%.16f" % btc)),
+                        it("cyan", str(sigfig(btc, 4))),
                         it("purple", btc_dict),
                     )  # json_dump(btc_dict, indent=0, sort_keys=True)))
                     print(
                         "DEX BTS:USD",
-                        "%.16f" % usd,
+                        sigfig(usd, 4),
                         it("purple", usd_dict),
                     )
                     print(
+                        "DEX BTS:IOB.XRP",
+                        sigfig(last.get("IOB.XRP_at_pool", -1), 4),
+                    )
+                    print(
+                        "DEX BTS:BTWTY.EOS",
+                        sigfig(last.get("BTWTY.EOS_at_pool", -1), 4),
+                    )
+                    print(
                         "DEX BTC:USD",
-                        it("yellow", ("%.4f" % implied_btcusd)),
+                        it("yellow", str(sigfig(implied_btcusd, 4))),
                         "(IMPLIED)",
                     )
-                except:
-                    pass
+                    print("\nBTS:BTC price sources:")
+                    print(race_read(doc="bts_btc_pipe.txt"))
+                except Exception as error:
+                    print(trace(error))
                 try:
-                    for key, val in cex.items():
+                    if cex:
+                        print("\n\n")
+                        exchanges = []
+                        for key, val in cex.items():
+                            exchanges.extend(list(val["data"].keys()))
+                        exchanges = list(set(exchanges))
+                        just_size = max(map(len, exchanges)) + 2
                         print(
-                            "CEX",
-                            key,
-                            it("cyan", ("%.8f" % val["median"])),
-                            {k: ("%.8f" % v["last"]) for k, v in val["data"].items()},
+                            "          "
+                            + "".join(i.ljust(just_size) for i in exchanges)
                         )
-                    print(
-                        "\nFOREX  "
-                        + "inverse ::: pair ::: min ::: mid ::: max ::: qty ::: source"
-                    )
-                    for key, val in forex["medians"].items():
-                        fxdata = [i[0] for i in forex["aggregate"][key]]
+                        for coin, data in cex.items():
+                            prices = [
+                                data["data"].get(exchange, {"last": -1})["last"]
+                                for exchange in exchanges
+                            ]
+                            print(
+                                coin.ljust(10)
+                                + "".join(
+                                    [
+                                        it(
+                                            "green" if i != -1 else "yellow",
+                                            str(sigfig(i, 4)).ljust(just_size),
+                                        )
+                                        for i in prices
+                                    ]
+                                )
+                            )
+                        print("\n")
+
+                    if forex:
                         print(
-                            it("cyan", str(sigfig(1 / val[0])).rjust(12)),
-                            it("green", key),
-                            str(min(fxdata)).ljust(11),
-                            it("cyan", str(val[0]).ljust(11)),
-                            str(max(fxdata)).ljust(11),
-                            len(fxdata),
-                            " ".join([i[1][:4] for i in forex["aggregate"][key]]),
+                            "\nFOREX  "
+                            + "inverse ::: pair ::: min ::: mid ::: max ::: qty ::: source"
                         )
-                    print(
-                        "FINAL INVERSE",
-                        {k: sigfig(v) for k, v in final["inverse"].items()},
-                    )
-                    print("FINAL FEED", it("green", final["feed"]))
-                    print("FEED CLOCK", it("yellow", final["time"]))
-                    try:
-                        print("HONEST CROSS RATES", honest_cross_rates)
-                    except:
-                        pass
-                    try:
+                        for key, val in forex["medians"].items():
+                            fxdata = [i[0] for i in forex["aggregate"][key]]
+                            print(
+                                it("cyan", str(sigfig(1 / val[0])).rjust(12)),
+                                it("green", key),
+                                str(min(fxdata)).ljust(11),
+                                it("cyan", str(val[0]).ljust(11)),
+                                str(max(fxdata)).ljust(11),
+                                len(fxdata),
+                                " ".join([i[1][:4] for i in forex["aggregate"][key]]),
+                            )
+                    if final:
                         print(
-                            "SCELETUS  ",
-                            it("purple", sceletus_output),
+                            "FINAL INVERSE",
+                            {k: sigfig(v) for k, v in final["inverse"].items()},
                         )
-                    except:
-                        pass
-                    stale = time() - final["time"]["unix"]
-                    if stale > 4000:
-                        print(
-                            it("red", f"WARNING YOUR FEED IS STALE BY {stale} SECONDS")
-                        )
-                except:
-                    pass
+                        print("FINAL FEED", it("green", final["feed"]))
+                        print("FEED CLOCK", it("yellow", final["time"]))
+                        try:
+                            print("HONEST CROSS RATES", honest_cross_rates)
+                        except:
+                            pass
+                        try:
+                            print(
+                                "SCELETUS  ",
+                                it("purple", sceletus_output),
+                            )
+                        except:
+                            pass
+                        stale = time() - final["time"]["unix"]
+                        if stale > 4000:
+                            print(
+                                it(
+                                    "red",
+                                    f"WARNING YOUR FEED IS STALE BY {stale} SECONDS",
+                                )
+                            )
+                except Exception as error:
+                    print(trace(error))
 
                 # send the maven dictionary to nascent_trend()
                 # Must be JSON type

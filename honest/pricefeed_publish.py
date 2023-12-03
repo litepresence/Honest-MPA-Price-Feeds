@@ -1601,10 +1601,10 @@ def execute(signal, log_in, auth, order):
             "broadcasted_tx": broadcasted_tx,
         }
         now = str(ctime())
-        race_write(
-            doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
-            text=receipt,
-        )
+        # race_write(
+        #     doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
+        #     text=receipt,
+        # )
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))

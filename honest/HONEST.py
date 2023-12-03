@@ -170,15 +170,37 @@ def gather_data(name, wif, trigger):
                     cex_btsbtc_dict[exchange] = btsusd_price["last"] * (
                         1 / cex["BTC:USDT"]["data"][exchange]["last"]
                     )
-            print(cex_btsbtc_dict)
             # Remove exchange keys after printing
             cex_btsbtc_list = list(cex_btsbtc_dict.values())
 
             # attain dex BTS:BTC median
             dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
-            # dex_btsbtc = median(dex_btsbtc_list)
+            dex_btsbtc_dict = {k: v for k, v in dex["last"].items() if "BTC" in k}
+
+            # remove the systemic risk of EOS and XRP leaving the systemic risk of IOB and BTWTY
+            # to attain two addional BTS:BTC sources from bitshares pools
+            if "IOB.XRP_at_pool" in dex["last"]:
+                dex_btsbtc_list.append(
+                    dex["last"]["IOB.XRP_at_pool"] * cex["XRP:BTC"]["median"]
+                )
+                dex_btsbtc_dict["IOB.XRP"] = dex_btsbtc_list[-1]
+            if "BTWTY.EOS_at_pool" in dex["last"]:
+                dex_btsbtc_list.append(
+                    dex["last"]["BTWTY.EOS_at_pool"] * cex["EOS:BTC"]["median"]
+                )
+                dex_btsbtc_dict["BTWTY.EOS"] = dex_btsbtc_list[-1]
+
             # finalize btsbtc by taking median of all cex and dex btsbtc prices
             btsbtc = median(dex_btsbtc_list + cex_btsbtc_list)
+            race_write(
+                doc="bts_btc_pipe.txt",
+                text=json_dumps(
+                    {
+                        k: sigfig(v, 4)
+                        for k, v in {**dex_btsbtc_dict, **cex_btsbtc_dict}.items()
+                    }
+                ),
+            )
             # create feed prices for crypto altcoins: LTC, ETH, XRP
 
             btcusd = cex["BTC:USD"]["median"]
@@ -240,6 +262,7 @@ def gather_data(name, wif, trigger):
             race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
             # publish feed prices to the blockchain
             if trigger["feed"] == "y":
+                race_write(doc=f"price_log_{time.ctime()}.txt", text=json_dumps(prices))
                 time.sleep(3)
                 print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
                 time.sleep(5)
