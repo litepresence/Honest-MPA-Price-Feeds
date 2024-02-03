@@ -1,0 +1,3 @@
+__pycache__
+pipe/*
+!pipe/__init__.txt

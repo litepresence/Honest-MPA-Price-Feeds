@@ -46,7 +46,6 @@ def return_urls():
         "mexc": "https://api.mexc.com",
         "gateio": "https://api.gateio.ws",
         "coinbase": "https://api.pro.coinbase.com",
-        "bittrex": "https://api.bittrex.com",
         "bitfinex": "https://api-pub.bitfinex.com",
         "kraken": "https://api.kraken.com",
         "poloniex": "https://api.poloniex.com",
@@ -115,7 +114,6 @@ def symbol_syntax(exchange, symbol):
         "xtcom": (asset + "_" + currency).lower(),
         "latoken": (asset + "/" + currency),
         "gateio": (asset + "_" + currency),
-        "bittrex": (asset + "-" + currency),
         "bitfinex": (asset + currency),
         "binance": (asset + currency),
         "poloniex": (asset + "_" + currency),
@@ -158,7 +156,7 @@ def request(api, signal):
     try:
         data = resp.json()
     except:
-        print(resp.text)
+        print(api["exchange"], "has errored out:\n\n", resp.text)
     doc = (
         api["exchange"]
         + api["pair"]
@@ -229,7 +227,6 @@ def get_price(api):
         "xtcom": "/sapi/v4/market/public/trade/recent",
         "mexc": "/api/v3/ticker/price",
         "gateio": "/api/v4/spot/tickers",
-        "bittrex": "/v3/markets/tickers",
         "bitfinex": "/v2/ticker/t{}".format(symbol),
         "binance": "/api/v1/ticker/allPrices",
         "poloniex": f"/markets/{symbol}/price",
@@ -245,7 +242,6 @@ def get_price(api):
         "xtcom": {"symbol": symbol, "limit": 1},
         "mexc": {"symbol": symbol},
         "gateio": {},
-        "bittrex": {},
         "bitfinex": {"market": symbol},
         "binance": {},
         "poloniex": {"symbol": symbol},
@@ -269,9 +265,6 @@ def get_price(api):
                 last = float(data["price"])
             elif exchange == "gateio":
                 data = {d["currency_pair"]: float(d["last"]) for d in data}
-                last = float(data[symbol])
-            elif exchange == "bittrex":
-                data = {d["symbol"]: float(d["lastTradeRate"]) for d in data}
                 last = float(data[symbol])
             elif exchange == "bitfinex":
                 last = float(data[6])

@@ -335,12 +335,12 @@ def rpc_pool_last(rpc, cache):
             pools,
             key=lambda x: int(x["balance_a"]),
         )
-        # calculate the last price given a and b balances w/ respective percision
+        # calculate the last price given a and b balances w/ respective precision
         bal_a = int(pool["balance_a"]) / 10**5
         bal_b = int(pool["balance_b"]) / 10 ** get_obj["precision"]
-        if not bal_a or not bal_b:
+        if bal_a < 50000:
             continue
-        last[currency + "_at_pool"] = bal_b / bal_a
+        last[currency] = bal_b / bal_a
     # a dictionary of pool prices
     return last
 
@@ -439,9 +439,8 @@ def thresh(storage, process, epoch, pid, cache):
                     optimizing = "".ljust(7)
                 # last, history, orderbook, balances, orders
                 # last = rpc_last(rpc, cache)
-                last = rpc_pool_last(
-                    rpc, cache
-                )  # {**last, **rpc_pool_last(rpc, cache)}
+                last = rpc_pool_last(rpc, cache)
+                # {**last, **rpc_pool_last(rpc, cache)}
                 # print(last)
                 now = to_iso_date(time())
                 then = to_iso_date(time() - 3 * 86400)
@@ -591,11 +590,11 @@ def thresh(storage, process, epoch, pid, cache):
                     )
                     print(
                         "DEX BTS:IOB.XRP",
-                        sigfig(last.get("IOB.XRP_at_pool", -1), 4),
+                        sigfig(last.get("IOB.XRP", -1), 4),
                     )
                     print(
                         "DEX BTS:BTWTY.EOS",
-                        sigfig(last.get("BTWTY.EOS_at_pool", -1), 4),
+                        sigfig(last.get("BTWTY.EOS", -1), 4),
                     )
                     print(
                         "DEX BTC:USD",
@@ -604,6 +603,8 @@ def thresh(storage, process, epoch, pid, cache):
                     )
                     print("\nBTS:BTC price sources:")
                     print(race_read(doc="bts_btc_pipe.txt"))
+                except UnboundLocalError:
+                    pass
                 except Exception as error:
                     print(trace(error))
                 try:

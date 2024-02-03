@@ -179,14 +179,14 @@ def gather_data(name, wif, trigger):
 
             # remove the systemic risk of EOS and XRP leaving the systemic risk of IOB and BTWTY
             # to attain two addional BTS:BTC sources from bitshares pools
-            if "IOB.XRP_at_pool" in dex["last"]:
+            if "IOB.XRP" in dex["last"]:
                 dex_btsbtc_list.append(
-                    dex["last"]["IOB.XRP_at_pool"] * cex["XRP:BTC"]["median"]
+                    dex["last"]["IOB.XRP"] * cex["XRP:BTC"]["median"]
                 )
                 dex_btsbtc_dict["IOB.XRP"] = dex_btsbtc_list[-1]
-            if "BTWTY.EOS_at_pool" in dex["last"]:
+            if "BTWTY.EOS" in dex["last"]:
                 dex_btsbtc_list.append(
-                    dex["last"]["BTWTY.EOS_at_pool"] * cex["EOS:BTC"]["median"]
+                    dex["last"]["BTWTY.EOS"] * cex["EOS:BTC"]["median"]
                 )
                 dex_btsbtc_dict["BTWTY.EOS"] = dex_btsbtc_list[-1]
 
@@ -260,6 +260,7 @@ def gather_data(name, wif, trigger):
             # update final output on disk
             race_write(doc="feed.txt", text=feed)
             race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
+
             # publish feed prices to the blockchain
             if trigger["feed"] == "y":
                 race_write(doc=f"price_log_{time.ctime()}.txt", text=json_dumps(prices))
@@ -267,6 +268,11 @@ def gather_data(name, wif, trigger):
                 print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
                 time.sleep(5)
                 publish_feed(prices, name, wif)
+        except Exception as error:
+            print(trace(error))
+            time.sleep(10)  # try again in 10 seconds
+            continue
+        try:
             # upload production data matrix to jsonbin.io
             if trigger["jsonbin"] == "y":
                 time.sleep(3)
@@ -301,10 +307,9 @@ def gather_data(name, wif, trigger):
             )
             race_append(doc="feed_append.txt", text=appendage)
             updates += 1
-            time.sleep(REFRESH)
-        except Exception as error:
-            print(trace(error))
-            time.sleep(10)  # try again in 10 seconds
+        except:
+            pass
+        time.sleep(REFRESH)
 
 
 def main():

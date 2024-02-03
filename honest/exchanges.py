@@ -3,7 +3,6 @@ EXCHANGES = {
         "binance",
         "bitfinex",
         "bitstamp",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -13,7 +12,6 @@ EXCHANGES = {
     "DOT:BTC": [
         "binance",
         "bitfinex",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -25,7 +23,6 @@ EXCHANGES = {
         "binance",
         "bitfinex",
         "bitstamp",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -36,7 +33,6 @@ EXCHANGES = {
     "SOL:BTC": [
         "binance",
         "bitfinex",
-        "bittrex",
         "coinbase",
         "hitbtc",
         "huobi",
@@ -53,7 +49,6 @@ EXCHANGES = {
     ],
     "ATOM:BTC": [
         "binance",
-        "bittrex",
         "coinbase",
         "hitbtc",
         "huobi",
@@ -65,7 +60,6 @@ EXCHANGES = {
         "binance",
         "bitfinex",
         "bitstamp",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -75,14 +69,12 @@ EXCHANGES = {
     "ALGO:BTC": [
         "binance",
         "bitstamp",
-        "bittrex",
         "coinbase",
         "hitbtc",
         "kraken",
     ],
     "FIL:BTC": [
         "binance",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -92,7 +84,6 @@ EXCHANGES = {
     "EOS:BTC": [
         "binance",
         "bitfinex",
-        "bittrex",
         "coinbase",
         "gateio",
         "hitbtc",
@@ -101,7 +92,6 @@ EXCHANGES = {
         "poloniex",
     ],
     "BTC:USD": [
-        "bittrex",
         "bitfinex",
         "coinbase",
         "kraken",
@@ -126,7 +116,6 @@ EXCHANGES = {
         "coinex",
     ],
     "XRP:BTC": [
-        "bittrex",
         "binance",
         "huobi",
         "hitbtc",
@@ -136,7 +125,6 @@ EXCHANGES = {
         "bitstamp",
     ],
     "ETH:BTC": [
-        "bittrex",
         "binance",
         "poloniex",
         "huobi",
