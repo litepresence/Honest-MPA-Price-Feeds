@@ -33,7 +33,6 @@ bitassets such as USD, CNY, BTC should NOT have the "bit" prefix
 
 
 def config_sceletus():
-
     """
     A REQUEST:
 

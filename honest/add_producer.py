@@ -16,12 +16,14 @@ litepresence2020
 # THIRD PARTY MODULES
 from getpass import getpass
 
+from config_tokens import MPAS, PRODUCER_IDS
+
 # HONEST PRICE FEED MODULES
 from pricefeed_publish import broker
 from utilities import race_read_json
-from config_tokens import PRODUCER_IDS, MPAS
 
 ASSET_IDS = list(MPAS.values())
+
 
 def add_producer(name, wif):
     """
@@ -58,5 +60,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

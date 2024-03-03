@@ -20,23 +20,39 @@ litepresence2020
 # STANDARD MODULES
 import os
 import time
-from multiprocessing import Process
-from statistics import median
-from random import shuffle
 from getpass import getpass
+from multiprocessing import Process
+from random import shuffle
+from statistics import median
+
+from cancel_all_markets import cancel_all_markets, wss_query
+from dex_manual_signing import broker
+from dex_meta_node import rpc_last, rpc_lookup_accounts, rpc_lookup_asset_symbols
+from forex_cfscrape import bloomberg, fxcm, fxempire1, investing
+from forex_scrape import (
+    aastock,
+    currencyme,
+    duckduckgo,
+    exchangeratewidget,
+    forexrates,
+    forextime,
+    freeforex,
+    fxempire2,
+    fxrate,
+    ino,
+    liveusd,
+    oanda,
+    reuters,
+    wocu,
+    wsj,
+    yahoo,
+)
+from pricefeed_cex import fetch
+from pricefeed_dex import print_logo
+from pricefeed_sceletus import reconnect
 
 # PROPRIETARY MODULES
-from utilities import race_write, race_read_json, it, sigfig
-from pricefeed_dex import print_logo
-from pricefeed_cex import fetch
-from pricefeed_sceletus import reconnect
-from dex_manual_signing import broker
-from dex_meta_node import rpc_lookup_asset_symbols, rpc_lookup_accounts, rpc_last
-from forex_scrape import liveusd, freeforex, yahoo, wsj
-from forex_scrape import reuters, duckduckgo, wocu, oanda, aastock, fxempire2, ino
-from forex_scrape import fxrate, forextime, currencyme, forexrates, exchangeratewidget
-from forex_cfscrape import bloomberg, fxcm, fxempire1, investing
-from cancel_all_markets import cancel_all_markets, wss_query
+from utilities import it, race_read_json, race_write, sigfig
 
 # GLOBAL CONSTANTS
 TIMEOUT = 10
@@ -712,5 +728,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

@@ -19,7 +19,6 @@ import time
 from json import loads as json_loads
 from traceback import format_exc
 
-
 # GLOBAL VARIABLES
 ATTEMPTS = 3
 PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
@@ -122,7 +121,7 @@ def race_read_json(doc=""):
                 return data
         except Exception as error:
             msg = str(type(error).__name__) + str(error.args)
-            msg += " race_read_json()"
+            msg += " race_read_json() " + doc
             print(msg)
             try:
                 handle.close()

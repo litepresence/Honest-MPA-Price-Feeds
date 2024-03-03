@@ -17,9 +17,10 @@ https://api.jsonbin.io/b/<<< your bin id >>>/latest
 litepresence2020
 """
 
+import time
+
 # STANDARD PYTHON MODULES
 from multiprocessing import Process, Value
-import time
 
 # THIRD PARTY MODULES
 import requests
@@ -108,5 +109,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

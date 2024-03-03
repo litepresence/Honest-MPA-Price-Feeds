@@ -102,47 +102,47 @@ def WTFPL_v0_March_1765():
 """
 
 
-# STANDARD PYTHON MODULES
-from time import time, ctime, gmtime, asctime, strptime, strftime, sleep
-from multiprocessing import Process, Value  # encapsulate processes
-from decimal import Decimal as decimal  # higher precision than float
-from json import dumps as json_dumps  # serialize object to string
-from json import loads as json_loads  # deserialize string to object
-from collections import OrderedDict
-from datetime import datetime
-from calendar import timegm
-from getpass import getpass  # hidden input()
-from random import shuffle
-from pprint import pprint  # pretty printing
-from sys import platform, version_info
-
 # STANDARD CONVERSION UTILITIES
 from binascii import hexlify  # binary text to hexidecimal
 from binascii import unhexlify  # hexidecimal to binary text
-from hashlib import sha256  # message digest algorithm
+from calendar import timegm
+from collections import OrderedDict
+from datetime import datetime
+from decimal import Decimal as decimal  # higher precision than float
+from getpass import getpass  # hidden input()
 from hashlib import new as hashlib_new  # access algorithm library
+from hashlib import sha256  # message digest algorithm
+from json import dumps as json_dumps  # serialize object to string
+from json import loads as json_loads  # deserialize string to object
+from multiprocessing import Process, Value  # encapsulate processes
+from pprint import pprint  # pretty printing
+from random import shuffle
 from struct import pack  # convert to string representation of C struct
 from struct import unpack_from  # convert back to PY variable
+from sys import platform, version_info
 
-# NON STANDARD MODULES WHICH REQUIRE INSTALLATION
-from websocket import create_connection as wss  # handshake to node
+# STANDARD PYTHON MODULES
+from time import asctime, ctime, gmtime, sleep, strftime, strptime, time
+
+from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
+from ecdsa import SigningKey as ecdsa_SigningKey  # class
+from ecdsa import VerifyingKey as ecdsa_VerifyingKey  # class
+from ecdsa import der as ecdsa_der  # module
+from ecdsa import numbertheory as ecdsa_numbertheory  # largest import
+from ecdsa import util as ecdsa_util  # module
 from secp256k1 import PrivateKey as secp256k1_PrivateKey  # class
 from secp256k1 import PublicKey as secp256k1_PublicKey  # class
 from secp256k1 import ffi as secp256k1_ffi  # compiled ffi object
 from secp256k1 import lib as secp256k1_lib  # library
-from ecdsa import numbertheory as ecdsa_numbertheory  # largest import
-from ecdsa import VerifyingKey as ecdsa_VerifyingKey  # class
-from ecdsa import SigningKey as ecdsa_SigningKey  # class
-from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
-from ecdsa import util as ecdsa_util  # module
-from ecdsa import der as ecdsa_der  # module
 
+# NON STANDARD MODULES WHICH REQUIRE INSTALLATION
+from websocket import create_connection as wss  # handshake to node
+
+from config_nodes import public_nodes
 
 # EXTINCTION EVENT MODULES
 from dex_meta_node import bitshares_trustless_client
-from utilities import race_write, trace, it, block_print, enable_print
-from config_nodes import public_nodes
-
+from utilities import block_print, enable_print, it, race_write, trace
 
 # FIXME this script has considerable stylistic pylint issues - litepresence2020
 
@@ -164,7 +164,6 @@ if version_info[0] < 3:
 
 
 def sample_orders():
-
     global order1, order2, order3
 
     # cancel all and place two buy orders
@@ -248,7 +247,6 @@ def sample_orders():
 
 
 def global_variables():
-
     global info
 
     info = {}
@@ -256,7 +254,6 @@ def global_variables():
 
 
 def global_constants():
-
     global OP_IDS, OP_NAMES, ID, TYPES, SATOSHI, SIXSIG
     global BASE58, HEXDIGITS, ISO8601, END_OF_TIME
     # bitsharesbase/operationids.py
@@ -286,7 +283,6 @@ def global_constants():
 
 
 def control_panel():
-
     global HANDSHAKE_TIMEOUT, PROCESS_TIMEOUT, AUTOSCALE, BTS_FEES
     global KILL_OR_FILL, ATTEMPTS, JOIN, LIMIT, DUST
 
@@ -313,7 +309,6 @@ def control_panel():
 
 # REMOTE PROCEDURE CALLS TO PUBLIC API NODES
 def wss_handshake():
-
     global ws, nodes  # the websocket is created and node list shuffled
     nodes = public_nodes()
     shuffle(nodes)
@@ -338,7 +333,6 @@ def wss_handshake():
 
 
 def wss_query(params):
-
     # this definition will place all remote procedure calls (RPC)
     for _ in range(10):
         try:
@@ -409,7 +403,6 @@ def rpc_fees():
 
 
 def rpc_balances():
-
     balances = wss_query(
         [
             "database",
@@ -449,7 +442,6 @@ def rpc_open_orders():
 
 
 def rpc_key_reference(public_key):
-
     # given public key return account id
     ret = wss_query(["database", "get_key_references", [[public_key]]])
 
@@ -505,6 +497,7 @@ def types_README():
     # Bool() has been merged into Uint8()
     # Varint32() has been merged into both Id() and Array()
     'consider the following "magic method" example'
+
     # this would have no effect on the way bytes() normally behaves
     class normal:
         def __init__(self, d):
@@ -544,7 +537,6 @@ def types_README():
 
 
 class ObjectId:
-
     # encodes a.b.c object ids - serializes the *instance* only!
     def __init__(self, object_str, type_verify=None):
         # if after splitting a.b.c there are 3 pieces:
@@ -675,7 +667,6 @@ def varint(n):
 
 
 class Base58(object):
-
     """
     This class serves as an abstraction layer
     to deal with base58 encoded strings
@@ -683,7 +674,6 @@ class Base58(object):
     """
 
     def __init__(self, data, prefix="BTS"):
-
         print(it("green", "Base58"))
         print(it("blue", data[:4]))
         self._prefix = prefix
@@ -699,7 +689,6 @@ class Base58(object):
             raise ValueError("Error loading Base58 object")
 
     def __format__(self, _format):
-
         if _format.upper() != "BTS":
             print("Format %s unkown. You've been warned!\n" % _format)
         return _format.upper() + str(self)
@@ -777,7 +766,6 @@ def doublesha256(s):
 
 
 def base58CheckEncode(version, payload):
-
     print(it("green", "base58CheckEncode"))
     print(payload, version)
     s = ("%.2x" % version) + payload
@@ -817,7 +805,6 @@ def gphBase58CheckDecode(s):
 
 # ADDRESS AND KEYS
 class Address(object):  # cropped litepresence2019
-
     """
     Example :: Address("BTSFN9r6VYzBK8EKtMewfNbfiGCr56pHDBFi")
     """
@@ -832,7 +819,6 @@ class Address(object):  # cropped litepresence2019
 
 
 class PublicKey(Address):  # graphenebase/account.py
-
     """
     This class deals with Public Keys and inherits ``Address``.
 
@@ -841,7 +827,6 @@ class PublicKey(Address):  # graphenebase/account.py
     """
 
     def __init__(self, pk, prefix="BTS"):
-
         global authenticated
 
         print(it("red", "PublicKey"))
@@ -923,7 +908,6 @@ class PublicKey(Address):  # graphenebase/account.py
 
 
 class PrivateKey(PublicKey):  # merged litepresence2019
-
     # Bitshares(MIT) graphenebase/account.py
     # Bitshares(MIT) bitsharesbase/account.py
 
@@ -932,7 +916,6 @@ class PrivateKey(PublicKey):  # merged litepresence2019
     """
 
     def __init__(self, wif=None, prefix="BTS"):
-
         print(prefix)
         print(it("red", "PrivateKey"))
         print(PublicKey)
@@ -1072,14 +1055,12 @@ class Limit_order_cancel(GrapheneObject):  # bitsharesbase/operations.py
 
 
 class Operation:  # refactored  litepresence2019
-
     "class GPHOperation():"
     # Bitshares(MIT) graphenebase/objects.py
     "class Operation(GPHOperation):"
     # Bitshares(MIT) bitsharesbase/objects.py
 
     def __init__(self, op):
-
         if not isinstance(op, list):
             raise ValueError("expecting op to be a list")
         if len(op) != 2:
@@ -1102,7 +1083,6 @@ class Operation:  # refactored  litepresence2019
 
 
 class Signed_Transaction(GrapheneObject):  # merged litepresence2019
-
     # Bitshares(MIT) graphenebase/signedtransactions.py
     # Bitshares(MIT) bitsharesbase/signedtransactions.py
 
@@ -1239,7 +1219,6 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
             pubKeysFound.append(phex)
 
         for pubkey in pubkeys:
-
             print(it("green", "for pubkey in pubkeys:"))
             print(it("green", "************ pubkey ************"))
             print(it("blue", "repr(pubkey)"))
@@ -1301,7 +1280,6 @@ class Signed_Transaction(GrapheneObject):  # merged litepresence2019
 
 
 def verify_message(message, signature, hashfn=sha256):
-
     # graphenebase/ecdsa.py stripped of non-secp256k1 methods
     print(it("red", "verify_message...return phex"))
     # require message and signature to be bytes
@@ -1654,7 +1632,6 @@ def build_transaction(order):
 
 
 def serialize_transaction(tx):
-
     if tx["operations"] == []:
         return tx, b""
 
@@ -1699,7 +1676,6 @@ def serialize_transaction(tx):
 
 
 def sign_transaction(tx, message):
-
     # graphenebase/ecdsa.py
     # tools.ietf.org/html/rfc6979
     # @xeroc/steem-transaction-signing-in-a-nutshell
@@ -1851,7 +1827,6 @@ def broker(order):
 
 
 def execute(signal, log_in, auth, order):
-
     global nodes, account_id, account_name, wif, login, authenticated
 
     login = log_in
@@ -1935,7 +1910,6 @@ def execute(signal, log_in, auth, order):
 
 
 def prototype_order():
-
     # creates an auto formatted empty prototype order in json format
     # you will add your ['edicts'] and ['wif']
     # metaNODE handles everything else
@@ -1970,7 +1944,6 @@ def prototype_order():
 
 # IN SCRIPT DEMONSTRATION
 def log_in():
-
     global wif, account_name, account_id
     global order, order1, order2, order3, nodes
 
@@ -2132,5 +2105,4 @@ def demo():
 
 
 if __name__ == "__main__":
-
     demo()

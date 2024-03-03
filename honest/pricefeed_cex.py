@@ -13,20 +13,21 @@ litepresence2020
 # STANDARD MODULES
 import os
 import time
-from pprint import pprint
+from calendar import timegm
+from datetime import datetime
 from json import dumps as json_dumps
 from multiprocessing import Process, Value
-from statistics import median
-from datetime import datetime
-from calendar import timegm
+from pprint import pprint
 from random import random
+from statistics import median
 
 # THIRD PARTY MODULES
 import requests
 
 # PROPRIETARY MODULES
 from exchanges import EXCHANGES
-from utilities import race_write, race_read_json, trace
+from proxy_list import ProxyManager
+from utilities import race_read_json, race_write, trace
 
 # GLOBAL CONSTANTS
 TIMEOUT = 15
@@ -109,20 +110,20 @@ def symbol_syntax(exchange, symbol):
         if asset == "DASH":
             asset = "DSH"
     symbols = {
-        "mexc": (asset + currency),
-        "tokocrypto": (asset + "_" + currency),
+        "mexc": asset + currency,
+        "tokocrypto": asset + "_" + currency,
         "xtcom": (asset + "_" + currency).lower(),
-        "latoken": (asset + "/" + currency),
-        "gateio": (asset + "_" + currency),
-        "bitfinex": (asset + currency),
-        "binance": (asset + currency),
-        "poloniex": (asset + "_" + currency),
-        "coinbase": (asset + "-" + currency),
-        "kraken": (asset.lower() + currency.lower()),
-        "bitstamp": (asset.lower() + currency.lower()),
-        "huobi": (asset.lower() + currency.lower()),
-        "hitbtc": (asset + currency),
-        "coinex": (asset + currency),
+        "latoken": asset + "/" + currency,
+        "gateio": asset + "_" + currency,
+        "bitfinex": asset + currency,
+        "binance": asset + currency,
+        "poloniex": asset + "_" + currency,
+        "coinbase": asset + "-" + currency,
+        "kraken": asset.lower() + currency.lower(),
+        "bitstamp": asset.lower() + currency.lower(),
+        "huobi": asset.lower() + currency.lower(),
+        "hitbtc": asset + currency,
+        "coinex": asset + currency,
     }
 
     symbol = symbols[exchange]
@@ -146,17 +147,25 @@ def request(api, signal):
     url = api["url"] + api["endpoint"]
     # print(api)
     time.sleep(10 * random())
-    resp = requests.request(
-        method=api["method"],
-        url=url,
-        data=api["data"],
-        params=api["params"],
-        headers=api["headers"],
-    )
-    try:
-        data = resp.json()
-    except:
-        print(api["exchange"], "has errored out:\n\n", resp.text)
+    if proxy_manager := api.get("proxy", False):
+        data = proxy_manager.get(
+            url=url,
+            data=api["data"],
+            params=api["params"],
+            headers=api["headers"],
+        )
+    else:
+        resp = requests.request(
+            method=api["method"],
+            url=url,
+            data=api["data"],
+            params=api["params"],
+            headers=api["headers"],
+        )
+        try:
+            data = resp.json()
+        except:
+            print(api["exchange"], "has errored out:\n\n", resp.text)
     doc = (
         api["exchange"]
         + api["pair"]
@@ -177,7 +186,7 @@ def process_request(api):
     signal = Value("i", 0)
     # several iterations of external requests until satisfied with response
     i = 0
-    while (i < ATTEMPTS) and not signal.value:
+    while (i < (ATTEMPTS if api["exchange"] != "binance" else 1)) and not signal.value:
         # multiprocessing text file name nonce
         api["nonce"] = time.time()
         i += 1
@@ -191,7 +200,7 @@ def process_request(api):
         child = Process(target=request, args=(api, signal))
         child.daemon = False
         child.start()
-        child.join(TIMEOUT)
+        child.join(TIMEOUT if api["exchange"] != "binance" else 60)
         child.terminate()
         time.sleep(i**2)
     # the doc was created by the subprocess; read and destroy it
@@ -208,7 +217,7 @@ def process_request(api):
     if i > 1:
         print(
             "{} {} PUBLIC elapsed:".format(api["exchange"], api["pair"]),
-            ("%.2f" % (time.time() - begin)),
+            "%.2f" % (time.time() - begin),
         )
     return data
 
@@ -228,7 +237,6 @@ def get_price(api):
         "mexc": "/api/v3/ticker/price",
         "gateio": "/api/v4/spot/tickers",
         "bitfinex": "/v2/ticker/t{}".format(symbol),
-        "binance": "/api/v1/ticker/allPrices",
         "poloniex": f"/markets/{symbol}/price",
         "coinbase": "/products/{}/ticker".format(symbol),
         "kraken": "/0/public/Ticker",
@@ -243,7 +251,6 @@ def get_price(api):
         "mexc": {"symbol": symbol},
         "gateio": {},
         "bitfinex": {"market": symbol},
-        "binance": {},
         "poloniex": {"symbol": symbol},
         "coinbase": {"market": symbol},
         "kraken": {"pair": [symbol]},
@@ -268,9 +275,6 @@ def get_price(api):
                 last = float(data[symbol])
             elif exchange == "bitfinex":
                 last = float(data[6])
-            elif exchange == "binance":
-                data = {d["symbol"]: float(d["price"]) for d in data}
-                last = float(data[symbol])
             elif exchange == "poloniex":
                 last = float(data["price"])
             elif exchange == "coinbase":
@@ -294,6 +298,42 @@ def get_price(api):
     print("writing", doc)
     data = {"last": last, "time": now}
     race_write(doc, json_dumps(data))
+
+
+def get_binance_prices(proxy_manager, symbols):
+    """
+    Get prices for all `symbols` on binance via `proxy_manager`
+    """
+    # note start time
+    start = time.time()
+    # process the request (including the proxy_manager)
+    data = process_request(
+        {
+            "exchange": "binance",
+            "endpoint": "/api/v1/ticker/allPrices",
+            "params": {},
+            "pair": "ALL_TOKENS",
+            "proxy": proxy_manager,
+        }
+    )
+    # re-order the data
+    data = {d["symbol"]: float(d["price"]) for d in data}
+    # for each symbol, write to a text pipe to be recovered later by `aggregate()`
+    for symbol in symbols:
+        try:
+            race_write(
+                f"binance{symbol}.txt",
+                json_dumps(
+                    {
+                        "last": float(data[symbol_syntax("binance", symbol)]),
+                        "time": int(time.time()),
+                    }
+                ),
+            )
+        except Exception as error:
+            trace(error)
+    # Note elapsed time
+    print("BINANCE ELAPSED:", time.time() - start)
 
 
 def aggregate(exchanges, api):
@@ -333,18 +373,22 @@ def fetch(exchanges, api):
     urls = return_urls()
     processes = {}
     for exchange in exchanges:
+        if exchange == "binance":
+            continue
         api["url"] = urls[exchange]
         api["exchange"] = exchange
         processes[exchange] = Process(target=get_price, args=(api,))
         processes[exchange].daemon = False
         processes[exchange].start()
     for exchange in exchanges:
+        if exchange == "binance":
+            continue
         processes[exchange].join(20)
         processes[exchange].terminate()
     return aggregate(exchanges, api)
 
 
-def pricefeed_cex():
+def pricefeed_cex(proxy_manager):
     """
     "HONEST.ADA", # Cardano
     "HONEST.DOT", # Polkadot
@@ -361,8 +405,14 @@ def pricefeed_cex():
     "HONEST.XRP"
     create a cex price feed, write it to disk, and return it
     """
-    cex = {}
+    # do binance once, the request gets all tokens at once, no need to repeat calls
+    binance_pairs = []
+    for pair in EXCHANGES:
+        if "binance" in EXCHANGES[pair]:
+            binance_pairs.append(pair)
+    get_binance_prices(proxy_manager, binance_pairs)
 
+    cex = {}
     for pair in EXCHANGES:
         cex[pair] = fetch(EXCHANGES[pair], {"pair": pair})
 
@@ -375,10 +425,10 @@ def main():
     demo a single cex pricefeed
     """
     print("initializing cex feeds...")
-    cex = pricefeed_cex()
+    proxy_manager = ProxyManager()
+    cex = pricefeed_cex(proxy_manager)
     print_results(cex)
 
 
 if __name__ == "__main__":
-
     main()

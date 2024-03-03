@@ -13,32 +13,31 @@ litepresence2020
 
 # STANDARD PYTHON MODULES
 import os
-import time
 import sys
-from statistics import median
-from multiprocessing import Process
-from json import dumps as json_dumps
-
-# THIRD PARTY MODULES
+import time
 from getpass import getpass
+from json import dumps as json_dumps
+from multiprocessing import Process
+from statistics import median
+
+from cancel_all_markets import cancel_all_markets
+from config_nodes import public_nodes
+from dex_manual_signing import broker as broker2
+from dex_manual_signing import trace, wss_handshake, wss_query
+from jsonbin import update_jsonbin
+from pricefeed_cex import pricefeed_cex
+from pricefeed_dex import pricefeed_dex, print_logo, race_append
+from pricefeed_forex import pricefeed_forex
+from pricefeed_publish import broker
+from pricefeed_sceletus import sceletus
+from proxy_list import ProxyManager
+from utilities import it, race_read_json, race_write, sigfig
 
 # ######################################################################################
 # ######################################################################################
 # YOU ARE OBLIGED AS AN HONEST MPA PRICE FEED PRODUCER
 # TO PUBLISH WITH THESE UNALTERED METHODS AND CONSTANTS
 # ######################################################################################
-from utilities import race_write, race_read_json, sigfig, it
-from pricefeed_forex import pricefeed_forex
-from pricefeed_cex import pricefeed_cex
-from pricefeed_dex import pricefeed_dex, race_append, print_logo
-from pricefeed_publish import broker
-from pricefeed_sceletus import sceletus
-from jsonbin import update_jsonbin
-from cancel_all_markets import cancel_all_markets
-from dex_manual_signing import wss_handshake, wss_query, trace
-from dex_manual_signing import broker as broker2
-from config_nodes import public_nodes
-
 CER = 1.5  # encourage payment of fees in bts, else 1.5X profit for HONEST producers
 MCR = 1400  # min. debt/collateral = 1.4
 MSSR = 1100  # liquidate immediately to as low as 1000/1100 = 11.0% below price feed
@@ -105,17 +104,18 @@ def publish_feed(prices, name, wif):
     print(json_dumps(edicts, indent=4))
 
     # attempt to publish them all at once
-    # try:
-    #     order = {
-    #         "header": header,
-    #         "edicts": edicts,
-    #         "nodes": nodes,
-    #     }
-    #     broker(order)
-    # # otherwise attempt each mpa indvidually
-    # except Exception as error:
-    # print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
-    # trace(error)
+    try:
+        order = {
+            "header": header,
+            "edicts": edicts,
+            "nodes": nodes,
+        }
+        broker(order)
+    # otherwise attempt each mpa indvidually
+    except Exception as error:
+        print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
+        trace(error)
+
     for edict in edicts:
         try:
             order = {
@@ -152,6 +152,7 @@ def gather_data(name, wif, trigger):
         # Above prevents hard drive strain and allows `pricefeed_dex` to actually start
         dex = race_read_json("pricefeed_dex.txt")
     updates = 1
+    proxy_manager = ProxyManager()
     while True:
         # print("REDIRECTING STDOUT TO LOG")
         # sys.stdout.close()
@@ -159,7 +160,7 @@ def gather_data(name, wif, trigger):
         try:
             # collect forex and cex data
             forex = pricefeed_forex()  # takes about 30 seconds
-            cex = pricefeed_cex()  # takes about 30 seconds
+            cex = pricefeed_cex(proxy_manager)  # takes about 30 seconds
             # read the latest dex data
             dex = race_read_json("pricefeed_dex.txt")
 
@@ -293,7 +294,6 @@ def gather_data(name, wif, trigger):
             time.sleep(5)
 
             if not updates % 24:
-
                 sceletus_orders, sceletus_output = sceletus(
                     prices, name, wif, trigger["sceletus"]
                 )
@@ -377,5 +377,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

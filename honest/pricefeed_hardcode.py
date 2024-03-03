@@ -2,6 +2,7 @@
 use this script to publish a feed with hard code
 """
 from getpass import getpass
+
 from pricefeed_final import publish_feed
 
 # input prices here must include cny, btc, and usd rate

@@ -12,42 +12,44 @@ this is a fork of manualsigning.py
 litepresence2020
 """
 
+import os
+
 # STANDARD PYTHON MODULES
 from binascii import hexlify  # binary text to hexidecimal
 from binascii import unhexlify  # hexidecimal to binary text
-from hashlib import sha256  # message digest algorithm
-from hashlib import new as hashlib_new  # access algorithm library
-from struct import pack  # convert to string representation of C struct
-from struct import unpack_from  # convert back to PY variable
-from time import time, ctime, gmtime, asctime, strptime, strftime, sleep
-from multiprocessing import Process, Value  # encapsulate processes
-from decimal import Decimal as decimal  # higher precision than float
-from json import dumps as json_dumps  # serialize object to string
-from json import loads as json_loads  # deserialize string to object
+from calendar import timegm
 from collections import OrderedDict
 from datetime import datetime
-from calendar import timegm
-from random import shuffle
+from decimal import Decimal as decimal  # higher precision than float
+from hashlib import new as hashlib_new  # access algorithm library
+from hashlib import sha256  # message digest algorithm
+from json import dumps as json_dumps  # serialize object to string
+from json import loads as json_loads  # deserialize string to object
+from multiprocessing import Process, Value  # encapsulate processes
 from pprint import pprint  # pretty printing
-import os
+from random import shuffle
+from struct import pack  # convert to string representation of C struct
+from struct import unpack_from  # convert back to PY variable
+from time import asctime, ctime, gmtime, sleep, strftime, strptime, time
 
-# THIRD PARTY MODULES
-from websocket import create_connection as wss  # handshake to node
+from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
+from ecdsa import SigningKey as ecdsa_SigningKey  # class
+from ecdsa import VerifyingKey as ecdsa_VerifyingKey  # class
+from ecdsa import der as ecdsa_der  # module
+from ecdsa import numbertheory as ecdsa_numbertheory  # largest import
+from ecdsa import util as ecdsa_util  # module
 from secp256k1 import PrivateKey as secp256k1_PrivateKey  # class
 from secp256k1 import PublicKey as secp256k1_PublicKey  # class
 from secp256k1 import ffi as secp256k1_ffi  # compiled ffi object
 from secp256k1 import lib as secp256k1_lib  # library
-from ecdsa import numbertheory as ecdsa_numbertheory  # largest import
-from ecdsa import VerifyingKey as ecdsa_VerifyingKey  # class
-from ecdsa import SigningKey as ecdsa_SigningKey  # class
-from ecdsa import SECP256k1 as ecdsa_SECP256k1  # curve
-from ecdsa import util as ecdsa_util  # module
-from ecdsa import der as ecdsa_der  # module
 
-# HONEST PRICE FEED MODULES
-from utilities import race_write, trace, block_print, enable_print, it
+# THIRD PARTY MODULES
+from websocket import create_connection as wss  # handshake to node
+
 from config_nodes import public_nodes
 
+# HONEST PRICE FEED MODULES
+from utilities import block_print, enable_print, it, race_write, trace
 
 # =======================================================================
 VERSION = "Bitshares Price Feed Publisher 0.00000001"
@@ -964,7 +966,6 @@ class Signed_Transaction(GrapheneObject):
 
     @property
     def id(self):
-
         """
         The transaction id of this transaction
         """
@@ -1390,6 +1391,7 @@ def sign_transaction(tx, message):
     @xeroc/steem-transaction-signing-in-a-nutshell
     @dantheman/steem-and-bitshares-cryptographic-security-update
     """
+
     # deterministic signatures retain the cryptographic
     # security features associated with digital signatures
     # but can be more easily implemented

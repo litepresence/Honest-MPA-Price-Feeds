@@ -13,19 +13,41 @@ litepresence2020
 
 # STANDARD PYTHON MODULES
 import time
-from pprint import pprint
-from statistics import median
 from json import dumps as json_dumps
 from multiprocessing import Process
+from pprint import pprint
+from statistics import median
 
 # PRICE FEED MODULES
-from forex_api import fixerio, openexchangerates, fscapi
-from forex_api import barchart, currencyconverter, fxmarket
-from forex_scrape import liveusd, freeforex, finviz, yahoo, wsj
-from forex_scrape import reuters, duckduckgo, wocu, oanda, aastock, fxempire2, ino
-from forex_scrape import fxrate, forextime, currencyme, forexrates, exchangeratewidget
+from forex_api import (
+    barchart,
+    currencyconverter,
+    fixerio,
+    fscapi,
+    fxmarket,
+    openexchangerates,
+)
 from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire1, investing
-from utilities import race_write, ret_markets, race_read_json, it, sigfig
+from forex_scrape import (
+    aastock,
+    currencyme,
+    duckduckgo,
+    exchangeratewidget,
+    finviz,
+    forexrates,
+    forextime,
+    freeforex,
+    fxempire2,
+    fxrate,
+    ino,
+    liveusd,
+    oanda,
+    reuters,
+    wocu,
+    wsj,
+    yahoo,
+)
+from utilities import it, race_read_json, race_write, ret_markets, sigfig
 
 # GLOBAL CONSTANTS
 TIMEOUT = 15
@@ -152,5 +174,4 @@ def main():
 
 
 if __name__ == "__main__":
-
     main()

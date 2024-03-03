@@ -87,7 +87,6 @@ EXCHANGES = {
         "coinbase",
         "gateio",
         "hitbtc",
-        "huobi",
         "kraken",
         "poloniex",
     ],

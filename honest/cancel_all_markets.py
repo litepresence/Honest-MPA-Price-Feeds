@@ -4,14 +4,14 @@ CANCEL ALL ORDERS IN ALL MARKETS
 litepresence2020
 """
 
+import time
+from getpass import getpass
 from json import dumps as json_dumps
 from json import loads as json_loads
-from getpass import getpass
-import time
 
-from pricefeed_sceletus import reconnect
 from dex_manual_signing import broker
-from utilities import race_read_json, it
+from pricefeed_sceletus import reconnect
+from utilities import it, race_read_json
 
 
 def wss_query(rpc, params):
@@ -122,5 +122,4 @@ def cancel_all_markets(account_name, wif):
 
 
 if __name__ == "__main__":
-
     main()

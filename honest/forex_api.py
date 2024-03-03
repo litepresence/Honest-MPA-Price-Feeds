@@ -19,9 +19,10 @@ from json import dumps as json_dumps
 # THIRD PARTY MODULES
 import requests
 
-# HONEST PRICE FEED MODULES
-from utilities import refine_data, race_write
 from config_apikeys import config_apikeys
+
+# HONEST PRICE FEED MODULES
+from utilities import race_write, refine_data
 
 
 def barchart(site):

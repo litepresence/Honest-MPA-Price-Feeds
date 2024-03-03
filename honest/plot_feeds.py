@@ -2,12 +2,13 @@
 A stand alone app for querying @sschiessl's custom API
 to obtain historical price feed data for HONEST mpa's
 """
+import json
+import math
+import time
+
 # import necessary modules
 from matplotlib import pyplot as plt
 from requests import get
-import math
-import time
-import json
 
 URL = "https://api.bitshares.ws/openexplorer/pricefeed"
 

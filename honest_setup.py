@@ -36,17 +36,16 @@ print("\n\nInstalling requirements.txt...\n\n")
 setup(
     name=__NAME__,
     version=__VERSION__,
-    description=("HONEST MPA PRICE FEEDS FOR BITSHARES DEX"),
+    description="HONEST MPA PRICE FEEDS FOR BITSHARES DEX",
     long_description=open("README.md").read(),
-    download_url="https://github.com/litepresence/extinction-event/tarball/"
-    + __VERSION__,
+    download_url="https://github.com/litepresence/extinction-event/tarball/" + __VERSION__,
     author=__AUTHOR__,
     author_email=__AUTHOR_EMAIL__,
     url=__URL__,
     keywords=[
         "bts",
         "bitshares",
-        "palmpay" "btc",
+        "palmpaybtc",
         "bitcoin",
         "crypto",
         "altcoin",

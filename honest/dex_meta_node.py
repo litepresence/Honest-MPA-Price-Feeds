@@ -28,26 +28,28 @@ litepresence 2019
 # metaNODE = bitshares_trustless_client()
 # access time with SSD is about 0.0003 seconds
 
-# STANDARD PYTHON MODULES
-from time import time, sleep, ctime, strptime
-from random import random, shuffle, choice
-from multiprocessing import Process, Value
-from json import loads as json_load
-from json import dumps as json_dump
-from traceback import format_exc
-from datetime import datetime
-from statistics import mode
 from calendar import timegm
-from sys import stdout
+from datetime import datetime
+from json import dumps as json_dump
+from json import loads as json_load
+from multiprocessing import Process, Value
 from os import popen
+from random import choice, random, shuffle
+from statistics import mode
+from sys import stdout
+
+# STANDARD PYTHON MODULES
+from time import ctime, sleep, strptime, time
+from traceback import format_exc
+
+from psutil import Process as psutil_Process
 
 # MODULES WHICH MAY REQUIRE INSTALLATION
 from requests import get as requests_get
-from psutil import Process as psutil_Process
 from websocket import create_connection as wss
 from websocket import enableTrace
-from config_nodes import public_nodes
 
+from config_nodes import public_nodes
 
 # ======================================================================
 VERSION = "Bitshares metaNODE 0.00000020"
@@ -68,6 +70,7 @@ BIFURCATION_PAUSE = 20  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
 # ======================================================================
+
 
 # INTER PROCESS COMMUNICATION VIA TEXT
 # ======================================================================
@@ -701,7 +704,7 @@ def thresh(storage, process, epoch, pid, cache):
                 )
                 print(
                     "mean ping        ",
-                    (it("yellow", ("%.3f" % ping))),
+                    (it("yellow", "%.3f" % ping)),
                     "       %s %.2f" % (reject, reject_p),
                     optimizing,
                 )
@@ -757,7 +760,7 @@ def thresh(storage, process, epoch, pid, cache):
                 print("")
                 print(
                     "history      ",
-                    it("yellow", ("%.16f" % m_last)),
+                    it("yellow", "%.16f" % m_last),
                     "LAST with depth",
                     len(m_history),
                 )

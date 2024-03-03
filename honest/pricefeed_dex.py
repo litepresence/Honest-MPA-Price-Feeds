@@ -20,28 +20,30 @@ litepresence2020
 # pylint: disable=too-many-nested-blocks, bad-continuation, bad-whitespace
 # pylint: disable=too-many-lines
 
-# STANDARD PYTHON MODULES
-from time import time, sleep, ctime, strptime
-from random import shuffle, random
-from multiprocessing import Process, Value
-from json import loads as json_load
-from json import dumps as json_dump
-from traceback import format_exc
-from datetime import datetime
-from statistics import mode, median
-from calendar import timegm
-from sys import stdout
-from os import popen
 import os
+from calendar import timegm
+from datetime import datetime
+from json import dumps as json_dump
+from json import loads as json_load
+from multiprocessing import Process, Value
+from os import popen
+from random import random, shuffle
+from statistics import median, mode
+from sys import stdout
+
+# STANDARD PYTHON MODULES
+from time import ctime, sleep, strptime, time
+from traceback import format_exc
 
 # THIRD PARTY MODULES
 from psutil import Process as psutil_Process
 from websocket import create_connection as wss
 from websocket import enableTrace
 
-# HONEST PRICE FEED MODULES
-from utilities import sigfig, it
 from config_nodes import public_nodes
+
+# HONEST PRICE FEED MODULES
+from utilities import it, sigfig
 
 # ======================================================================
 VERSION = "HONEST MPA DEX FEED 0.00000001"
@@ -572,7 +574,7 @@ def thresh(storage, process, epoch, pid, cache):
                 )
                 print(
                     "mean ping            ",
-                    (it("purple", ("%.3f" % ping))),
+                    (it("purple", "%.3f" % ping)),
                     "       %s %.2f" % (reject, reject_p),
                     optimizing,
                 )
@@ -1286,5 +1288,4 @@ def pricefeed_dex():
 
 
 if __name__ == "__main__":
-
     pricefeed_dex()

@@ -16,19 +16,25 @@ this module by pricefeed_final.py
 litepresence2020
 """
 
+import itertools
+import random
+
 # STANDARD PYTHON MODULES
 import time
-import random
-import itertools
 from json import dumps as json_dumps
+
+from config_sceletus import config_sceletus
 
 # HONEST PRICE FEEDS MODULES
 from dex_manual_signing import broker
+from dex_meta_node import (
+    rpc_last,
+    rpc_lookup_accounts,
+    rpc_lookup_asset_symbols,
+    wss_handshake,
+)
 from pricefeed_dex import trace
-from utilities import race_write, race_read_json, sigfig, it
-from dex_meta_node import rpc_last, rpc_lookup_asset_symbols, rpc_lookup_accounts
-from dex_meta_node import wss_handshake
-from config_sceletus import config_sceletus
+from utilities import it, race_read_json, race_write, sigfig
 
 
 def reconnect(rpc):
@@ -489,6 +495,5 @@ def sceletus(prices, name, wif, do_sceletus):
 
 
 if __name__ == "__main__":
-
     print(create_pairs())
     print("see module docstring, launch with pricefeed_final.py")
