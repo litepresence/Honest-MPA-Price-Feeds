@@ -147,7 +147,8 @@ def request(api, signal):
     url = api["url"] + api["endpoint"]
     # print(api)
     time.sleep(10 * random())
-    if proxy_manager := api.get("proxy", False):
+    proxy_manager = api.get("proxy", False)
+    if proxy_manager:
         data = proxy_manager.get(
             url=url,
             data=api["data"],
