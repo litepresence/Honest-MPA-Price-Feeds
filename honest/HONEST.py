@@ -116,16 +116,16 @@ def publish_feed(prices, name, wif):
         print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
         trace(error)
 
-    for edict in edicts:
-        try:
-            order = {
-                "header": header,
-                "edicts": [edict],
-                "nodes": nodes,
-            }
-            broker(order)
-        except Exception as error:
-            trace(error)
+        for edict in edicts:
+            try:
+                order = {
+                    "header": header,
+                    "edicts": [edict],
+                    "nodes": nodes,
+                }
+                broker(order)
+            except Exception as error:
+                trace(error)
 
 
 def gather_data(name, wif, trigger):
