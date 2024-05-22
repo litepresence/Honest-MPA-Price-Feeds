@@ -1555,6 +1555,7 @@ def execute(signal, log_in, auth, order):
         tx = build_transaction(order)
     except Exception as e:
         trace(e)
+    problems = False
     if tx["operations"]:  # if there are any orders
         if not DEV:  # disable printing with DEV=False
             block_print()
@@ -1564,10 +1565,12 @@ def execute(signal, log_in, auth, order):
             tx, message = serialize_transaction(tx)
         except Exception as e:
             tx = message = trace(e)
+            problems = True
         try:
             signed_tx = sign_transaction(tx, message)
         except Exception as e:
             signed_tx = trace(e)
+            problems = True
         if login:
             # PublicKey.__init__ switches "authenticated"
             if not DEV:
@@ -1580,6 +1583,7 @@ def execute(signal, log_in, auth, order):
                 verified_tx = verify_transaction(signed_tx)
             except Exception as e:
                 verified_tx = trace(e)
+                problems = True
             if not DEV:
                 enable_print()
             try:
@@ -1587,6 +1591,7 @@ def execute(signal, log_in, auth, order):
                 broadcasted_tx = rpc_broadcast_transaction(verified_tx)
             except Exception as e:
                 broadcasted_tx = trace(e)
+                problems = True
 
         current_time = {
             "unix": int(time()),
@@ -1603,10 +1608,11 @@ def execute(signal, log_in, auth, order):
             "broadcasted_tx": broadcasted_tx,
         }
         now = str(ctime())
-        # race_write(
-        #     doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
-        #     text=receipt,
-        # )
+        if problems:
+            race_write(
+                doc=(now + order["edicts"][0]["op"] + "_transaction_receipt.txt"),
+                text=json_dumps(receipt, indent=2),
+            )
     else:
         print(it("red", "manualSIGNING rejected your order"), order["edicts"])
     print("manualSIGNING process elapsed: %.3f sec" % (time() - start))

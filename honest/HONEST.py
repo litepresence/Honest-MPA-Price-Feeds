@@ -31,7 +31,7 @@ from pricefeed_forex import pricefeed_forex
 from pricefeed_publish import broker
 from pricefeed_sceletus import sceletus
 from proxy_list import ProxyManager
-from utilities import it, race_read_json, race_write, sigfig
+from utilities import it, race_read_json, race_write, sigfig, logger, trace
 
 # ######################################################################################
 # ######################################################################################
@@ -270,6 +270,7 @@ def gather_data(name, wif, trigger):
                 time.sleep(5)
                 publish_feed(prices, name, wif)
         except Exception as error:
+            logger(trace(error), "publishing")
             print(trace(error))
             time.sleep(10)  # try again in 10 seconds
             continue
