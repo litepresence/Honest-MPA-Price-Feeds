@@ -66,19 +66,18 @@ def trace(error):
 
 def logger(msg, typ):
     spots = [PATH + "pipe/error_log.txt", "error_log.txt", "error_log"]
-    for spot in spots: # keep trying until we log somewhere
+    idx = 0
+    while True: # keep trying until we log somewhere
+        spot = spots[idx]
         try:
-            try:
-                with open(spot, "a"):
-                    handle.write(f"---------------- error during {typ} ----------------\n{msg}\n\n")
-                    handle.close()
-            except:
-                with open(spot, "w"):
-                    handle.write(f"---------------- error during {typ} ----------------\n{msg}\n\n")
-                    handle.close()
+            with open(spot, "a") as handle:
+                handle.write(f"---------------- error during {typ} ----------------\n{msg}\n\n")
+                handle.close()
             break
         except:
             pass
+        idx += 1
+        idx %= 3
 
 
 def sigfig(number, n=8):
