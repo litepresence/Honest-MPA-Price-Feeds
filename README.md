@@ -6,7 +6,7 @@ Honest Price Feeds for Bitshares Market Pegged Assets
 
 We are currently feeding an HONEST price hourly to 46 BitShares Market Pegged Assets: 
 
-These are backed by the BTS core token as collateral, meaning you "borrow them into existence" with Bitshares:
+These are all fundamentally backed by the Bitshares core token (BTS) as collateral, meaning you "borrow them into existence" with BTS:
 
     HONEST.CNY
     HONEST.USD
@@ -53,14 +53,14 @@ These are backed by the BTS core token as collateral, meaning you "borrow them i
     HONEST.XAGSHORT
     HONEST.CNYSHORT
 
-(The `SHORT` tokens are fed the inverse (`1 / `) of their base price, see [this document](short_tokens.md) for more details.)
+(The `SHORT` tokens are fed the inverse (`1 / oracle`) of their base price, see [this document](short_tokens.md) to learn more about HONEST SHORT.)
 
-These are backed by HONEST.BTC as collateral, meaning you "borrow them into existence" with HONEST Bitcoin:
+The following two tokens are backed by HONEST.BTC as collateral, meaning you "borrow them into existence" with HONEST.BTC:
 
     HONEST.ETH1
     HONEST.XRP1
 
-NOTE: The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem as they are the only MPA backed MPA's on the DEX.   In this regard they are an exotic, experimental financial instrument. 
+The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem as they are the only MPA backed MPA's on the DEX.   
 
 # Installation
 You should be on a linux box with latest python version installed (3.7 or better).
@@ -82,7 +82,7 @@ pip install -r requirements.txt
 If that fails you may need to set up a virtual enviroment for python3.9+, which is outside the scope of this document.  See [here](https://realpython.com/python-virtual-environments-a-primer/) for instructions.
 
 
-> The pricefeed script for the HONEST mpa's used to provide additional functionality called `sceletus`.  This aspect of the script performed a dust quantity wash trade once per hour to provide a historical chart reference rate.   This functionality has since been removed to simplify the script, but there remains a `honest_cross_rates.txt` file in the `pipe` folder so that custom or 3rd party sceletus scripts may use HONEST's curated price data.
+There is a streaming file `honest_cross_rates.txt` in the `pipe` folder so that custom or 3rd party integrations may use HONEST's curated price data.
 
 
 You are now ready to deploy live.   Run `HONEST.py` in the terminal.  Choose `y + Enter` to enable publishing.  
@@ -96,21 +96,12 @@ Then enter your BitShares `username` and `wif`.   Press `Enter` one last time an
 From time to time this Github repository will be updated.  Please check in regularly at the HONEST mpa development room on telegram.  Whenever you update, we suggest using `git pull` rather than the `Download ZIP` button, so that should there be any errors in the latest development branch, it would then be easier to revert using `git checkout <commit-hash>`.
 
 
-To sign up as a feed producer for HONEST market pegged assets on Bitshares Blockchain find me on telegram, I'm a chat mod in the groups:
+I'm a chat mod in https://t.me/bitsharesDEV
 
-https://t.me/bitshares_community
+or contact me via email:
 
-https://t.me/bitsharesDEX
-
-or via email:
-
-finitestate@tutamail.com
-
-We are seeking python competent individuals, with a linux box, familiar with Austrian economics, with reliable high speed internet, who have a strong ethical outlook towards the crypto community. 
-
-For more information, please visit the ANNOUNCEMENT thread at: https://bitsharestalk.org/index.php?topic=32035
-
+f i n i t e s t a t e @tutamail.com
 
 HONEST BDFL,
 
-litepresence2020 & squidKid-deluxe 2025
+litepresence
