@@ -11,12 +11,14 @@ data formatting and text pipe IPC utilities
 litepresence2020
 """
 
+import json
 # STANDARD PYTHON MODULES
 import math
 import os
+import re
+import shutil
 import sys
 import time
-from json import loads as json_loads
 from traceback import format_exc
 
 # GLOBAL VARIABLES
@@ -35,8 +37,57 @@ def it(style, text):
         "blue": 94,
         "purple": 95,
         "cyan": 96,
+        "default": 0,
+        "white": 0,
     }
     return ("\033[%sm" % emphasis[style]) + str(text) + "\033[0m"
+
+
+def at(
+    spot: tuple,  # (col, row, width, height,)
+    data: str,  # return to row, col and insert this multi line block text
+):
+    """
+    format string w/ escape sequence
+    to clear a terminal area at specific location of specified size
+    and print a multi line text in that area
+    """
+    final = "".join(
+        f"\033[{spot[1] + i};{spot[0]}H" + " " * spot[2] for i in range(spot[3])
+    )
+    for ldx, line in enumerate(data.split("\n")):
+        final += f"\033[{spot[1]+ldx};{spot[0]}H" + line
+    return final
+
+
+def print_logo(output=True):
+    """
+    ╔═══════════════════════════════╗
+    ║  ╦ ╦  ╔═╗  ╔╗╔  ╔═╗  ╔═╗  ╔╦╗ ║
+    ║  ╠═╣  ║ ║  ║║║  ║╣   ╚═╗   ║  ║
+    ║  ╩ ╩  ╚═╝  ╝╚╝  ╚═╝  ╚═╝   ╩  ║
+    ║    MARKET - PEGGED - ASSETS   ║
+    ╚═══════════════════════════════╝
+    """
+    if output:
+        print(
+            it(
+                "green",
+                "\n".join(
+                    i.ljust(33).center(shutil.get_terminal_size().columns)
+                    for i in print_logo.__doc__.replace("\n    ", "\n").split("\n")
+                ),
+            )
+        )
+    else:
+        return "\n".join(
+            i.ljust(33) for i in print_logo.__doc__.replace("\n    ", "\n").split("\n")
+        )
+
+
+def string_width(string):
+    string = re.sub(r"\033\[.*?m", "", string)
+    return max(map(len, string.split("\n")))
 
 
 def block_print():
@@ -60,18 +111,23 @@ def trace(error):
     msg = str(type(error).__name__) + "\n"
     msg += str(error.args) + "\n"
     msg += str(format_exc()) + "\n"
-    print(msg)
+    # print(msg)
     return msg
 
 
 def logger(msg, typ):
     spots = [PATH + "pipe/error_log.txt", "error_log.txt", "error_log"]
     idx = 0
-    while True: # keep trying until we log somewhere
+    while True:  # keep trying until we log somewhere
         spot = spots[idx]
         try:
             with open(spot, "a") as handle:
-                handle.write(f"---------------- error during {typ} ----------------\n{msg}\n\n")
+                handle.write(
+                    "---------------- "
+                    + time.ctime()
+                    + f" - error during {typ} "
+                    + f"----------------\n{msg}\n\n"
+                )
                 handle.close()
             break
         except:
@@ -90,65 +146,84 @@ def sigfig(number, n=8):
     return round(number, n - int(math.floor(math.log10(abs(number)))) - 1)
 
 
-def race_write(doc="", text=""):
+def file_operation(mode, doc="", text=None):
     """
-    Concurrent Write to File Operation
+    Generic File Operation
     """
-    text = str(text)
+    doc = os.path.join(PATH, "pipe", doc)
     i = 0
-    doc = PATH + "pipe/" + doc
     while True:
         try:
             time.sleep(0.05 * i**2)
             i += 1
-            with open(doc, "w+") as handle:
-                handle.write(text)
-                handle.close()
+            with open(doc, mode) as handle:
+                if mode == "a+":
+                    handle.write(text)
+                elif mode == "w+":
+                    handle.write(str(text))
+                elif mode == "r":
+                    return json.loads(handle.read())
                 break
         except Exception as error:
-            msg = str(type(error).__name__) + str(error.args)
-            msg += " race_write()"
+            msg = f"{type(error).__name__}: {error.args} in file_operation()"
             print(msg)
-            try:
-                handle.close()
-            except:
-                pass
-            continue
-        finally:
-            try:
-                handle.close()
-            except:
-                pass
+            if i > 10:  # Limit the number of retries
+                break
+
+
+def race_append(doc="", text=""):
+    """
+    Concurrent Append to File Operation
+    """
+    file_operation("a+", doc, text)
+
+
+def race_write(doc="", text=""):
+    """
+    Concurrent Write to File Operation
+    """
+    file_operation("w+", doc, text)
 
 
 def race_read_json(doc=""):
     """
     Concurrent Read JSON from File Operation
     """
+    return file_operation("r", doc)
+
+
+def race_read(doc=""):
+    """
+    Concurrent Read from File Operation
+    """
     doc = PATH + "pipe/" + doc
-    i = 0
+    iteration = 0
     while True:
+        time.sleep(0.0001 * iteration**2)
+        iteration += 1
         try:
-            time.sleep(0.05 * i**2)
-            i += 1
             with open(doc, "r") as handle:
-                data = json_loads(handle.read())
-                handle.close()
-                return data
+                ret = handle.read().replace("'", '"')
+                try:
+                    return json.loads(ret)
+                except json.JSONDecodeError:
+                    # Attempt to fix malformed JSON
+                    for fix in [
+                        lambda x: x.split("]")[0] + "]",
+                        lambda x: x.split("}")[0] + "}",
+                    ]:
+                        try:
+                            ret = fix(ret)
+                            return json.loads(ret)
+                        except json.JSONDecodeError:
+                            continue
+                    print("race_read() failed to parse JSON: %s" % str(ret))
+                    return {} if "{" in ret else []
+        except FileNotFoundError:
+            return []
         except Exception as error:
-            msg = str(type(error).__name__) + str(error.args)
-            msg += " race_read_json() " + doc
-            print(msg)
-            try:
-                handle.close()
-            except:
-                pass
+            print(trace(error))
             continue
-        finally:
-            try:
-                handle.close()
-            except:
-                pass
 
 
 def from_iso_date(date):

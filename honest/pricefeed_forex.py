@@ -13,40 +13,21 @@ litepresence2020
 
 # STANDARD PYTHON MODULES
 import time
+from collections import defaultdict
 from json import dumps as json_dumps
 from multiprocessing import Process
 from pprint import pprint
 from statistics import median
 
 # PRICE FEED MODULES
-from forex_api import (
-    barchart,
-    currencyconverter,
-    fixerio,
-    fscapi,
-    fxmarket,
-    openexchangerates,
-)
-from forex_cfscrape import bitcoinaverage, bloomberg, fxcm, fxempire1, investing
-from forex_scrape import (
-    aastock,
-    currencyme,
-    duckduckgo,
-    exchangeratewidget,
-    finviz,
-    forexrates,
-    forextime,
-    freeforex,
-    fxempire2,
-    fxrate,
-    ino,
-    liveusd,
-    oanda,
-    reuters,
-    wocu,
-    wsj,
-    yahoo,
-)
+from forex.api_source import (barchart, currencyconverter, fixerio, fscapi,
+                              fxmarket, openexchangerates)
+from forex.bts_source import cmc, cryptocomp, google
+from forex.cfscrape_source import fxcm, fxempire1
+from forex.commodities import (arincen, bitpanda, businessinsider, cnbc,
+                               commoditycom, mql5)
+from forex.scrape_source import (aastock, currencyme, duckduckgo, forexrates,
+                                 ino, liveusd, oanda, ratewidget, wocu, yahoo)
 from utilities import it, race_read_json, race_write, ret_markets, sigfig
 
 # GLOBAL CONSTANTS
@@ -60,33 +41,32 @@ def refresh_forex_rates():
     """
     methods = [
         aastock,  # DARKWEB API; MORNINGSTAR (GOOGLE FINANCE) BACKDOOR
-        barchart,  # KEYED
-        bitcoinaverage,  # MAY ADD CAPTCHA; HEADER REQUIRED; CLOUDFARE SPOOFING
-        bloomberg,  # MAY ADD CAPTCHA; HEADER REQUIRED; CLOUDFARE SPOOFING
-        currencyconverter,  # KEYED, NOT COMPATIBLE WITH VPN / DYNAMIC IP
+        # barchart,  # KEYED
+        # currencyconverter,  # KEYED, NOT COMPATIBLE WITH VPN / DYNAMIC IP
         currencyme,  # DARKWEB API
         duckduckgo,  # XML SCRAPING, XE BACKDOOR
-        exchangeratewidget,  # XML SCRAPING
-        finviz,  # DARKWEB API
-        fixerio,  # KEYED
+        ratewidget,  # XML SCRAPING
+        # fixerio,  # KEYED
         forexrates,  # XML SCRAPING
-        forextime,  # DARKWEB API
-        freeforex,  # FREE API
-        fscapi,  # KEYED
+        # fscapi,  # KEYED
         fxcm,  # CLOUDFARE SPOOFING; HEADER REQUIRED; ALMOST JSON RESPONSE
         fxempire1,  # XIGNITE BACKDOOR; HEADER REQUIRED; CLOUDFARE SPOOFING
-        fxempire2,  # TRADINGVIEW BACKDOOR
-        fxmarket,  # KEYED
-        fxrate,  # XML SCRAPING
+        # fxmarket,  # KEYED
         ino,  # DARKWEB API
-        investing,  # CLOUDFARE SPOOFING, XML SCRAPING
         liveusd,  # DARKWEB API
         oanda,  # DARKWEB API; RC4 ECRYPTION OF LATIN ENCODING
-        openexchangerates,  # KEYED
-        reuters,  # REFINITIV BACKDOOR, DARKWEB API
+        # openexchangerates,  # KEYED
         wocu,  # XML SCRAPING
-        wsj,  # MARKETWATCH BACKDOOR, DARKWEB API
         yahoo,  # YAHOO FINANCE V7 DARKWEB API
+        cmc,
+        cryptocomp,
+        google,
+        cnbc,
+        arincen,
+        bitpanda,
+        commoditycom,
+        businessinsider,
+        mql5,
     ]
     # initialize each external call method as a process
     processes = {}
@@ -114,14 +94,45 @@ def refresh_forex_rates():
 
 def aggregate_rates():
     """
-    sort and aggregate data from external sources
-    calculate medians
+    Sort and aggregate data from external sources and calculate medians.
+
+    This function retrieves foreign exchange rates from various sources,
+    aggregates the prices for each currency pair, and calculates the median
+    price along with the count of prices and the sources from which they were obtained.
+
+    Returns:
+        dict: A dictionary containing the following keys:
+        - "sources" (dict): A dictionary of the raw forex rates from each source.
+        - "aggregate" (defaultdict): A dictionary aggregating prices for each currency pair,
+          where each key is a currency pair and the value is a list of tuples containing
+          the price and the source.
+        - "medians" (dict): A dictionary where each key is a currency pair and the value is a tuple
+          containing:
+            - median price (float): The median price of the currency pair.
+            - count (int): The number of prices aggregated for the currency pair.
+            - sources (list): A list of sources from which the prices were obtained.
+
+    Example:
+        {
+            "sources": {
+                "source1": {"EUR:USD": 1.1, "GBP:USD": 1.3},
+                "source2": {"EUR:USD": 1.2, "GBP:USD": 1.4},
+            },
+            "aggregate": {
+                "EUR:USD": [(1.1, "source1"), (1.2, "source2")],
+                "GBP:USD": [(1.3, "source1"), (1.4, "source2")],
+            },
+            "medians": {
+                "EUR:USD": (1.15, 2, ["source1", "source2"]),
+                "GBP:USD": (1.35, 2, ["source1", "source2"]),
+            }
+        }
     """
     sources = refresh_forex_rates()
-    aggregate = {}
+    aggregate = defaultdict(list)
     for source, prices in sources.items():
         for pair, price in prices.items():
-            aggregate.setdefault(pair, []).append((price, source))
+            aggregate[pair].append((price, source))
 
     medians = {
         pair: (
@@ -161,6 +172,7 @@ def pricefeed_forex():
     """
     forex = aggregate_rates()
     race_write(doc="pricefeed_forex.txt", text=json_dumps(forex))
+    print(it("purple", "FOREX: "), it("green", "DONE!"))
     return forex
 
 

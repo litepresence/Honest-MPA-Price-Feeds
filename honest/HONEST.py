@@ -12,26 +12,26 @@ litepresence2020
 """
 
 # STANDARD PYTHON MODULES
+import json
 import os
 import sys
 import time
 from getpass import getpass
-from json import dumps as json_dumps
 from multiprocessing import Process
 from statistics import median
 
-from cancel_all_markets import cancel_all_markets
+# 3RD PARTY MODULES
+from bitshares_signing import broker
+from bitshares_signing.rpc import (rpc_account_id, rpc_get_objects,
+                                   wss_handshake)
+# HONEST MODULES
 from config_nodes import public_nodes
-from dex_manual_signing import broker as broker2
-from dex_manual_signing import trace, wss_handshake, wss_query
-from jsonbin import update_jsonbin
 from pricefeed_cex import pricefeed_cex
-from pricefeed_dex import pricefeed_dex, print_logo, race_append
+from pricefeed_dex import pricefeed_dex
 from pricefeed_forex import pricefeed_forex
-from pricefeed_publish import broker
-from pricefeed_sceletus import sceletus
 from proxy_list import ProxyManager
-from utilities import it, race_read_json, race_write, sigfig, logger, trace
+from utilities import (PATH, it, logger, print_logo, race_append,
+                       race_read_json, race_write, sigfig, trace)
 
 # ######################################################################################
 # ######################################################################################
@@ -47,19 +47,36 @@ REFRESH = 2750  # maintain accurate timely price feeds; approximately on 55 min
 # ######################################################################################
 # ######################################################################################
 BEGIN = int(time.time())
+REDIRECT_TO_LOG = False
+BROADCAST = True
+
+def create_btc_collateral_edict(
+    pub_dict, prices, asset_name, currency_name, core_price_key, settlement_price_key
+):
+    """
+    Helper function to create an edict for assets backed by HONEST.BTC collateral.
+    """
+    return {
+        **pub_dict,  # Start with the base publication dictionary
+        "asset_name": asset_name,
+        "currency_name": currency_name,
+        "core_price": prices["feed"][core_price_key],
+        "settlement_price": prices["feed"][settlement_price_key],
+    }
 
 
 def publish_feed(prices, name, wif):
     """
-    update the feed price on the blockchain using broker(order) method
+    Updates the feed prices on the blockchain using the broker(order) method.
+    Publishes prices for regular tokens, shorts, and assets backed by HONEST.BTC collateral.
     """
-    # gather the node list created by dex_process
+    # Gather the node list created by the pricefeed_dex metanode
     nodes = race_read_json("nodes.txt")
-    # attach your account name and wif to the header
-    header = {
-        "account_name": name,
-        "wif": wif,
-    }
+
+    # Attach account name and WIF to the header
+    header = {"account_name": name, "wif": wif}
+
+    # Base publication dictionary with standard parameters
     pub_dict = {
         "op": "publish",
         "CER": CER,
@@ -67,55 +84,53 @@ def publish_feed(prices, name, wif):
         "MCR": MCR,
         "currency_name": "BTS",
     }
-    # create publication edict for each MPA
-    # include standard publication dictionary parameters with unique name and price
-    print(it("yellow", "NODES + PUB_DICT"))
-    print(nodes)
-    print(pub_dict)
 
-    edicts = []
-    # Regular tokens, then shorts.
-    for short in ["SHORT", ""]:
-        for coin, feed in prices["feed"].items():
-            if coin.split(":")[0] != "BTC":
-                edict = dict(pub_dict)
-                edict["asset_name"] = f"HONEST.{coin.split(':')[1]}{short}"
-                edict["settlement_price"] = 1 / feed if short else feed
-                edicts.append(edict)
+    # Prepare list of edicts for regular tokens and shorts
+    # NOTE to future self: this requires that all honest short tokens end in "SHORT"
+    # if we ever had to use "INV" or similar because of symbol length, this would break
+    edicts = [
+        {
+            **pub_dict,
+            "asset_name": f"HONEST.{coin.split(':')[1]}{short}",
+            "settlement_price": 1 / feed if short else feed,
+        }
+        for short in ["SHORT", ""]  # Handle both regular and short tokens
+        for coin, feed in prices["feed"].items()
+        if coin.split(":")[0] != "BTC"
+    ]
+
     print("EDICTS BEFORE BTC COLLATERAL")
     print(edicts)
 
-    # these are a little different; they're backed by HONEST.BTC collateral
-    # we'll override currency name and add core price
-    btceth1 = dict(pub_dict)
-    btceth1["asset_name"] = "HONEST.ETH1"
-    btceth1["currency_name"] = "HONEST.BTC"
-    btceth1["core_price"] = prices["feed"]["BTS:ETH"]
-    btceth1["settlement_price"] = prices["feed"]["BTC:ETH"]
-    btcxrp1 = dict(pub_dict)
-    btcxrp1["asset_name"] = "HONEST.XRP1"
-    btcxrp1["currency_name"] = "HONEST.BTC"
-    btcxrp1["core_price"] = prices["feed"]["BTS:XRP"]
-    btcxrp1["settlement_price"] = prices["feed"]["BTC:XRP"]
-    # add each publication edict to the edicts list
-    edicts = [*edicts, btceth1, btcxrp1]
+    # Handle BTC-backed collateral assets (ETH1 and XRP1)
+    btc_eth_edicts = [
+        create_btc_collateral_edict(
+            pub_dict, prices, "HONEST.ETH1", "HONEST.BTC", "BTS:ETH", "BTC:ETH"
+        ),
+        create_btc_collateral_edict(
+            pub_dict, prices, "HONEST.XRP1", "HONEST.BTC", "BTS:XRP", "BTC:XRP"
+        ),
+    ]
+
+    # Add BTC collateral edicts to the main edicts list
+    edicts.extend(btc_eth_edicts)
 
     print("EDICTS:\n")
-    print(json_dumps(edicts, indent=4))
+    print(json.dumps(edicts, indent=4))
 
-    # attempt to publish them all at once
+    # Attempt to publish all at once
     try:
         order = {
             "header": header,
             "edicts": edicts,
             "nodes": nodes,
         }
-        broker(order)
-    # otherwise attempt each mpa indvidually
+        broker(order, BROADCAST)
     except Exception as error:
         print(it("red", "FAILED TO PUBLISH ATOMICALLY, FALLING BACK TO INDIVIDUAL"))
         trace(error)
 
+        # Attempt to publish each MPA individually if atomic publish fails
         for edict in edicts:
             try:
                 order = {
@@ -123,125 +138,182 @@ def publish_feed(prices, name, wif):
                     "edicts": [edict],
                     "nodes": nodes,
                 }
-                broker(order)
+                broker(order, BROADCAST)
             except Exception as error:
                 trace(error)
 
 
-def gather_data(name, wif, trigger):
+def purge_ipc():
     """
-    primary event loop
+    purge the IPC text pipe
     """
-    # purge the IPC text pipe
     race_write("pricefeed_final.txt", {})
     race_write("pricefeed_forex.txt", {})
     race_write("pricefeed_cex.txt", {})
     race_write("pricefeed_dex.txt", {})
-    race_write("sceletus_output.txt", [])
-    race_write("honest_cross_rates.txt", {})
+    race_write("bts_btc_pipe.txt", {})
+    race_write("honest_cross_rates.txt", {})  # This is only populated, not printed
     race_write("feed.txt", {})
+
+
+def wait_for_dex():
+    """
+    wait until the first dex pricefeed writes to file
+    """
+    dex = {}
+    while not dex:
+        # Prevent hard drive strain
+        time.sleep(0.5)
+        dex = race_read_json("pricefeed_dex.txt")
+    return dex
+
+
+def calculate_btsbtc_price(cex, exchange):
+    """
+    Calculate BTS:BTC price for a given exchange using CEX data.
+    """
+    btsusd_price = cex["BTS:USDT"]["data"][exchange]
+    btcusd_price = cex["BTC:USDT"]["data"][exchange]
+    return btsusd_price * (1 / btcusd_price)
+
+
+def gather_dex_btsbtc(dex, cex):
+    """
+    Gather BTS:BTC prices from DEX and adjust for systemic risks.
+    """
+    dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
+    dex_btsbtc_dict = {k: v for k, v in dex["last"].items() if "BTC" in k}
+
+    # Remove the systemic risk of EOS and XRP while leaving the systemic risk of IOB and
+    # BTWTY to attain two addional BTS:BTC sources from bitshares pools
+    for asset in ["IOB.XRP", "BTWTY.EOS"]:
+        if asset in dex["last"]:
+            price = dex["last"][asset] * cex[f"{asset.split('.')[1]}:BTC"]["median"]
+            dex_btsbtc_list.append(price)
+            dex_btsbtc_dict[asset] = price
+
+    return dex_btsbtc_list, dex_btsbtc_dict
+
+
+def process_data(cex, dex, forex):
+    btcusd = cex["BTC:USD"]["median"]
+
+    # Get BTS:BTC prices from CEX
+    cex_btsbtc_dict = {
+        exchange: calculate_btsbtc_price(cex, exchange)
+        for exchange in cex["BTS:USDT"]["data"]
+        if exchange in cex["BTC:USDT"]["data"]
+    }
+
+    agg_btsbtc_dict = {
+        source: price / btcusd for price, source in forex["aggregate"]["BTS:USD"]
+    }
+
+    # Gather DEX BTS:BTC prices
+    dex_btsbtc_list, dex_btsbtc_dict = gather_dex_btsbtc(dex, cex)
+
+    agg_btsbtc_list = list(agg_btsbtc_dict.values())
+    cex_btsbtc_list = list(cex_btsbtc_dict.values())
+
+    # Finalize BTS:BTC by taking the median of all prices
+    btsbtc = median(dex_btsbtc_list + cex_btsbtc_list + agg_btsbtc_list)
+    race_write(
+        doc="bts_btc_pipe.txt",
+        text=json.dumps(
+            {
+                k: sigfig(v, 4)
+                for k, v in {
+                    **dex_btsbtc_dict,
+                    **cex_btsbtc_dict,
+                    **agg_btsbtc_dict,
+                }.items()
+            }
+        ),
+    )
+
+    # Create implied BTS USD price
+    btsusd = btsbtc * btcusd
+    usdtusd = btcusd / cex["BTC:USDT"]["median"]
+
+    # Prepare forex feeds
+    forexfeedusd = {pair: value[0] for pair, value in forex["medians"].items()}
+    forexfeedbts = {
+        f"BTS:{pair.split(':')[1]}": btsusd * value
+        for pair, value in forexfeedusd.items()
+    }
+
+    # Prepare crypto feeds
+    cryptofeedbtc = {
+        ":".join(coin.split(":")[::-1]): price["median"]
+        for coin, price in cex.items()
+        if coin not in ["BTC:USD", "BTS:BTC", "BTS:USDT"]
+    }
+    cryptofeedbts = {
+        f"BTS:{pair.split(':')[1]}": btsbtc / value
+        for pair, value in cryptofeedbtc.items()
+    }
+    cryptofeedbtc = {
+        coin: 1 / value
+        for coin, value in cryptofeedbtc.items()
+        if coin in ["BTC:XRP", "BTC:ETH"]
+    }
+
+    # Create the final feed
+    feed = {
+        **cryptofeedbtc,
+        **cryptofeedbts,
+        **forexfeedbts,
+        "BTS:USD": btsusd,
+        "BTS:BTC": btsbtc,
+    }
+    feed = {k: sigfig(v) for k, v in feed.items()}
+
+    # Create inverse feed
+    inverse_feed = {
+        ":".join(k.split(":")[::-1]): sigfig(1 / v) for k, v in feed.items()
+    }
+
+    return feed, inverse_feed
+
+
+def gather_data(name, wif, publish):
+    """
+    primary event loop
+    """
+    purge_ipc()
     # begin the dex pricefeed (metanode fork)
     dex_process = Process(target=pricefeed_dex)
-    dex_process.daemon = False
     dex_process.start()
-    # dex_process.join(10)
-    dex = {}
-    # wait until the first dex pricefeed writes to file
-    while not dex:
-        time.sleep(0.5)
-        # Above prevents hard drive strain and allows `pricefeed_dex` to actually start
-        dex = race_read_json("pricefeed_dex.txt")
-    updates = 1
+    # pause for the dex process the start up
+    time.sleep(1)
+    updates = 0
     proxy_manager = ProxyManager()
     while True:
-        # print("REDIRECTING STDOUT TO LOG")
-        # sys.stdout.close()
-        # sys.stdout = open(f"pipe/log{int(time.time())}.txt", "w")
+        if REDIRECT_TO_LOG:
+            # FIXME this leaves a file "dangling" open, probably not the best
+            print("REDIRECTING STDOUT TO LOG")
+            sys.stdout.close()
+            sys.stdout = open(
+                os.path.join(PATH, "pipe", f"log{int(time.time())}.txt"), "w"
+            )
         try:
             # collect forex and cex data
-            forex = pricefeed_forex()  # takes about 30 seconds
-            cex = pricefeed_cex(proxy_manager)  # takes about 30 seconds
-            # read the latest dex data
+            forex_proc = Process(target=pricefeed_forex)
+            forex_proc.start()
+            # FIXME for now this is disabled because the two exchanges that use proxies
+            # are disabled.  this needs improvement so requests can actually be made to
+            # binance and bybit
+            # proxy_manager.get_proxy_list()
+            cex = pricefeed_cex(proxy_manager)
+            forex_proc.join()
+            # pricefeed_dex has been spooling up this whole time
+            # but make sure the data is there before grabbing it
+            wait_for_dex()
+            forex = race_read_json("pricefeed_forex.txt")
             dex = race_read_json("pricefeed_dex.txt")
 
-            # Get BTS:BTC price for each exchange
-            cex_btsbtc_dict = {}
-            for exchange, btsusd_price in cex["BTS:USDT"]["data"].items():
-                if exchange in cex["BTC:USDT"]["data"]:
-                    cex_btsbtc_dict[exchange] = btsusd_price["last"] * (
-                        1 / cex["BTC:USDT"]["data"][exchange]["last"]
-                    )
-            # Remove exchange keys after printing
-            cex_btsbtc_list = list(cex_btsbtc_dict.values())
+            feed, inverse_feed = process_data(cex, dex, forex)
 
-            # attain dex BTS:BTC median
-            dex_btsbtc_list = [v for k, v in dex["last"].items() if "BTC" in k]
-            dex_btsbtc_dict = {k: v for k, v in dex["last"].items() if "BTC" in k}
-
-            # remove the systemic risk of EOS and XRP leaving the systemic risk of IOB and BTWTY
-            # to attain two addional BTS:BTC sources from bitshares pools
-            if "IOB.XRP" in dex["last"]:
-                dex_btsbtc_list.append(
-                    dex["last"]["IOB.XRP"] * cex["XRP:BTC"]["median"]
-                )
-                dex_btsbtc_dict["IOB.XRP"] = dex_btsbtc_list[-1]
-            if "BTWTY.EOS" in dex["last"]:
-                dex_btsbtc_list.append(
-                    dex["last"]["BTWTY.EOS"] * cex["EOS:BTC"]["median"]
-                )
-                dex_btsbtc_dict["BTWTY.EOS"] = dex_btsbtc_list[-1]
-
-            # finalize btsbtc by taking median of all cex and dex btsbtc prices
-            btsbtc = median(dex_btsbtc_list + cex_btsbtc_list)
-            race_write(
-                doc="bts_btc_pipe.txt",
-                text=json_dumps(
-                    {
-                        k: sigfig(v, 4)
-                        for k, v in {**dex_btsbtc_dict, **cex_btsbtc_dict}.items()
-                    }
-                ),
-            )
-            # create feed prices for crypto altcoins: LTC, ETH, XRP
-
-            btcusd = cex["BTC:USD"]["median"]
-            # create implied bts us dollar price
-            btsusd = btsbtc * btcusd
-
-            forexfeedusd = {pair: value[0] for pair, value in forex["medians"].items()}
-            print(forexfeedusd)
-            forexfeedbts = {
-                "BTS:" + pair.split(":")[1]: btsusd * value
-                for pair, value in forexfeedusd.items()
-            }
-            print(forexfeedbts)
-            cryptofeedbtc = {
-                ":".join(coin.split(":")[::-1]): price["median"]
-                for coin, price in cex.items()
-                if coin not in ["BTC:USD", "BTS:BTC", "BTS:USDT"]
-            }
-            print(cryptofeedbtc)
-            cryptofeedbts = {
-                "BTS:" + pair.split(":")[1]: btsbtc / value
-                for pair, value in cryptofeedbtc.items()
-            }
-            cryptofeedbtc = {
-                coin: 1 / value
-                for coin, value in cryptofeedbtc.items()
-                if coin in ["BTC:XRP", "BTC:ETH"]
-            }
-
-            # create implied bts priced in forex terms
-            feed = {
-                **cryptofeedbtc,
-                **cryptofeedbts,
-                **forexfeedbts,
-                "BTS:USD": btsusd,
-                "BTS:BTC": btsbtc,
-            }
-            feed = {k: sigfig(v) for k, v in feed.items()}
-            # forex priced in bts terms; switch symbol and 1/price
-            inverse_feed = {f"{k[-3:]}:{k[:3]}": sigfig(1 / v) for k, v in feed.items()}
             # aggregate full price calculation for jsonbin.io
             current_time = {
                 "unix": int(time.time()),
@@ -260,121 +332,105 @@ def gather_data(name, wif, trigger):
             }
             # update final output on disk
             race_write(doc="feed.txt", text=feed)
-            race_write(doc="pricefeed_final.txt", text=json_dumps(prices))
+            race_write(doc="pricefeed_final.txt", text=json.dumps(prices))
 
             # publish feed prices to the blockchain
-            if trigger["feed"] == "y":
-                race_write(doc=f"price_log_{time.ctime()}.txt", text=json_dumps(prices))
-                time.sleep(3)
-                print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
-                time.sleep(5)
-                publish_feed(prices, name, wif)
+            if publish:
+                try:
+                    race_write(
+                        doc=f"price_log_{time.ctime()}.txt", text=json.dumps(prices)
+                    )
+                    print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
+                    time.sleep(5)
+                    publish_feed(prices, name, wif)
+                except Exception as error:
+                    msg = trace(error)
+                    logger(msg, "publishing")
+                    print(msg)
+                    time.sleep(10)  # try again in 10 seconds
+                    continue
         except Exception as error:
-            logger(trace(error), "publishing")
-            print(trace(error))
+            msg = trace(error)
+            logger(msg, "data collection")
+            print(msg)
             time.sleep(10)  # try again in 10 seconds
             continue
-        try:
-            # upload production data matrix to jsonbin.io
-            if trigger["jsonbin"] == "y":
-                time.sleep(3)
-                print("\n", it("red", "UPLOADING TO JSONBIN"))
-                time.sleep(5)
-                update_jsonbin(prices)
-            # buy/sell reference rates with two accounts
-            msg = "DEMO SCELETUS REFERENCE RATES"
-            if trigger["sceletus"] == "y":
-                if trigger["cancel"] == "y":
-                    time.sleep(3)
-                    print("\n", it("red", "CANCEL ALL IN ALL MARKETS"))
-                    time.sleep(5)
-                    cancel_all_markets(name, wif)
-                msg = msg.replace("DEMO ", "")
-            time.sleep(3)
-            print("\n", it("red", msg))
-            time.sleep(5)
+        print("\n", it("red", "REFERENCE RATES"))
+        time.sleep(5)
 
-            if not updates % 24:
-                sceletus_orders, sceletus_output = sceletus(
-                    prices, name, wif, trigger["sceletus"]
-                )
-                race_append(
-                    "sceletus_orders.txt", ("\n\n" + json_dumps(sceletus_orders))
-                )
-                race_write("sceletus_output.txt", json_dumps(sceletus_output))
-
-            appendage = (
-                "\n" + str(int(time.time())) + " " + time.ctime() + " " + str(feed)
-            )
-            race_append(doc="feed_append.txt", text=appendage)
-            updates += 1
-        except:
-            pass
+        race_append(
+            doc="feed_append.txt",
+            text=f"\n\n\n{int(time.time())} {time.ctime()}\n{feed}",
+        )
+        updates += 1
         time.sleep(REFRESH)
+
+
+def authenticate_account():
+    """Authenticate user account based on Bitshares agent name and WIF."""
+    while True:
+        account_name = input(
+            "\n  Bitshares" + it("yellow", " AGENT NAME:\n\n           ")
+        )
+        try:
+            rpc = wss_handshake()
+            try:
+                account_id = rpc_account_id(rpc, account_name)
+                name = rpc_get_objects(rpc, account_id)["name"]
+                assert name == account_name
+            except (IndexError, KeyError, AssertionError):
+                raise ValueError("\nInvalid account name, try again...")
+        except ValueError as error:
+            print(error.args[0])
+            continue
+
+        print(f"\nWelcome back account {account_name} with id {account_id}")
+
+        wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
+        order = {
+            "edicts": [{"op": "login"}],
+            "header": {
+                "asset_id": "1.3.0",
+                "currency_id": "1.3.861",
+                "asset_precision": 5,
+                "currency_precision": 8,
+                "account_id": account_id,
+                "account_name": account_name,
+                "wif": wif,
+            },
+            "nodes": public_nodes(),
+        }
+        if broker(order):
+            print("Authenticated")
+            time.sleep(3)
+            return account_name, wif
+        print("Invalid WIF for this account, try again")
 
 
 def main():
     """
-    initialize final aggregation and publication event loop
+    Initialize final aggregation and publication event loop.
     """
     print("\033c")
     print_logo()
-    PATH = f"{str(os.path.dirname(os.path.abspath(__file__)))}/"
-    os.makedirs(f"{PATH}pipe", exist_ok=True)
-    trigger = {
-        "feed": input(
-            "\n  to PUBLISH"
-            + it("cyan", " y + Enter ")
-            + "or Enter to skip\n\n          "
+
+    # create the pipe folder if it does not exist
+    os.makedirs(os.path.join(PATH, "pipe"), exist_ok=True)
+
+    # Trigger inputs for various actions
+    publish = (
+        "y"
+        in input(
+            f'\n   y + Enter to {it("cyan", "PUBLISH")} or Enter to skip\n\n          '
         ).lower()
-    }
+    )
+    if publish:
+        name, wif = authenticate_account()
+    else:
+        name, wif = "", ""
 
-    trigger["jsonbin"] = input(
-        "\n  to JSONBIN" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
-    ).lower()
-    trigger["sceletus"] = input(
-        "\n  to SCELETUS" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
-    ).lower()
-    trigger["cancel"] = input(
-        "\n  to CANCEL" + it("cyan", " y + Enter ") + "or Enter to skip\n\n          "
-    ).lower()
-    wif, name = "", ""
-    if trigger["feed"].lower() == "y" or (trigger["sceletus"] == "y"):
-        while True:
-            name = input("\n  Bitshares" + it("yellow", " AGENT NAME:\n\n           "))
-            try:
-                wss_handshake()
-                account_name, account_id = wss_query(
-                    ["database", "lookup_accounts", [name, 1]]
-                )[0]
-                if name == account_name:
-                    print(f"\nWelcome back account {account_name} with id {account_id}")
-                else:
-                    raise ValueError("\nInvalid account name, try again...")
-            except ValueError as error:
-                print(error.args)
-                continue
-            wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
-            order = {
-                "edicts": [{"op": "login"}],
-                "header": {
-                    "asset_id": "1.3.0",
-                    "currency_id": "1.3.861",
-                    "asset_precision": 5,
-                    "currency_precision": 8,
-                    "account_id": account_id,
-                    "account_name": name,
-                    "wif": wif,
-                },
-                "nodes": public_nodes(),
-            }
-            if broker2(order):
-                print("Authenticated")
-                time.sleep(3)
-                break
-            print("invalid WIF for this account, try again")
-
-    gather_data(name, wif, trigger)
+    # Proceed to gather data
+    gather_data(name, wif, publish)
 
 
 if __name__ == "__main__":

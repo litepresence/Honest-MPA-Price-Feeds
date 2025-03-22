@@ -30,27 +30,27 @@ from os import popen
 from random import random, shuffle
 from statistics import median, mode
 from sys import stdout
-
 # STANDARD PYTHON MODULES
 from time import ctime, sleep, strptime, time
 from traceback import format_exc
 
+import numpy as np
+from config_nodes import public_nodes
+from exchanges import EXCHANGES
 # THIRD PARTY MODULES
 from psutil import Process as psutil_Process
+# HONEST PRICE FEED MODULES
+from utilities import (PATH, at, it, print_logo, race_append, race_read,
+                       race_write, sigfig, string_width, trace)
 from websocket import create_connection as wss
 from websocket import enableTrace
-
-from config_nodes import public_nodes
-
-# HONEST PRICE FEED MODULES
-from utilities import it, sigfig
 
 # ======================================================================
 VERSION = "HONEST MPA DEX FEED 0.00000001"
 # ======================================================================
 DEV = False
 COLOR = True
-MAVENS = 1  # 7
+MAVENS = 7  # 7
 TIMEOUT = 100  # 100
 PROCESSES = 1  # 20 (slower than metanode)
 MIN_NODES = 9  # 15
@@ -63,7 +63,6 @@ LATENCY_TIMEOUT = 5  # 5
 BIFURCATION_PAUSE = 20  # 10  # 2 (slower than metanode)
 # ======================================================================
 ID = "4018d7844c78f6a6c41c6a552b898022310fc5dec06da467ee7905a8dad512c8"
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
 # ======================================================================
 
 CURRENCIES = [
@@ -81,15 +80,15 @@ ASSET = "BTS"
 # ======================================================================
 def bitshares_trustless_client():
     """
-    Include this definition in your script to storage['access'] pricefeed_dex.txt
+    Include this definition in your script to access pricefeed_dex.txt
     Deploy your bot script in the same folder as pricefeed_dex.py
     """
-    doc = PATH + "pipe/pricefeed_dex.txt"
+    doc = os.path.join(PATH, "pipe", "pricefeed_dex.txt")
 
     while True:
         try:
             with open(doc, "r") as handle:
-                ret = handle.read()  # .replace("'",'"')
+                ret = handle.read()
                 handle.close()
                 data = json_load(ret)
                 break
@@ -112,108 +111,6 @@ def bitshares_trustless_client():
             except BaseException:
                 pass
     return data
-
-
-def race_append(doc="", text=""):  # DONE
-    """
-    Concurrent Append to File Operation
-    """
-    doc = PATH + "pipe/" + doc
-    iteration = 0
-    while True:
-        sleep(0.0001 * iteration**2)
-        iteration += 1
-        try:
-            if iteration > 10:
-                break
-            with open(doc, "a+") as handle:
-                handle.write(text)
-                handle.close()
-                break
-        except Exception as error:
-            print(trace(error))
-            try:
-                handle.close()
-            except BaseException:
-                pass
-        finally:
-            try:
-                handle.close()
-            except BaseException:
-                pass
-
-
-def race_write(doc="", text=""):  # DONE
-    """
-    Concurrent Write to File Operation
-    """
-    doc = PATH + "pipe/" + doc
-    if not isinstance(text, str):
-        text = str(text)
-    iteration = 0
-    while True:
-        sleep(0.0001 * iteration**2)
-        iteration += 1
-        try:
-            with open(doc, "w+") as handle:
-                handle.write(text)
-                handle.close()
-                break
-        except Exception as error:
-            print(trace(error))
-            try:
-                handle.close()
-            except BaseException:
-                pass
-        finally:
-            try:
-                handle.close()
-            except BaseException:
-                pass
-
-
-def race_read(doc=""):
-    """
-    Concurrent Read from File Operation
-    """
-    doc = PATH + "pipe/" + doc
-    iteration = 0
-    while True:
-        sleep(0.0001 * iteration**2)
-        iteration += 1
-        try:
-            with open(doc, "r") as handle:
-                ret = handle.read().replace("'", '"')
-                handle.close()
-                try:
-                    ret = json_load(ret)
-                except BaseException:
-                    try:
-                        ret = ret.split("]")[0] + "]"
-                        ret = json_load(ret)
-                    except BaseException:
-                        try:
-                            ret = ret.split("}")[0] + "}"
-                            ret = json_load(ret)
-                        except BaseException:
-                            print("race_read() failed %s" % str(ret))
-                            ret = {} if "{" in ret else []
-                break
-        except FileNotFoundError:
-            ret = []
-        except Exception as error:
-            if DEV:
-                print(trace(error))
-            try:
-                handle.close()
-            except BaseException:
-                pass
-        finally:
-            try:
-                handle.close()
-            except BaseException:
-                pass
-    return ret
 
 
 # WEBSOCKET SEND AND RECEIVE
@@ -247,8 +144,6 @@ def wss_query(rpc, params):  # DONE
 
 # REMOTE PROCEDURE CALLS TO PUBLIC API DATABASE
 # ======================================================================
-
-
 def rpc_lookup_asset_symbols(rpc):  # DONE
     """
     Given asset names return asset ids and precisions
@@ -266,7 +161,6 @@ def rpc_lookup_asset_symbols(rpc):  # DONE
     for idx, item in enumerate(CURRENCIES):
         currency_id[item] = ret[idx]["id"]
         currency_precision[item] = ret[idx]["precision"]
-        print(22222)
     return asset_id, asset_precision, currency_id, currency_precision
 
 
@@ -349,396 +243,715 @@ def rpc_pool_last(rpc, cache):
 
 # STATISTICAL DATA CURATION
 # ======================================================================
+def initialize_storage(storage):
+    """Initialize storage dictionary with default values"""
+    storage["access"] = 0
+    storage["data_latency"] = 0
+    storage["mean_ping"] = 0.5
+
+
+def get_node_info():
+    """Get and shuffle nodes, return first node and set bandwidth depth"""
+    nodes = get_nodes()
+    static_nodes = public_nodes()
+    shuffle(nodes)
+    return nodes[0], nodes, static_nodes
+
+
+def handle_lists(storage, node):
+    """Manage blacklists and whitelists"""
+    black = race_read(doc="blacklist.txt")[-storage["bw_depth"] :]
+    white = race_read(doc="whitelist.txt")[-storage["bw_depth"] :]
+
+    try:
+        start = time()
+        metanode = bitshares_trustless_client()
+        storage["access"] = time() - start
+        ping = storage["mean_ping"] = metanode["ping"]
+        blacklist = metanode["blacklist"][-storage["bw_depth"] :]
+        whitelist = metanode["whitelist"][-storage["bw_depth"] :]
+        blocktime = metanode["blocktime"]
+        storage["data_latency"] = time() - blocktime
+        del metanode
+
+        if len(blacklist) > len(black):
+            black = blacklist
+            race_write("blacklist.txt", json_dump(black))
+        if len(whitelist) > len(white):
+            white = whitelist
+            race_write("whitelist.txt", json_dump(white))
+
+        return black, white, blocktime, ping
+    except BaseException:
+        return black, white, None, None
+
+
+def calculate_metrics(
+    handshake_bs,
+    ping_bs,
+    block_bs,
+    reject_bs,
+    handshake_latency,
+    handshake_max,
+    ping_latency,
+    ping_max,
+    block_latency,
+    block_max,
+):
+    """Calculate timing metrics and maintain history"""
+    set_timing = "                  " + "speed/max/ratio/cause/rate"
+    if handshake_max == 5:
+        set_timing = "                  " + it("cyan", "RESOLVING MEAN NETWORK SPEED")
+
+    ping_r = ping_latency / ping_max
+    block_r = block_latency / block_max
+    handshake_r = handshake_latency / handshake_max
+
+    ping_b = int(bool(int(ping_r)))
+    block_b = int(bool(int(block_r)))
+    handshake_b = int(bool(int(handshake_r)))
+    reject_b = int(bool(ping_b + block_b + handshake_b))
+
+    ping_bs.append(ping_b)
+    block_bs.append(block_b)
+    reject_bs.append(reject_b)
+    handshake_bs.append(handshake_b)
+
+    ping_bs = ping_bs[-100:]
+    block_bs = block_bs[-100:]
+    reject_bs = reject_bs[-100:]
+    handshake_bs = handshake_bs[-100:]
+
+    ping_p = sum(ping_bs) / max(1, len(ping_bs))
+    block_p = sum(block_bs) / max(1, len(block_bs))
+    reject_p = sum(reject_bs) / max(1, len(reject_bs))
+    handshake_p = sum(handshake_bs) / max(1, len(handshake_bs))
+
+    return (
+        set_timing,
+        ping_r,
+        block_r,
+        handshake_r,
+        ping_b,
+        block_b,
+        handshake_b,
+        reject_b,
+        ping_p,
+        block_p,
+        reject_p,
+        handshake_p,
+        ping_bs,
+        block_bs,
+        reject_bs,
+        handshake_bs,
+    )
+
+
+def get_system_metrics(storage, process, cache):
+    """Get system resource metrics"""
+    try:
+        proc = psutil_Process()
+        descriptors = proc.num_fds()
+        usage = "grep 'cpu ' /proc/stat | awk '{usage=($2+$4)*100/($2+$4+$5)} END {print usage }'"
+        cpu = "%.3f" % (float(popen(usage).readline()))
+        ram = "%.3f" % (100 * float(proc.memory_percent()))
+        io_count = list(proc.io_counters())[:2]
+
+        metanode = bitshares_trustless_client()
+        m_last, ping, keys = {}, 0.5, ["bifurcating the metanode...."]
+        try:
+            keys = metanode["keys"]
+            ping = storage["mean_ping"] = metanode["ping"]
+            m_last = metanode["last"]
+        except Exception as error:
+            if DEV or True:
+                print(trace(error))
+        del metanode
+
+        return descriptors, cpu, ram, io_count, m_last, ping, keys
+    except Exception as error:
+        if DEV or True:
+            print(trace(error))
+        return None, None, None, None, {}, 0.5, ["bifurcating the metanode...."]
+
+
+def process_price_data(m_last):
+    """Process price data and calculate medians"""
+    usds, btcs = [], []
+    usd_dict, btc_dict = {}, {}
+
+    try:
+        for key, val in m_last.items():
+            if "BTC" in key:
+                btcs.append(val)
+                btc_dict[key] = sigfig(val, 4)
+            elif "USD" in key:
+                usds.append(val)
+                usd_dict[key] = sigfig(val, 4)
+        usd = sigfig(median(usds), 4)
+        btc = sigfig(median(btcs), 4)
+        implied_btcusd = usd / btc
+    except Exception as error:
+        print(trace(error))
+        usd, btc, implied_btcusd = None, None, None
+
+    return usd, btc, implied_btcusd, usd_dict, btc_dict
+
+
+def print_metanode_stats(local_vars):
+    runtime = int(time()) - local_vars["cache"]["begin"]
+    optimizing = (
+        it("cyan", "OPTIMIZING".ljust(7))
+        if (time() - local_vars["cache"]["begin"]) > 200
+        else "".ljust(7)
+    )
+    reject = it("cyan", "X".ljust(7)) if local_vars["reject_b"] else "".ljust(7)
+
+    alert = (
+        it("cyan", "    BUILDING BLACK AND WHITE LISTS")
+        if (
+            len(local_vars["white"]) < local_vars["storage"]["bw_depth"]
+            or len(local_vars["black"]) < local_vars["storage"]["bw_depth"]
+        )
+        else ""
+    )
+    if local_vars["nodes"] == local_vars["static_nodes"]:
+        alert += " ::WARN:: USING STATIC NODE LIST"
+
+    upm = len(local_vars["storage"].get("updates", []))
+
+    print()
+    print(
+        "runtime:epoch:pid:upm",
+        it("green", runtime),
+        local_vars["epoch"],
+        local_vars["pid"],
+        upm,
+    )
+    try:
+        print(
+            "fds:processes        ",
+            local_vars["descriptors"],
+            local_vars["process"],
+            "of",
+            PROCESSES,
+        )
+    except:
+        print("processes:           ", local_vars["process"], "of", PROCESSES)
+    try:
+        print(
+            "cpu:ram:io_count     ",
+            local_vars["cpu"],
+            local_vars["ram"],
+            local_vars["io_count"],
+        )
+    except:
+        pass
+    print(
+        "utilization:node     ",
+        str(local_vars["util"] + 1).ljust(3),
+        local_vars["node"],
+    )
+    print(
+        "total:white:black    ",
+        # len(local_vars["static_nodes"]),
+        len(local_vars["nodes"]),
+        len(local_vars["white"]),
+        len(local_vars["black"]),
+        alert,
+    )
+    print(local_vars["set_timing"])
+    print(
+        "block latency        ",
+        "%.2f %.1f %.1f %s %.2f"
+        % (
+            local_vars["block_latency"],
+            local_vars["block_max"],
+            local_vars["block_r"],
+            str(local_vars["block_b"]).ljust(7),
+            local_vars["block_p"],
+        ),
+    )
+    print(
+        "handshake            ",
+        "%.2f %.1f %.1f %s %.2f"
+        % (
+            local_vars["handshake_latency"],
+            local_vars["handshake_max"],
+            local_vars["handshake_r"],
+            str(local_vars["handshake_b"]).ljust(7),
+            local_vars["handshake_p"],
+        ),
+    )
+    print(
+        "ping                 ",
+        "%.2f %.1f %.1f %s %.2f"
+        % (
+            local_vars["ping_latency"],
+            local_vars["ping_max"],
+            local_vars["ping_r"],
+            str(local_vars["ping_b"]).ljust(7),
+            local_vars["ping_p"],
+        ),
+    )
+    print(
+        "mean ping            ",
+        (it("purple", "%.3f" % local_vars["ping"])),
+        "       %s %.2f" % (reject, local_vars["reject_p"]),
+        optimizing,
+    )
+    print("")
+
+
+def dex_table(local_vars):
+    dex_string = ""
+    # DEX
+    try:
+        gateways = sorted(list({i.split(".", 1)[0] for i in CURRENCIES}))
+        gateway_tokens = sorted(list({i.split(".", 1)[1] for i in CURRENCIES}))
+
+        # gateway_table is len(gateway_tokens)+1 rows and len(gateways)+1 columns
+        table = [[" " * 10] + [i.ljust(10) for i in gateway_tokens]]
+        for gateway in gateways:
+            row = [gateway.ljust(10)] + [
+                str(sigfig(local_vars["last"].get(f"{gateway}.{token}", -1), 4)).ljust(
+                    10
+                )
+                for token in gateway_tokens
+            ]
+            row = [
+                i
+                if not any(j.isdigit() for j in i)
+                else it("green", i)
+                if "-1" not in i
+                else it("yellow", i)
+                for i in row
+            ]
+            table.append(row)
+
+        # table is now len(gateway_tokens)+1 columns and len(gateways)+1 rows
+        table = np.array(table).T
+        dex_string = "\n".join("".join(row) for row in table)
+    except Exception as error:
+        if DEV:
+            print(trace(error))
+        print(
+            it("red", "WARN:"),
+            "gathering DEX prices failed, maybe the metanode isn't live yet?",
+        )
+    return dex_string
+
+
+def cex_table(local_vars):
+    cex_string = ""
+    # CEX
+    try:
+        cex = race_read("pricefeed_cex.txt")
+
+        if cex:
+            # sort by pair
+            cex = dict(sorted(cex.items()))
+
+            exchanges = []
+            for key, val in cex.items():
+                exchanges.extend(list(val["data"].keys()))
+            exchanges = sorted(list(set(exchanges)))
+
+            pairs = list(cex.keys())
+            just_size = max(map(len, pairs)) + 2
+
+            table = [exchanges + ["median"]]
+            for coin, data in cex.items():
+                table.append([data["data"].get(exchange, -1) for exchange in exchanges])
+                table[-1].append(data["median"])
+            n_prices = list([len([i for i in j if i != -1]) - 1 for j in table[1:]])
+            table = list(zip(*table))
+
+            exchange_just = max(map(len, exchanges)) + 2
+
+            # print header
+            cex_string += " " * exchange_just + "".join(
+                it(
+                    "white"
+                    if count >= 7
+                    else "yellow"
+                    if count >= 5
+                    else "red"
+                    if count >= 2
+                    else "cyan",
+                    coin.ljust(just_size),
+                )
+                for coin, count in zip(pairs, n_prices)
+            )
+            for rdx, row in enumerate(table):
+                cex_string += "\n" + (
+                    (
+                        row[0].ljust(exchange_just)
+                        if row[0] != "median"
+                        else it("purple", row[0].center(exchange_just))
+                    )
+                    + "".join(
+                        [
+                            it(
+                                (
+                                    "green"
+                                    if i != -1 or rdx >= len(exchanges)
+                                    else "red"
+                                    if exchanges[rdx] in EXCHANGES[pairs[idx]]
+                                    else "yellow"
+                                )
+                                if row[0] != "median"
+                                else "cyan",
+                                str(sigfig(i, 4)).ljust(just_size),
+                            )
+                            for idx, i in enumerate(row[1:])
+                        ]
+                    )
+                )
+            cex_string = (
+                it("yellow", " CEX ".center(string_width(cex_string), "═"))
+                + "\n\n"
+                + cex_string
+            )
+    except Exception as error:
+        if DEV:
+            print(trace(error))
+        print(
+            it("red", "WARN:"),
+            "gathering CEX prices failed, maybe they aren't done yet?",
+        )
+    return cex_string
+
+
+def forex_table(local_vars):
+    forex_string = ""
+    try:
+        forex = race_read("pricefeed_forex.txt")
+        if forex:
+            # sort the pairs and sources
+            forex["aggregate"] = dict(sorted(forex["aggregate"].items()))
+            forex["sources"] = dict(sorted(forex["sources"].items()))
+
+            # get the lists of pairs and sources
+            pairs = list(forex["aggregate"].keys())
+            sources = list(forex["sources"].keys())
+            just_size = max(map(len, pairs)) + 2
+
+            table = [sources]
+            for pair, data in forex["aggregate"].items():
+                data = dict([i[::-1] for i in data])
+                table.append([data.get(source, -1) for source in sources])
+            table = list(zip(*table))
+            # table is now rows=source; cols=pair
+
+            # add median column
+            table.append(["median"] + [forex["medians"][pair][0] for pair in pairs])
+
+            n_prices = [forex["medians"][pair][1] for pair in pairs]
+
+            source_just = max(map(len, sources)) + 2
+
+            # print header
+            forex_string += " " * source_just + "".join(
+                it(
+                    "white"
+                    if count >= 7
+                    else "yellow"
+                    if count >= 5
+                    else "red"
+                    if count >= 2
+                    else "cyan",
+                    coin.ljust(just_size),
+                )
+                for coin, count in zip(pairs, n_prices)
+            )
+            for rdx, row in enumerate(table):
+                forex_string += "\n" + (
+                    (
+                        it("red", row[0].ljust(source_just))
+                        if all(i == -1 for i in row[1:])
+                        else row[0].ljust(source_just)
+                        if row[0] != "median"
+                        else it("purple", row[0].center(source_just))
+                    )
+                    + "".join(
+                        [
+                            it(
+                                ("green" if i != -1 else "yellow")
+                                if row[0] != "median"
+                                else "cyan",
+                                str(sigfig(i, 4)).ljust(just_size),
+                            )
+                            for idx, i in enumerate(row[1:])
+                        ]
+                    )
+                )
+            forex_string = (
+                it(
+                    "purple",
+                    " FOREX / AGGREGATORS ".center(string_width(forex_string), "═"),
+                )
+                + "\n\n"
+                + forex_string
+            )
+    except Exception as error:
+        if DEV:
+            print(trace(error))
+        print(
+            it("red", "WARN:"),
+            "gathering FOREX prices failed, maybe they aren't done yet?",
+        )
+    return forex_string
+
+
+def final_table(local_vars):
+    final_string = ""
+    try:
+        final = race_read("pricefeed_final.txt")
+        if final:
+            table = []
+            for pair, price in sorted(final["feed"].items()):
+                table.append([pair, str(sigfig(price, 5))])
+            just = max([max(map(len, row)) for row in table])
+            final_string = "\n".join(
+                "".join([row[0].ljust(just), it("cyan", row[1]).ljust(just)])
+                for row in table
+            )
+    except Exception as error:
+        # if DEV:
+        print(trace(error))
+        print(
+            it("red", "WARN:"),
+            "gathering final feed failed, maybe it isn't done yet?",
+        )
+    return final_string
+
+
+def print_status(local_vars):
+    """Handle all printing operations using the local variables of thresh"""
+    logo_string = print_logo(False)
+    print("\033c")
+
+    dex_string = dex_table(local_vars)
+    cex_string = cex_table(local_vars)
+    forex_string = forex_table(local_vars)
+    final_string = final_table(local_vars)
+
+    try:
+        # find the maximum width of the DEX table
+        width = string_width(dex_string)
+
+        # all the " "*6 is for padding off the left side
+
+        # center the logo across that width, and print it and the DEX table
+        print()
+        print(
+            it(
+                "green",
+                "\n".join(" " * 6 + i.center(width) for i in logo_string.split("\n")),
+            )
+        )
+        print("\n")
+        # while ensuring the dex table's header is full width;
+        # note this is a Calvin S unicode character, not an equals sign
+        print(" " * 6 + it("green", " DEX ".center(width, "═")))
+        print("\n")
+        print(dex_string.replace("\n", "\n" + " " * 6))
+
+        forex_width = string_width(forex_string)
+        forex_height = len(forex_string.split("\n"))
+
+        # print the FOREX table "hanging" off the side of the DEX table
+
+        print(
+            at(
+                (
+                    width + 12,
+                    2,
+                    forex_width,
+                    forex_height,
+                ),
+                forex_string,
+            )
+        )
+        print("\n")
+
+        if final_string:
+            print(
+                at(
+                    (
+                        width + 18 + forex_width,
+                        2,
+                        string_width(final_string),
+                        2,
+                    ),
+                    it("green", " FINAL FEED ".center(string_width(final_string), "═")),
+                )
+            )
+            print(
+                at(
+                    (
+                        width + 18 + forex_width,
+                        4,
+                        string_width(final_string),
+                        len(final_string.split("\n")),
+                    ),
+                    final_string,
+                )
+            )
+        # reset cursor to the bottom of the forex table
+        print(at((1, forex_height + 3, 1, 1), ""))
+
+        # center the CEX table on the combined width of the FOREX and DEX tables
+        cex_width = string_width(cex_string)
+        delta = (width + 12 + forex_width) - cex_width
+        if delta > 0:
+            cex_string = cex_string.replace("\n", "\n" + (" " * (delta // 2)))
+
+        print(cex_string)
+
+        if DEV:
+            print_metanode_stats(local_vars)
+        final = race_read("pricefeed_final.txt")
+        if final:
+            print("\n\n")
+            print(it("cyan", "BTS:BTC sources:"), race_read("bts_btc_pipe.txt"))
+            print("FEED CLOCK", it("yellow", final["time"]))
+            stale = time() - final["time"]["unix"]
+            if stale > 4000:
+                print(it("red", f"WARNING YOUR FEED IS STALE BY {stale} SECONDS"))
+    except Exception as error:
+        print(trace(error))
+        print(
+            it("red", "WARN:"),
+            "Printing source tables failed!  Retrying on next thresh...",
+        )
+
+
 def thresh(storage, process, epoch, pid, cache):
     """
     Make calls for data, shake out any errors
     There are 20 threshing process running in parallel
     They are each periodically terminated and respawned
     """
-    handshake_bs = []
-    ping_bs = []
-    block_bs = []
-    reject_bs = []
-    storage["access"] = 0
-    storage["data_latency"] = 0
+    handshake_bs, ping_bs, block_bs, reject_bs = [], [], [], []
+    initialize_storage(storage)
+
     while True:
-        storage["mean_ping"] = 0.5
         try:
-            nodes = get_nodes()
-            static_nodes = public_nodes()
-            shuffle(nodes)
-            node = nodes[0]
+            node, nodes, static_nodes = get_node_info()
             storage["bw_depth"] = max(int(len(nodes) / 6), 1)
-            # CHECK BLACK AND WHITE LISTS
-            black = race_read(doc="blacklist.txt")[-storage["bw_depth"] :]
-            white = race_read(doc="whitelist.txt")[-storage["bw_depth"] :]
-            try:
-                start = time()
-                metanode = bitshares_trustless_client()
-                storage["access"] = time() - start
-                ping = storage["mean_ping"] = metanode["ping"]
-                blacklist = metanode["blacklist"][-storage["bw_depth"] :]
-                whitelist = metanode["whitelist"][-storage["bw_depth"] :]
-                blocktime = metanode["blocktime"]
-                storage["data_latency"] = time() - blocktime
-                del metanode
-                if len(blacklist) > len(black):
-                    black = blacklist
-                    race_write("blacklist.txt", json_dump(black))
-                if len(whitelist) > len(white):
-                    white = whitelist
-                    race_write("whitelist.txt", json_dump(white))
-            except BaseException:
-                pass
+
+            black, white, blocktime, ping = handle_lists(storage, node)
             if node in black:
                 raise ValueError("blacklisted")
             if node in white:
                 raise ValueError("whitelisted")
-            # connect to websocket
+
             rpc, handshake_latency, handshake_max = wss_handshake(storage, node)
-            # use each node several times
-            utilizations = UTILIZATIONS
-            if (time() - cache["begin"]) < 100:
-                utilizations = 1
+            utilizations = UTILIZATIONS if (time() - cache["begin"]) >= 100 else 1
+
             for util in range(utilizations):
                 sleep(THRESH_PAUSE)
-                # Database calls w/ data validations
                 ping_latency, ping_max = rpc_ping_latency(rpc, storage)
                 block_latency, block_max, blocktime = rpc_block_latency(rpc, storage)
-                set_timing = "                  " + "speed/max/ratio/cause/rate"
-                if handshake_max == 5:
-                    set_timing = "                  " + it(
-                        "cyan", "RESOLVING MEAN NETWORK SPEED"
-                    )
-                # timing analysis for development
-                ping_r = ping_latency / ping_max
-                block_r = block_latency / block_max
-                handshake_r = handshake_latency / handshake_max
-                ping_b = int(bool(int(ping_r)))
-                block_b = int(bool(int(block_r)))
-                handshake_b = int(bool(int(handshake_r)))
-                reject_b = int(bool(ping_b + block_b + handshake_b))
-                ping_bs.append(ping_b)
-                block_bs.append(block_b)
-                reject_bs.append(reject_b)
-                handshake_bs.append(handshake_b)
-                ping_bs = ping_bs[-100:]
-                block_bs = block_bs[-100:]
-                reject_bs = reject_bs[-100:]
-                handshake_bs = handshake_bs[-100:]
-                ping_p = sum(ping_bs) / max(1, len(ping_bs))
-                block_p = sum(block_bs) / max(1, len(block_bs))
-                reject_p = sum(reject_bs) / max(1, len(reject_bs))
-                handshake_p = sum(handshake_bs) / max(1, len(handshake_bs))
-                ping_b = str(ping_b).ljust(7)
-                block_b = str(block_b).ljust(7)
-                handshake_b = str(handshake_b).ljust(7)
-                reject = "".ljust(7)
-                if reject_b:
-                    reject = it("cyan", "X".ljust(7))
-                optimizing = it("cyan", "OPTIMIZING".ljust(7))
-                if (time() - cache["begin"]) > 200:
-                    optimizing = "".ljust(7)
-                # last, history, orderbook, balances, orders
-                # last = rpc_last(rpc, cache)
+
+                (
+                    set_timing,
+                    ping_r,
+                    block_r,
+                    handshake_r,
+                    ping_b,
+                    block_b,
+                    handshake_b,
+                    reject_b,
+                    ping_p,
+                    block_p,
+                    reject_p,
+                    handshake_p,
+                    ping_bs,
+                    block_bs,
+                    reject_bs,
+                    handshake_bs,
+                ) = calculate_metrics(
+                    handshake_bs,
+                    ping_bs,
+                    block_bs,
+                    reject_bs,
+                    handshake_latency,
+                    handshake_max,
+                    ping_latency,
+                    ping_max,
+                    block_latency,
+                    block_max,
+                )
+
                 last = rpc_pool_last(rpc, cache)
-                # {**last, **rpc_pool_last(rpc, cache)}
-                # print(last)
                 now = to_iso_date(time())
                 then = to_iso_date(time() - 3 * 86400)
                 ids = [cache["asset_id"], cache["currency_id"]]
                 precisions = [cache["asset_precision"], cache["currency_precision"]]
-                # CPU, RAM, io_count data REQUIRES MODULE INSTALL
-                try:
-                    proc = psutil_Process()
-                    descriptors = proc.num_fds()
-                    usage = (
-                        "grep 'cpu ' /proc/stat | awk "
-                        + "'{usage=($2+$4)*100/($2+$4+$5)}"
-                        + " END {print usage }' "
-                    )
-                    cpu = "%.3f" % (float(popen(usage).readline()))
-                    ram = "%.3f" % (100 * float(proc.memory_percent()))
-                    io_count = list(proc.io_counters())[:2]
-                except Exception as error:
-                    if DEV:
-                        print(trace(error))
-                metanode = bitshares_trustless_client()
-                m_last = {}
-                ping = 0.5
-                keys = ["bifurcating the metanode...."]
-                try:
-                    keys = metanode["keys"]
-                    ping = storage["mean_ping"] = metanode["ping"]
-                    m_last = metanode["last"]
-                except BaseException:
-                    pass
-                del metanode
-                try:
-                    cex = race_read("pricefeed_cex.txt")
-                    forex = race_read("pricefeed_forex.txt")
-                    final = race_read("pricefeed_final.txt")
-                except:
-                    pass
-                # aggregate gateway:bts data
-                usds = []
-                btcs = []
-                usd_dict = {}
-                btc_dict = {}
-                try:
-                    for key, val in m_last.items():
-                        if "BTC" in key:
-                            btcs.append(val)
-                            btc_dict[key] = sigfig(val, 4)
-                        elif "USD" in key:
-                            usds.append(val)
-                            usd_dict[key] = sigfig(val, 4)
-                    # eliminate outliers
-                    usd = sigfig(median(usds), 4)
-                    btc = sigfig(median(btcs), 4)
-                    # calculate the gateway btcusd for reference only
-                    implied_btcusd = usd / btc
-                except:
-                    print(it("cyan", "WARN: GATHERING PRICES"))
-                sceletus_output = {}
-                try:
-                    sceletus_output = race_read(doc="sceletus_output.txt")
-                except:
-                    pass
-                try:
-                    honest_cross_rates = race_read(doc="honest_cross_rates.txt")
-                except:
-                    pass
 
-                runtime = int(time()) - cache["begin"]
-                # storage['bw_depth'] = max(int(len(nodes) / 6), 1)
-                if (len(white) < storage["bw_depth"]) or (
-                    len(black) < storage["bw_depth"]
-                ):
-                    alert = it("cyan", "    BUILDING BLACK AND WHITE LISTS")
-                else:
-                    alert = ""
-                if nodes == static_nodes:
-                    alert += " ::WARN:: USING STATIC NODE LIST"
-                upm = 0
-                try:
-                    upm = len(storage["updates"])
-                except:
-                    pass
-                # in the event data passes all tests, then:
-                # print, winnow the node, and nascent trend the maven
-                print_market(storage, cache)
-                print(keys)
-                print("")
-                print("runtime:epoch:pid:upm", it("green", runtime), epoch, pid, upm)
-                try:
-                    print(
-                        "fds:processes        ", descriptors, process, "of", PROCESSES
-                    )
-                except BaseException:
-                    print("processes:           ", process, "of", PROCESSES)
-                try:
-                    print("cpu:ram:io_count     ", cpu, ram, io_count)
-                except BaseException:
-                    pass
-                print("utilization:node     ", str(util + 1).ljust(3), node)
-                print(
-                    "total:white:black    ",
-                    len(static_nodes),
-                    len(nodes),
-                    len(white),
-                    len(black),
-                    alert,
+                (
+                    descriptors,
+                    cpu,
+                    ram,
+                    io_count,
+                    m_last,
+                    ping,
+                    keys,
+                ) = get_system_metrics(storage, process, cache)
+                usd, btc, implied_btcusd, usd_dict, btc_dict = process_price_data(
+                    m_last
                 )
-                print(set_timing)
-                print(
-                    "block latency        ",
-                    "%.2f %.1f %.1f %s %.2f"
-                    % (block_latency, block_max, block_r, block_b, block_p),
-                )
-                print(
-                    "handshake            ",
-                    "%.2f %.1f %.1f %s %.2f"
-                    % (
-                        handshake_latency,
-                        handshake_max,
-                        handshake_r,
-                        handshake_b,
-                        handshake_p,
-                    ),
-                )
-                print(
-                    "ping                 ",
-                    "%.2f %.1f %.1f %s %.2f"
-                    % (ping_latency, ping_max, ping_r, ping_b, ping_p),
-                )
-                print(
-                    "mean ping            ",
-                    (it("purple", "%.3f" % ping)),
-                    "       %s %.2f" % (reject, reject_p),
-                    optimizing,
-                )
-                print("")
-                try:
-                    print(
-                        "DEX BTS:BTC",
-                        it("cyan", str(sigfig(btc, 4))),
-                        it("purple", btc_dict),
-                    )  # json_dump(btc_dict, indent=0, sort_keys=True)))
-                    print(
-                        "DEX BTS:USD",
-                        sigfig(usd, 4),
-                        it("purple", usd_dict),
-                    )
-                    print(
-                        "DEX BTS:IOB.XRP",
-                        sigfig(last.get("IOB.XRP", -1), 4),
-                    )
-                    print(
-                        "DEX BTS:BTWTY.EOS",
-                        sigfig(last.get("BTWTY.EOS", -1), 4),
-                    )
-                    print(
-                        "DEX BTC:USD",
-                        it("yellow", str(sigfig(implied_btcusd, 4))),
-                        "(IMPLIED)",
-                    )
-                    print("\nBTS:BTC price sources:")
-                    print(race_read(doc="bts_btc_pipe.txt"))
-                except UnboundLocalError:
-                    pass
-                except Exception as error:
-                    print(trace(error))
-                try:
-                    if cex:
-                        print("\n\n")
-                        exchanges = []
-                        for key, val in cex.items():
-                            exchanges.extend(list(val["data"].keys()))
-                        exchanges = list(set(exchanges))
-                        just_size = max(map(len, exchanges)) + 2
-                        print(
-                            "          "
-                            + "".join(i.ljust(just_size) for i in exchanges)
-                        )
-                        for coin, data in cex.items():
-                            prices = [
-                                data["data"].get(exchange, {"last": -1})["last"]
-                                for exchange in exchanges
-                            ]
-                            print(
-                                coin.ljust(10)
-                                + "".join(
-                                    [
-                                        it(
-                                            "green" if i != -1 else "yellow",
-                                            str(sigfig(i, 4)).ljust(just_size),
-                                        )
-                                        for i in prices
-                                    ]
-                                )
-                            )
-                        print("\n")
 
-                    if forex:
-                        print(
-                            "\nFOREX  "
-                            + "inverse ::: pair ::: min ::: mid ::: max ::: qty ::: source"
-                        )
-                        for key, val in forex["medians"].items():
-                            fxdata = [i[0] for i in forex["aggregate"][key]]
-                            print(
-                                it("cyan", str(sigfig(1 / val[0])).rjust(12)),
-                                it("green", key),
-                                str(min(fxdata)).ljust(11),
-                                it("cyan", str(val[0]).ljust(11)),
-                                str(max(fxdata)).ljust(11),
-                                len(fxdata),
-                                " ".join([i[1][:4] for i in forex["aggregate"][key]]),
-                            )
-                    if final:
-                        print(
-                            "FINAL INVERSE",
-                            {k: sigfig(v) for k, v in final["inverse"].items()},
-                        )
-                        print("FINAL FEED", it("green", final["feed"]))
-                        print("FEED CLOCK", it("yellow", final["time"]))
-                        try:
-                            print("HONEST CROSS RATES", honest_cross_rates)
-                        except:
-                            pass
-                        try:
-                            print(
-                                "SCELETUS  ",
-                                it("purple", sceletus_output),
-                            )
-                        except:
-                            pass
-                        stale = time() - final["time"]["unix"]
-                        if stale > 4000:
-                            print(
-                                it(
-                                    "red",
-                                    f"WARNING YOUR FEED IS STALE BY {stale} SECONDS",
-                                )
-                            )
-                except Exception as error:
-                    print(trace(error))
+                print_status(locals())
+                calculate_cross_rates()
 
-                # send the maven dictionary to nascent_trend()
-                # Must be JSON type
-                # 'STRING', 'INT', 'FLOAT', '{DICT}', or '[LIST]'
-                maven = {}
-                maven["ping"] = (19 * storage["mean_ping"] + ping_latency) / 20  # FLOAT
-                maven["last"] = last  # precision() STRING
-                maven["whitelist"] = white  # LIST
-                maven["blacklist"] = black  # LIST
-                maven["blocktime"] = blocktime  # INT
+                maven = {
+                    "ping": (19 * storage["mean_ping"] + ping_latency) / 20,
+                    "last": last,
+                    "whitelist": white,
+                    "blacklist": black,
+                    "blocktime": blocktime,
+                }
                 nascent_trend(maven)
-                # winnow this node to the whitelist
                 winnow(storage, "whitelist", node)
-                # clear namespace
-                del maven
-                del last
-                del io_count
-                del alert
-                del ram
-                del cpu
-                del keys
-                del now
-                del runtime
-                del descriptors
-                del proc
-            try:
-                sleep(0.0001)
-                rpc.close()
-            except Exception as error:
-                if DEV:
-                    print(trace(error))
-            continue
+
+                del maven, last, io_count, ram, cpu, keys, now
+
+            sleep(0.0001)
+            rpc.close()
+
         except Exception as error:
             try:
                 if DEV:
                     print(trace(error))
                 sleep(0.0001)
                 rpc.close()
-            except BaseException:
+            except:
                 pass
             try:
                 msg = trace(error) + node
-                if (
-                    ("ValueError" not in msg)
-                    and ("StatisticsError" not in msg)
-                    and ("result" not in msg)
-                    and ("timeout" not in msg)
-                    and ("SSL" not in msg)
+                if all(
+                    x not in msg
+                    for x in [
+                        "ValueError",
+                        "StatisticsError",
+                        "result",
+                        "timeout",
+                        "SSL",
+                    ]
                 ):
-                    if (
-                        ("WebSocketTimeoutException" not in msg)
-                        and ("WebSocketBadStatusException" not in msg)
-                        and ("WebSocketAddressException" not in msg)
-                        and ("ConnectionResetError" not in msg)
-                        and ("ConnectionRefusedError" not in msg)
+                    if all(
+                        x not in msg
+                        for x in [
+                            "WebSocketTimeoutException",
+                            "WebSocketBadStatusException",
+                            "WebSocketAddressException",
+                            "ConnectionResetError",
+                            "ConnectionRefusedError",
+                        ]
                     ):
                         msg += "\n" + str(format_exc())
                 if DEV:  # or ((time() - cache["begin"]) > 60):
@@ -747,7 +960,7 @@ def thresh(storage, process, epoch, pid, cache):
                     race_append(doc="metanodelog.txt", text=msg)
                 winnow(storage, "blacklist", node)
                 del msg
-            except BaseException:
+            except:
                 pass
             continue
 
@@ -759,7 +972,6 @@ def bifurcation(storage, cache):
     """
     while True:
         try:
-            sleep(BIFURCATION_PAUSE)  # take a deep breath
             # initialize the dex_data dictionary
             dex_data = {}
             # initialize lists to sort data from each maven by key
@@ -772,33 +984,37 @@ def bifurcation(storage, cache):
             mavens = race_read(doc="mavens.txt")
             # sort maven data for statistical mode analysis by key
             len_m = len(mavens)
-            for i in range(len_m):
-                maven = mavens[i]
+            for maven in mavens:
+                # stringify lists for statistical mode of json text
                 last.append(json_dump(maven["last"]))
                 blocktime.append(maven["blocktime"])
                 whitelist.append(maven["whitelist"])
                 blacklist.append(maven["blacklist"])
                 pings.append(maven["ping"])
-                # stringify lists for statistical mode of json text
             # the mean ping of the mavens is passed to the dex_data
             ping = int(1000 * sum(pings) / (len(pings) + 0.00000001)) / 1000.0
             ping = min(1, ping)
             # find the youngest bitshares blocktime in our dataset
             try:
                 blocktime = max(blocktime)
-            except BaseException:
+            except Exception:
                 print("validating the nascent trend...")
+                sleep(1)
                 continue
-            # get the mode of the mavens for each metric
-            # allow 1 or 2 less than total & most recent for mode
-            # accept "no mode" statistics error as possibility
-            try:
-                last = json_load(mode(last))
-            except BaseException:
+            # get the mode of the mavens for the last, slicing progressively more recent
+            # chunks if there are multiple modes
+            slice_size = 0
+            while slice_size < len_m:
                 try:
-                    last = mode(last[-(len_m - 1) :])
-                except BaseException:
-                    last = mode(last[-(len_m - 2) :])
+                    last = mode(last[slice_size:])
+                    break
+                except Exception:
+                    slice_size += 1
+            else:
+                # if there is no mode, we need more data
+                sleep(1)
+                continue
+            last = json_load(last)
 
             # attempt a full whitelist and blacklist
             white_l = []
@@ -834,6 +1050,7 @@ def bifurcation(storage, cache):
             storage["updates"].append(time())
             storage["updates"] = [t for t in storage["updates"] if (time() - t) < 60]
 
+            sleep(BIFURCATION_PAUSE)  # take a deep breath
             # clear namespace
             del dex_data
             del mavens
@@ -852,6 +1069,7 @@ def bifurcation(storage, cache):
                 msg = trace(error)
                 print(msg)
                 race_append(doc="pricefeed_dexlog.txt", text=msg)
+            sleep(1)
             continue  # from top of while loop NOT pass through error
 
 
@@ -902,16 +1120,16 @@ def get_cache(storage, cache, nodes):
     asset_ids, currency_ids = [], []
     asset_precisions, currency_precisions = [], []
     # trustless of multiple nodes
+    wwc()
     while True:
         try:
-            wwc()
             black = race_read(doc="blacklist.txt")
             white = race_read(doc="whitelist.txt")
             # switch nodes
             nodes = get_nodes()
             shuffle(nodes)
             node = nodes[0]
-            print(node)
+            print(it("green", "DEX: "), node)
             if node in black:
                 raise ValueError("blacklisted")
             if node in white:
@@ -946,7 +1164,7 @@ def get_cache(storage, cache, nodes):
                     winnow(storage, "blacklist", node)
                     continue
         except Exception as error:
-            print(trace(error))
+            # print(trace(error))
             continue
     return storage, cache
 
@@ -1133,16 +1351,29 @@ def nascent_trend(maven):
 
 # HELPER FUNCTIONS
 # ======================================================================
-def print_logo():
-    """
-    +===============================+
-      ╦ ╦  ╔═╗  ╔╗╔  ╔═╗  ╔═╗  ╔╦╗
-      ╠═╣  ║ ║  ║║║  ║╣   ╚═╗   ║
-      ╩ ╩  ╚═╝  ╝╚╝  ╚═╝  ╚═╝   ╩
-        MARKET - PEGGED - ASSETS
-    +===============================+
-    """
-    print(it("green", print_logo.__doc__))
+def calculate_cross_rates():
+    feed = race_read("pricefeed_final.txt")
+    if "feed" in feed:
+        feed = feed["feed"]
+    else:
+        print("Feed not ready yet; skipping cross rates")
+        return
+
+    # Use all the BTS: prices
+    feed = {k.split(":")[1]: v for k, v in feed.items() if k.startswith("BTS:")}
+
+    # Initialize a dictionary to hold cross rates
+    cross_rates = {}
+
+    # Calculate cross rates
+    for base_currency, base_price in feed.items():
+        for quote_currency, quote_price in feed.items():
+            if base_currency != quote_currency:
+                # Calculate the cross rate
+                cross_rate = base_price / quote_price
+                cross_rates[f"{base_currency}/{quote_currency}"] = cross_rate
+
+    race_write("honest_cross_rates.txt", cross_rates)
 
 
 def print_market(storage, cache):
@@ -1233,16 +1464,6 @@ def sign_in(cache):
         cache["pair"][currency].append(cache["asset"] + ":" + currency)
         cache["currency"][currency].append(currency)
     return cache
-
-
-def trace(error):
-    """
-    Stack trace upon exception
-    """
-    msg = str(type(error).__name__) + str(error.args)
-    if DEV:
-        msg += str(format_exc()) + " " + ctime()
-    return msg
 
 
 def initialize():

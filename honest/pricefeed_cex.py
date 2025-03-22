@@ -14,6 +14,7 @@ litepresence2020
 import os
 import time
 from calendar import timegm
+from collections import defaultdict
 from datetime import datetime
 from json import dumps as json_dumps
 from multiprocessing import Process, Value
@@ -22,40 +23,21 @@ from random import random
 from statistics import median
 
 # THIRD PARTY MODULES
+import ccxt
 import requests
-
-# PROPRIETARY MODULES
+# HONEST MODULES
 from exchanges import EXCHANGES
 from proxy_list import ProxyManager
-from utilities import race_read_json, race_write, trace
+from utilities import PATH, it, race_read_json, race_write, trace
 
 # GLOBAL CONSTANTS
-TIMEOUT = 15
-ATTEMPTS = 10
+TIMEOUT = 30
+ATTEMPTS = 20
 DETAIL = False
 BEGIN = int(time.time())
-PATH = str(os.path.dirname(os.path.abspath(__file__))) + "/"
-
-
-def return_urls():
-    """
-    dictionary of exchanges to their API base url
-    """
-    return {
-        "latoken": "https://api.latoken.com/v2",
-        "xtcom": "https://www.xt.com",
-        "mexc": "https://api.mexc.com",
-        "gateio": "https://api.gateio.ws",
-        "coinbase": "https://api.pro.coinbase.com",
-        "bitfinex": "https://api-pub.bitfinex.com",
-        "kraken": "https://api.kraken.com",
-        "poloniex": "https://api.poloniex.com",
-        "binance": "https://api.binance.com",
-        "bitstamp": "https://www.bitstamp.net",
-        "huobi": "https://api.huobi.pro",
-        "hitbtc": "https://api.hitbtc.com",
-        "coinex": "https://api.coinex.com/v1",
-    }
+USE_PROXY = ["binance", "bybit"]
+# what to multiply ATTEMPTS and TIMEOUT by when an exchange uses a proxy
+PROXY_SCALE = 5
 
 
 # FORMATING & TYPESETTING
@@ -68,325 +50,148 @@ def print_results(cex):
     pprint(cex)
 
 
-def from_iso_date(date):
-    """
-    ISO to UNIX conversion
-    """
-    return int(timegm(time.strptime(str(date), "%Y-%m-%dT%H:%M:%S")))
-
-
-def to_iso_date(unix):
-    """
-    iso8601 datetime given unix epoch
-    """
-    return datetime.utcfromtimestamp(int(unix)).isoformat()
-
-
-def symbol_syntax(exchange, symbol):
-    """
-    translate ticker symbol to each exchange's local syntax
-    """
-    asset, currency = symbol.upper().split(":")
-    # ticker symbol colloquialisms
-    if exchange == "kraken":
-        if asset == "BTC":
-            asset = "XBT"
-        if currency == "BTC":
-            currency = "XBT"
-        if asset == "DOGE":
-            asset = "XDG"
-    if exchange == "poloniex":
-        # if asset == "XLM":
-        #     asset = "STR"
-        if currency == "USD":
-            currency = "USDT"
-        if asset == "BCH":
-            asset = "BCHABC"
-    if exchange == "binance" and currency == "USD":
-        currency = "USDT"
-    if exchange == "bitfinex":
-        if asset == "BCH":
-            asset = "BAB"
-        if asset == "DASH":
-            asset = "DSH"
-    symbols = {
-        "mexc": asset + currency,
-        "tokocrypto": asset + "_" + currency,
-        "xtcom": (asset + "_" + currency).lower(),
-        "latoken": asset + "/" + currency,
-        "gateio": asset + "_" + currency,
-        "bitfinex": asset + currency,
-        "binance": asset + currency,
-        "poloniex": asset + "_" + currency,
-        "coinbase": asset + "-" + currency,
-        "kraken": asset.lower() + currency.lower(),
-        "bitstamp": asset.lower() + currency.lower(),
-        "huobi": asset.lower() + currency.lower(),
-        "hitbtc": asset + currency,
-        "coinex": asset + currency,
-    }
-
-    symbol = symbols[exchange]
-    print(symbol, exchange)
-    return symbol
-
-
-# SUBPROCESS REMOTE PROCEDURE CALL
-def request(api, signal):
-    """
-    GET remote procedure call to public exchange API
-    """
-    urls = return_urls()
-    api["method"] = "GET"
-    api["headers"] = {}
-    api["data"] = ""
-    api["key"] = ""
-    api["passphrase"] = ""
-    api["secret"] = ""
-    api["url"] = urls[api["exchange"]]
-    url = api["url"] + api["endpoint"]
-    # print(api)
-    time.sleep(10 * random())
-    proxy_manager = api.get("proxy", False)
-    if proxy_manager:
-        data = proxy_manager.get(
-            url=url,
-            data=api["data"],
-            params=api["params"],
-            headers=api["headers"],
-        )
-    else:
-        resp = requests.request(
-            method=api["method"],
-            url=url,
-            data=api["data"],
-            params=api["params"],
-            headers=api["headers"],
-        )
-        try:
-            data = resp.json()
-        except:
-            print(api["exchange"], "has errored out:\n\n", resp.text)
-    doc = (
-        api["exchange"]
-        + api["pair"]
-        + str(int(10**6 * api["nonce"]))
-        + "_{}_public.txt".format(api["exchange"])
-    )
-    race_write(doc, json_dumps(data))
-    signal.value = 1
-
-
-def process_request(api):
-    """
-    Multiprocessing Durability Wrapper for External Requests
-    interprocess communication via durable text pipe
-    """
-    begin = time.time()
-    # multiprocessing completion signal
-    signal = Value("i", 0)
-    # several iterations of external requests until satisfied with response
-    i = 0
-    while (i < (ATTEMPTS if api["exchange"] != "binance" else 1)) and not signal.value:
-        # multiprocessing text file name nonce
-        api["nonce"] = time.time()
-        i += 1
-        if i > 1:
-            print(
-                "{} {} PUBLIC attempt:".format(api["exchange"], api["pair"]),
-                i,
-                time.ctime(),
-                int(time.time()),
-            )
-        child = Process(target=request, args=(api, signal))
-        child.daemon = False
-        child.start()
-        child.join(TIMEOUT if api["exchange"] != "binance" else 60)
-        child.terminate()
-        time.sleep(i**2)
-    # the doc was created by the subprocess; read and destroy it
-    doc = (
-        api["exchange"]
-        + api["pair"]
-        + str(int(10**6 * api["nonce"]))
-        + "_{}_public.txt".format(api["exchange"])
-    )
-    data = race_read_json(doc)
-    path = PATH + "pipe/"
-    if os.path.isfile(path + doc):
-        os.remove(path + doc)
-    if i > 1:
-        print(
-            "{} {} PUBLIC elapsed:".format(api["exchange"], api["pair"]),
-            "%.2f" % (time.time() - begin),
-        )
-    return data
-
-
 # PRIMARY EVENT METHODS
-def get_price(api):
+def get_price(proxy_manager, exchange, pairs):
     """
     Last Price as float
     """
-    doc = api["exchange"] + api["pair"] + ".txt"
+    if not hasattr(get_price, "exchange_cache"):
+        get_price.exchange_cache = {}
+
+    doc = exchange + ".txt"
     race_write(doc, {})
-    exchange = api["exchange"]
-    symbol = symbol_syntax(exchange, api["pair"])
-    endpoints = {
-        "latoken": f"/ticker/{symbol}",
-        "xtcom": "/sapi/v4/market/public/trade/recent",
-        "mexc": "/api/v3/ticker/price",
-        "gateio": "/api/v4/spot/tickers",
-        "bitfinex": "/v2/ticker/t{}".format(symbol),
-        "poloniex": f"/markets/{symbol}/price",
-        "coinbase": "/products/{}/ticker".format(symbol),
-        "kraken": "/0/public/Ticker",
-        "bitstamp": f"/api/v2/ticker/{symbol}",  # "bitstamp": "/api/ticker",
-        "huobi": "/market/trade",
-        "hitbtc": f"/api/2/public/ticker/{symbol}",
-        "coinex": "/market/deals",
-    }
-    params = {
-        "latoken": {},
-        "xtcom": {"symbol": symbol, "limit": 1},
-        "mexc": {"symbol": symbol},
-        "gateio": {},
-        "bitfinex": {"market": symbol},
-        "poloniex": {"symbol": symbol},
-        "coinbase": {"market": symbol},
-        "kraken": {"pair": [symbol]},
-        "bitstamp": {},
-        "huobi": {"symbol": symbol},
-        "hitbtc": {},
-        "coinex": {"market": symbol, "limit": 1},
-    }
-    api["endpoint"] = endpoints[exchange]
-    api["params"] = params[exchange]
-    while 1:
+
+    # fetch the exchange object from the cache if possible, else create a new one
+    exchange_obj = get_price.exchange_cache.get(exchange, getattr(ccxt, exchange)())
+    assert exchange_obj.has[
+        "fetchTickers"
+    ], f"{exchange} does not support fetch_tickers"
+    # reformat from HONEST style to CCXT style
+    pairs = [pair.replace(":", "/") for pair in pairs]
+
+    use_proxy = exchange in USE_PROXY
+
+    # get a proxy if required
+    if use_proxy:
+        proxy = proxy_manager.get_proxy()
+        exchange_obj.socksProxy = f"socks5://{proxy}"
+    idx = 0
+    individual = False
+    while True:
+        # allow for more attempts when using proxies
+        if idx > ATTEMPTS * (PROXY_SCALE if use_proxy else 1):
+            print(it("yellow", "CEX: "), exchange, it("red", "failed!"))
+            return
         try:
-            data = process_request(api)
-            if exchange == "latoken":
-                last = float(data["lastPrice"])
-            elif exchange == "xtcom":
-                last = float(data["result"][0]["p"])
-            elif exchange == "mexc":
-                last = float(data["price"])
-            elif exchange == "gateio":
-                data = {d["currency_pair"]: float(d["last"]) for d in data}
-                last = float(data[symbol])
-            elif exchange == "bitfinex":
-                last = float(data[6])
-            elif exchange == "poloniex":
-                last = float(data["price"])
-            elif exchange == "coinbase":
-                last = float(data["price"])
-            elif exchange == "kraken":
-                data = data["result"]
-                data = data[list(data)[0]]
-                last = float(data["c"][0])
-            elif exchange == "bitstamp":
-                last = float(data["last"])
-            elif exchange == "huobi":
-                last = float(data["tick"]["data"][-1]["price"])
-            elif exchange == "hitbtc":
-                last = float(data["last"])
-            elif exchange == "coinex":
-                last = float(data["data"][0]["price"])
+            # fetch tickers
+            if individual:
+                tickers = {}
+                for pair in pairs:
+                    tickers[pair] = exchange_obj.fetch_ticker(pair)
+                    time.sleep(0.5)
+            else:
+                tickers = exchange_obj.fetch_tickers(pairs)
+            # get the last price from each, moving back from CCXT style to HONEST style
+            data = {i["symbol"].replace("/", ":"): i["last"] for i in tickers.values()}
+            break
+        except ccxt.errors.BadSymbol as error:
+            badsymbol = error.args[0].rsplit(" ", 1)[1]
+            pairs.pop(pairs.index(badsymbol))
+            print(
+                it("yellow", "CEX: "),
+                exchange,
+                f"declares {badsymbol} is a",
+                it("red", "bad symbol."),
+                " Retrying without it...",
+            )
         except Exception as error:
-            print(trace(error), {k: v for k, v in api.items() if k != "secret"}, data)
-        break
-    now = int(time.time())
-    print("writing", doc)
-    data = {"last": last, "time": now}
+            if "cannot contain more than 1 symbol" in str(error):
+                individual = True
+                print(
+                    it("yellow", "CEX: "),
+                    exchange,
+                    "does not allow multi-symbol queries.  Falling back to individual...",
+                )
+                time.sleep(1)
+                continue
+            print(
+                it("yellow", "CEX: "),
+                exchange,
+                f"failed{' with proxy' if use_proxy else ''}, retrying:",
+                error,
+                type(error),
+            )
+            idx += 1
+            if use_proxy:
+                proxy_manager.blacklist_proxy(proxy)
+            time.sleep(1)
+
+    data["time"] = int(time.time())
+    print(it("yellow", "CEX: "), "writing", doc)
     race_write(doc, json_dumps(data))
 
 
-def get_binance_prices(proxy_manager, symbols):
-    """
-    Get prices for all `symbols` on binance via `proxy_manager`
-    """
-    # note start time
-    start = time.time()
-    # process the request (including the proxy_manager)
-    data = process_request(
-        {
-            "exchange": "binance",
-            "endpoint": "/api/v1/ticker/allPrices",
-            "params": {},
-            "pair": "ALL_TOKENS",
-            "proxy": proxy_manager,
-        }
-    )
-    # re-order the data
-    data = {d["symbol"]: float(d["price"]) for d in data}
-    # for each symbol, write to a text pipe to be recovered later by `aggregate()`
-    for symbol in symbols:
-        try:
-            race_write(
-                f"binance{symbol}.txt",
-                json_dumps(
-                    {
-                        "last": float(data[symbol_syntax("binance", symbol)]),
-                        "time": int(time.time()),
-                    }
-                ),
-            )
-        except Exception as error:
-            trace(error)
-    # Note elapsed time
-    print("BINANCE ELAPSED:", time.time() - start)
-
-
-def aggregate(exchanges, api):
+def aggregate(exchanges):
     """
     post process data from all exchanges to extract medians and means
     """
     data = {}
     for exchange in exchanges:
         try:
-            doc = exchange + api["pair"] + ".txt"
-            print("reading", doc)
+            doc = exchange + ".txt"
+            print(it("yellow", "CEX: "), "reading", doc)
             json_data = race_read_json(doc)
             if json_data:
                 data[exchange] = json_data
         except Exception as error:
-            print(error.args)
-    prices = []
-    for _, val in data.items():
+            print(it("yellow", "CEX: "), error.args)
+
+    pairs = defaultdict(list)
+    exchange_pairs = defaultdict(dict)
+    for exchange, datapoints in data.items():
         try:
-            if int(time.time()) - val["time"] < 300:
-                prices.append(val["last"])
+            if int(time.time()) - datapoints["time"] < 300:
+                for pair, price in datapoints.items():
+                    if pair == "time":
+                        continue
+                    pairs[pair].append(price)
+                    exchange_pairs[pair][exchange] = price
         except Exception as error:
-            print(error.args)
-    median_price = median(prices)
-    mean_price = sum(prices) / len(prices)
+            print(it("yellow", "CEX: "), error)
+    median_price = {pair: median(prices) for pair, prices in pairs.items()}
+    mean_price = {pair: sum(prices) / len(prices) for pair, prices in pairs.items()}
     return {
-        "mean": mean_price,
-        "median": median_price,
-        "data": data,
+        pair: {
+            "mean": mean_price[pair],
+            "median": median_price[pair],
+            "data": exchange_pairs[pair],
+        }
+        for pair in pairs
     }
 
 
-def fetch(exchanges, api):
+def fetch(proxy_manager, exchanges, by_pairs):
     """
     multiprocess wrap external request for durability
     """
-    urls = return_urls()
     processes = {}
-    for exchange in exchanges:
-        if exchange == "binance":
-            continue
-        api["url"] = urls[exchange]
-        api["exchange"] = exchange
-        processes[exchange] = Process(target=get_price, args=(api,))
+    for exchange, pairs in exchanges.items():
+        processes[exchange] = Process(
+            target=get_price,
+            args=(
+                proxy_manager,
+                exchange,
+                pairs,
+            ),
+        )
         processes[exchange].daemon = False
         processes[exchange].start()
     for exchange in exchanges:
-        if exchange == "binance":
-            continue
-        processes[exchange].join(20)
+        processes[exchange].join(
+            TIMEOUT if exchange not in USE_PROXY else TIMEOUT * PROXY_SCALE
+        )
         processes[exchange].terminate()
-    return aggregate(exchanges, api)
+    return aggregate(exchanges)
 
 
 def pricefeed_cex(proxy_manager):
@@ -406,18 +211,15 @@ def pricefeed_cex(proxy_manager):
     "HONEST.XRP"
     create a cex price feed, write it to disk, and return it
     """
-    # do binance once, the request gets all tokens at once, no need to repeat calls
-    binance_pairs = []
-    for pair in EXCHANGES:
-        if "binance" in EXCHANGES[pair]:
-            binance_pairs.append(pair)
-    get_binance_prices(proxy_manager, binance_pairs)
+    rotated = defaultdict(list)
+    for pair, exchanges in EXCHANGES.items():
+        for exchange in exchanges:
+            rotated[exchange].append(pair)
 
-    cex = {}
-    for pair in EXCHANGES:
-        cex[pair] = fetch(EXCHANGES[pair], {"pair": pair})
+    cex = fetch(proxy_manager, rotated, EXCHANGES)
 
     race_write("pricefeed_cex.txt", cex)
+    print(it("yellow", "CEX: "), it("green", "DONE!"))
     return cex
 
 
@@ -427,6 +229,8 @@ def main():
     """
     print("initializing cex feeds...")
     proxy_manager = ProxyManager()
+    proxy_manager.get_proxy_list()
+
     cex = pricefeed_cex(proxy_manager)
     print_results(cex)
 

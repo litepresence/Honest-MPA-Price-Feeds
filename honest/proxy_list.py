@@ -1,13 +1,7 @@
 """
-+===============================+
-  ╦ ╦  ╔═╗  ╔╗╔  ╔═╗  ╔═╗  ╔╦╗
-  ╠═╣  ║ ║  ║║║  ║╣   ╚═╗   ║
-  ╩ ╩  ╚═╝  ╝╚╝  ╚═╝  ╚═╝   ╩
-    MARKET - PEGGED - ASSETS
-+===============================+
-
-
 Acquire a list of non US based socks5 proxy servers
+Provide Statistical Mode Response
+Unit Tested On Binance Public API from US based VPN
 
 litepresence + squidKid-deluxe 2024
 """
@@ -15,6 +9,7 @@ litepresence + squidKid-deluxe 2024
 # STANDARD MODULES
 import base64
 import json
+import os
 import random
 import re
 import socket
@@ -26,6 +21,49 @@ from statistics import StatisticsError, mode
 # THIRD PATRY MODULES
 import requests
 import socks
+from utilities import it, race_read, race_write
+
+PINGS = [
+    "http://pingomatic.com",
+    "http://pingler.com",
+    "http://indexkings.com",
+    "http://totalping.com",
+    "http://pingfarm.com",
+    "http://pingmyurl.com",
+    "http://addurl.nu/",
+    "http://googleping.com",
+    "http://pingsitemap.com",
+    "http://pingbomb.com",
+    "http://mypagerank.net",
+    "http://ping.in",
+    "http://coreblog.org/ping",
+    "http://feedshark.brainbliss.com",
+    "http://pingoat.net",
+    "http://backlinkping.com",
+    "http://nimtools.com/online-ping-website-tool",
+    "http://blo.gs/ping.php",
+    "http://blogbuzzer.com",
+    "http://weblogs.com",
+    "http://pingmyblog.com",
+    "http://bulkping.com",
+    "http://auto-ping.com",
+    "http://rpc.weblogs.com",
+    "http://autopinger.com",
+    "http://icerocket.com",
+    "http://blogsnow.com/ping",
+    "http://weblogalot.com/ping",
+    "http://bulkfeeds.net/rpc",
+    "http://ipings.com",
+    "http://feedsubmitter.com",
+    "http://pingerati.net",
+    "http://pingmylink.com",
+    "http://syncr.com",
+    "http://blogpingtool.com",
+    "http://blogmatcher.com",
+    "http://pinggator.com",
+    "http://geourl.org/ping",
+    "http://pingates.com",
+]
 
 
 def openproxyspace(proxy_list):
@@ -200,6 +238,7 @@ def filter_broken_links(links):
     ip_port_pattern = r"^\d{1,3}\.\d{1,3}\.\d{1,3}\.\d{1,3}:\d+$"
     filtered_links = []
     for link in links:
+        link = re.sub(r"\s+", "", link)
         # Check if the link matches the IP:Port pattern
         if re.match(ip_port_pattern, link) and int(link.split(":")[1]) <= 65535:
             filtered_links.append(link)
@@ -216,15 +255,54 @@ class ProxyManager:
     """
 
     def __init__(self):
-        self.whitelist = []
-        self.responses = []
-        self.proxies = []
-        self.blacklist = []
+        self.whitelist = set()
+        self.proxies = list()
+        self.blacklist = set()
+        self.tick = 0
+        self.blacklist = self.load_list("black")
+
+    def initial_blacklist(self):
+        print(it("cyan", "PROXY:"), "Starting proxy checking...")
+        children = []
+        for proxy in [i for i in self.proxies if i not in self.blacklist]:
+            children.append(
+                threading.Thread(
+                    target=self.make_request,
+                    args=("get", proxy),
+                    kwargs={"url": random.choice(PINGS)},
+                )
+            )
+            children[-1].start()
+            time.sleep(0.05)
+
+        print(it("cyan", "PROXY:"), "All proxy checks started, waiting for responses...")
+
+        for child in children:
+            child.join()
+        self.save_list(self.blacklist, "black")
+        self.save_list(self.whitelist, "white")
+        self.save_list([i for i in self.proxies if i not in self.blacklist], "grey")
+        print(it("cyan", "PROXY:"), f"Proxy checking done! {len(self.blacklist)} blacklisted, {len(self.proxies)} left.")
+
+    def get_proxy(self):
+        if random.random() > 0.5 and self.whitelist:
+            return random.choice(self.whitelist)
+        else:
+            proxy = random.choice(self.proxies)
+            while proxy in self.blacklist:
+                proxy = random.choice(self.proxies)
+            self.whitelist.add(proxy)
+            return proxy
+
+    def blacklist_proxy(self, proxy):
+        self.blacklist.add(proxy)
+        self.whitelist = {i for i in self.whitelist if i != proxy}
 
     def get_proxy_list(self):
         """
         Spawn thread to concurrently get all available proxy lists and merge them
         """
+        print(it("cyan", "PROXY:"), "Fetching lists of proxies...")
         # Create lists to store the results
         children = []
 
@@ -247,110 +325,40 @@ class ProxyManager:
         for child in children:
             child.join()
 
+        self.proxies = list(self.proxies)
+
         random.shuffle(self.proxies)
 
         # Eliminate duplicates and malformed servers
-        self.proxies = filter_broken_links(list(set(self.proxies)))
+        self.proxies = list(set(filter_broken_links(set(self.proxies))))
+        self.initial_blacklist()
 
-    def make_request(self, proxy, *args, **kwargs):
+    def make_request(self, type, proxy, *args, **kwargs):
         """
         Make request using a given SOCKS4 proxy, otherwise
         act as direct replacement for requests.get
         """
+        data = None
         try:
             # Set the SOCKS proxy server address and port
             proxy_host, proxy_port = proxy.split(":")
 
-            # Create a SOCKS5 proxy connection
-            socks.setdefaultproxy(socks.SOCKS4, proxy_host, int(proxy_port))
-            socket.socket = socks.socksocket
+            session = requests.Session()
 
-            # Make the request using the requests library
-            response = requests.get(
-                *args, **kwargs, timeout=10
-            )  # Set a timeout for the request
-
-            # Check if the request was successful
-            if response.status_code == 200:
-                try:
-                    data = response.json()
-                    # US-based
-                    if isinstance(data, dict) and data.get("code", None) == 0:
-                        self.blacklist.append(proxy)
-                        return
-                    self.responses.append(data)
-                    self.whitelist.append(proxy)
-                    print(f"PROXY SUCCESS {proxy}")
-                except requests.exceptions.JSONDecodeError:
-                    if proxy in self.whitelist:
-                        self.whitelist = [i for i in self.whitelist if i != proxy]
-            elif proxy in self.whitelist:
-                self.whitelist = [i for i in self.whitelist if i != proxy]
+            # Directly set the proxy for this specific session using the proxies attribute
+            session.proxies = {
+                'http': f'socks5://{proxy_host}:{proxy_port}',
+                'https': f'socks5://{proxy_host}:{proxy_port}',
+            }
+            resp = session.get(*args, timeout=5, **kwargs)
+            if resp.status_code == 200:
+                data = resp.text
         except Exception as e:
-            pass
+            self.blacklist.add(proxy)
+        return data
 
-    def check_mode(self):
-        """
-        Check if there at least three responses, with two matching
-        """
-        if len(self.responses) >= 3:
-            try:
-                return json.loads(mode([json.dumps(i) for i in self.responses]))
-            except StatisticsError as e:
-                return None
+    def save_list(self, typelist, name):
+        race_write(f"proxy_{name}list.txt", list(typelist))
 
-    def get(self, *args, **kwargs):
-        """
-        Act as direct replacement for requests.get, but pass all requests through proxies
-        """
-        # Always update the proxy list
-        self.get_proxy_list()
-        # reset responses
-        self.responses = []
-        # check whitelisted proxies first, and exclude blacklisted proxies
-        proxies = self.whitelist + [i for i in self.proxies if i not in self.blacklist]
-        mode_response = []
-        # iterate through all proxies
-        for i, proxy in enumerate(proxies):
-            # check if we have a mode yet
-            mode_response = self.check_mode()
-            # if we do, break
-            if mode_response is not None:
-                break
-            # spawn thread to try another proxy
-            thread = threading.Thread(
-                target=self.make_request,
-                args=(
-                    proxy,
-                    *args,
-                ),
-                kwargs=kwargs,
-            )
-            thread.start()
-            # sleep to prevent overloading of URL
-            time.sleep(min(1, 0.005 * i))
-        return mode_response
-
-
-def main():
-    """
-    Unit test
-    """
-    # proxies = []
-    # proxyscrapecom(proxies)
-    # openproxyspace(proxies)
-    # freeproxycz(proxies)
-    # freeproxyworld(proxies)
-    # socksproxynet(proxies)
-    # proxylistdownload(proxies)
-    # print("\033c")
-    # print(proxies)
-    # print(len(proxies))
-    # exit()
-
-    proxm = ProxyManager()
-    print(proxm.get("https://api.binance.com/api/v1/ticker/allPrices"))
-
-
-if __name__ == "__main__":
-    main()
+    def load_list(self, name):
+        return set(race_read(f"proxy_{name}list.txt"))

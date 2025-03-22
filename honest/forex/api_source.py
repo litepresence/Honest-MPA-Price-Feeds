@@ -18,11 +18,9 @@ from json import dumps as json_dumps
 
 # THIRD PARTY MODULES
 import requests
-
 from config_apikeys import config_apikeys
-
 # HONEST PRICE FEED MODULES
-from utilities import race_write, refine_data
+from utilities import it, race_write, refine_data
 
 
 def barchart(site):
@@ -45,10 +43,10 @@ def barchart(site):
         data["USD:XAG"] = 1 / data.pop("^XAGUSD")
         data["USD:XAU"] = 1 / data.pop("^XAUUSD")
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
 
 
 def currencyconverter(site):
@@ -70,10 +68,10 @@ def currencyconverter(site):
             except:
                 pass
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
 
 
 def fxmarket(site):
@@ -92,10 +90,10 @@ def fxmarket(site):
         data["USD:XAG"] = 1 / data.pop("XAGUSD:")
         data["USD:XAU"] = 1 / data.pop("XAUUSD:")
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
 
 
 def fscapi(site):
@@ -121,10 +119,10 @@ def fscapi(site):
         data["USD:XAG"] = 1 / data.pop("XAG:USD")
         data["USD:XAU"] = 1 / data.pop("XAU:USD")
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
 
 
 def fixerio(site):
@@ -151,10 +149,10 @@ def fixerio(site):
             "USD:JPY": float(ret["JPY"]) * usdeur,
         }
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
 
 
 def openexchangerates(site):
@@ -171,7 +169,7 @@ def openexchangerates(site):
         ret = requests.get(url, params=params, timeout=(15, 15)).json()["rates"]
         data = {"USD:" + key: float(val) for key, val in ret.items() if key in symbols}
         data = refine_data(data)
-        print(site, data)
+        print(it("purple", "FOREX API:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
-        print(f"{site} failed to load")
+        print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
