@@ -1,29 +1,65 @@
-<p align="center"> 
-<img src="https://github.com/litepresence/Honest-MPA-Price-Feeds/blob/master/docs/Screenshot%20from%202020-10-29%2021-50-33.png">	
-<img src="https://github.com/litepresence/Honest-MPA-Price-Feeds/blob/master/docs/Screenshot%20from%202020-10-30%2011-05-50.png">
-</p>
+<img src="https://github.com/litepresence/Honest-MPA-Price-Feeds/blob/master/docs/Screenshot.png">	
 
 
 # Honest-MPA-Price-Feeds
 Honest Price Feeds for Bitshares Market Pegged Assets
 
-We are currently feeding an HONEST price hourly to 9 BitShares Market Pegged Assets: 
+We are currently feeding an HONEST price hourly to 46 BitShares Market Pegged Assets: 
 
 These are backed by the BTS core token as collateral, meaning you "borrow them into existence" with Bitshares:
 
-    HONEST.CNY (CHINESE YUAN)
-    HONEST.BTC (BITCOIN)
-    HONEST.USD (US DOLLAR)
-    HONEST.XAU (GOLD)
-    HONEST.XAG (SILVER)
-    HONEST.ETH (ETHEREUM)
-    HONEST.XRP (RIPPLE)
+    HONEST.CNY
+    HONEST.USD
+    HONEST.BTC
+    HONEST.XAU
+    HONEST.XAG
+    HONEST.ETH
+    HONEST.XRP
+    HONEST.USDSHORT
+    HONEST.BTCSHORT
+    HONEST.ADA
+    HONEST.DOT
+    HONEST.LTC
+    HONEST.SOL
+    HONEST.XMR
+    HONEST.ATOM
+    HONEST.XLM
+    HONEST.ALGO
+    HONEST.FIL
+    HONEST.EOS
+    HONEST.RUB
+    HONEST.EUR
+    HONEST.GBP
+    HONEST.JPY
+    HONEST.KRW
+    HONEST.ADASHORT
+    HONEST.DOTSHORT
+    HONEST.LTCSHORT
+    HONEST.SOLSHORT
+    HONEST.XMRSHORT
+    HONEST.ATOMSHORT
+    HONEST.XLMSHORT
+    HONEST.ALGOSHORT
+    HONEST.FILSHORT
+    HONEST.EOSSHORT
+    HONEST.RUBSHORT
+    HONEST.EURSHORT
+    HONEST.GBPSHORT
+    HONEST.JPYSHORT
+    HONEST.KRWSHORT
+    HONEST.XRPSHORT
+    HONEST.ETHSHORT
+    HONEST.XAUSHORT
+    HONEST.XAGSHORT
+    HONEST.CNYSHORT
 
-These are backed by HONEST.BTC as collateral, meaning you "borrow them into existence" with Bitcoin:
+(The `SHORT` tokens are fed the inverse (`1 / `) of their base price, see [this document](short_tokens.md) for more details.)
 
-    HONEST.ETH1 (ETHEREUM)
-    HONEST.XRP1 (RIPPLE)
-    
+These are backed by HONEST.BTC as collateral, meaning you "borrow them into existence" with HONEST Bitcoin:
+
+    HONEST.ETH1
+    HONEST.XRP1
+
 NOTE: The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem as they are the only MPA backed MPA's on the DEX.   In this regard they are an exotic, experimental financial instrument. 
 
 # Installation
@@ -31,63 +67,25 @@ You should be on a linux box with latest python version installed (3.7 or better
 
 First, perform these commands:
 
-    sudo apt-get update
-    sudo apt-get install pkg-config
-    sudo apt-get install libffi-dev
-    sudo apt-get install libsecp256k1-dev
+```bash
+sudo apt-get update
+sudo apt-get install pkg-config
+sudo apt-get install libffi-dev
+sudo apt-get install libsecp256k1-dev
+```
+You will then need to install the `requirements.txt`:
 
-You will then need to manually pip3 install the following dependencies (sorry no setup.py yet):
+```bash
+pip install -r requirements.txt
+```
 
-    pip3 install requests
-    pip3 install cfscrape
-    pip3 install psutil
-    pip3 install websocket-client
-    pip3 install ecdsa
-    pip3 install secp256k1
+If that fails you may need to set up a virtual enviroment for python3.9+, which is outside the scope of this document.  See [here](https://realpython.com/python-virtual-environments-a-primer/) for instructions.
 
-Then clone the repo, be sure to include the empty `/pipe/` folder!  It will be used for text pipe inter process communication.
 
-Next, in terminal, navigate to the folder containing pricefeed_final.py and run it:
+> The pricefeed script for the HONEST mpa's used to provide additional functionality called `sceletus`.  This aspect of the script performed a dust quantity wash trade once per hour to provide a historical chart reference rate.   This functionality has since been removed to simplify the script, but there remains a `honest_cross_rates.txt` file in the `pipe` folder so that custom or 3rd party sceletus scripts may use HONEST's curated price data.
 
-    python3 pricefeed_final.py 
-  
-On your system, you may need to specify the python sub-version explicitly, like this:
-  
-    python3.8 pricefeed_final.py 
-  
-Then press `Enter` 4 times to skip `publish`, `jsonbin`, `sceletus`, and `cancel` functionality for now.  Just confirm a demo works and you have all dependencies loaded.   Once it is loaded; it takes about 3 minutes, exit the script:
 
-    ctrl + shift + \
-
-to set up www.jsonbin.io functionality:
-
-`config_api.py` will need the configuration dictionary values updated for `jsonbin: key:` and then the script saved.  You get your `key` at www.jsonbin.io in the `api keys` tab, after signing up for their service.   After installing the `key`, run the jsonbin.py script ONCE in the terminal with the command:
-
-    python3 jsonbin.py 
-    
-The script will print a `BIN ID`.  Next, install the `id` you just generated in the `config_api.py` script where it belongs as the `jsonbin: id:`; just under where you just installed the `jsonbin: key:`.   
-
-Then you can now test the `jsonbin` functionality of the `pricefeed_final.py` script.  In terminal:
-
-    python3 pricefeed_final.py
-
-Press `y + Enter` when prompted at startup by the `jsonbin` question.   For all other question, just press `Enter` to skip the other functions for now.   `pricefeed_final.py` will now use the `jsonbin.py` with the `BIN ID` you installed in `config_api.py` as a module to upload your data matrix for the public to see.
-
-To view your `jsonbin` and ensure everything is working correctly, visit:
-
-    https://api.jsonbin.io/b/<your_bin_id>/latest 
-
-(be sure to install your bin id where it goes in the link)
-
-In `config_api.py` you have a place to store this web address marked `jsonbin: url:`; this is not strictly necessary, but you should at the very least bookmark your `jsonbin` in a web browser, to check up on it later.  Be sure to include `/latest` on the end of the url, as the `jsonbin` will contain a historic copy of every upload you make.  Without `latest` the url points to the first upload and will appear to not update.
-
-Next, you will need to sign up at several forex sites to access their api data.   Open the `config_api.py` file again.  It contains several forex data site urls for you to visit and attain keys.  Each of these sites provides FREE data, all you need is an email address.  Install the keys into the dictionary provided, in their respective places; then save the file.  Also, save your password for each site someplace safe. 
-
-Be sure to inform us in the HONEST mpa development room of your `jsonbin id` so we can add it to the announce thread at https://bitsharestalk.org/index.php?topic=32035
-
-Finally, the pricefeed script for the HONEST mpa's provides additional functionality called `SCELETUS`.  This aspect of the script performs a dust quantity wash trade once per hour to provide a historical chart reference rate.   Each price feed producer is expected to assist with this process as a marketing tool to display the accuracy of our pricefeeds over time.  The annual blockchain transaction cost of these operations is expected to be less than $10.   Each user has been assigned markets to sceletus.  Open `config_sceletus.py` to find the markets assigned to you.  Edit the uncommented return statement accordingly with the commented out statement assigned to you, then save the file.   You will also need to manually purchase or borrow about 100 BTS (currently $3 value) of each instrument you've been assigned to sceletus to enact the buy and sell wash trade.  It should be noted both the buy and sell will be performed by one account.  
-
-You are now ready to deploy live.   Run `pricefeed_final.py` in the terminal.  Choose `y + Enter` for all four initial questions asked by the script.  
+You are now ready to deploy live.   Run `HONEST.py` in the terminal.  Choose `y + Enter` to enable publishing.  
 
     NOTE: You should certainly familiarize yourself with the scripts provided at this point
     you are about to enter your private keys which provide COMPLETE ACCESS TO YOUR FUNDS
@@ -95,8 +93,9 @@ You are now ready to deploy live.   Run `pricefeed_final.py` in the terminal.  C
 
 Then enter your BitShares `username` and `wif`.   Press `Enter` one last time and you are now an offical price feed producer for HONEST market pegged assets.   Welcome to the team!
 
-From time to time the github will be updated.   Please check in regularly at the HONEST mpa development room on telegram.   Whenever you git clone the repo to update, please save a copy of the previous version on your local hard drive.   This will make reverting easier should there be any errors in the latest development branch.   
-    
+From time to time this Github repository will be updated.  Please check in regularly at the HONEST mpa development room on telegram.  Whenever you update, we suggest using `git pull` rather than the `Download ZIP` button, so that should there be any errors in the latest development branch, it would then be easier to revert using `git checkout <commit-hash>`.
+
+
 To sign up as a feed producer for HONEST market pegged assets on Bitshares Blockchain find me on telegram, I'm a chat mod in the groups:
 
 https://t.me/bitshares_community
@@ -114,4 +113,4 @@ For more information, please visit the ANNOUNCEMENT thread at: https://bitshares
 
 HONEST BDFL,
 
-litepresence2020
+litepresence2020 & squidKid-deluxe 2025
