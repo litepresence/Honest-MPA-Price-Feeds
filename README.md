@@ -81,6 +81,18 @@ pip install -r requirements.txt
 
 If that fails you may need to set up a virtual enviroment for python3.9+, which is outside the scope of this document.  See [here](https://realpython.com/python-virtual-environments-a-primer/) for instructions.
 
+HONEST feeds use a package called `bitshares-signing` that is having trouble getting pypi installation to work, thus you must install it via git & pip:
+
+```bash
+git clone https://github.com/squidKid-deluxe/bitshares-signing.git
+cd bitshares-signing
+pip install -e .
+```
+
+> This is a temporary workaround and will be fixed in the near future.
+
+---
+
 
 There is a streaming file `honest_cross_rates.txt` in the `pipe` folder so that custom or 3rd party integrations may use HONEST's curated price data.
 
