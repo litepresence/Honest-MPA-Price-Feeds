@@ -28,7 +28,7 @@ import requests
 # HONEST MODULES
 from exchanges import EXCHANGES
 from proxy_list import ProxyManager
-from utilities import PATH, it, race_read_json, race_write, trace
+from utilities import PATH, it, race_read_json, race_write, trace, correct_pair
 
 # GLOBAL CONSTANTS
 TIMEOUT = 30
@@ -87,20 +87,24 @@ def get_price(proxy_manager, exchange, pairs):
             if individual:
                 tickers = {}
                 for pair in pairs:
-                    tickers[pair] = exchange_obj.fetch_ticker(pair)
+                    tickers[pair] = exchange_obj.fetch_ticker(correct_pair(exchange, pair))
                     time.sleep(0.5)
             else:
-                tickers = exchange_obj.fetch_tickers(pairs)
+                tickers = exchange_obj.fetch_tickers([correct_pair(exchange, pair) for pair in pairs])
             # get the last price from each, moving back from CCXT style to HONEST style
-            data = {i["symbol"].replace("/", ":"): i["last"] for i in tickers.values()}
+            data = {correct_pair(exchange, i["symbol"], reverse=True).replace("/", ":"): i["last"] for i in tickers.values()}
             break
         except ccxt.errors.BadSymbol as error:
             badsymbol = error.args[0].rsplit(" ", 1)[1]
+            if badsymbol != (corrected_bad_sym:=correct_pair(exchange, badsymbol, reverse=True)):
+                corrected_bad_sym, badsymbol = badsymbol, corrected_bad_sym
+            else:
+                corrected_bad_sym = ""
             pairs.pop(pairs.index(badsymbol))
             print(
                 it("yellow", "CEX: "),
                 exchange,
-                f"declares {badsymbol} is a",
+                f"declares {badsymbol}{f' (aka {corrected_bad_sym})' if corrected_bad_sym else ''} is a",
                 it("red", "bad symbol."),
                 " Retrying without it...",
             )

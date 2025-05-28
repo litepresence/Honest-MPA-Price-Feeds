@@ -296,3 +296,20 @@ def refine_data(data):
     # ensure all pairs exist in configured pairs
     data = {k: v for k, v in data.items() if k in markets}
     return data
+
+
+def correct_pair(exchange, pair, reverse=False):
+    asset, currency = pair.split("/")
+    new_pair = []
+    lookup = {
+        "coinex": {"EOS": "A"},
+        "hitbtc": {"EOS": "A"},
+        "kucoin": {"EOS": "A"},
+        "mexc": {"EOS": "A"},
+        "xt": {"EOS": "A"}
+    }
+    if reverse:
+        lookup = {k:{nt:t for t, nt in v.items()} for k, v in lookup.items()}
+    for token in [asset, currency]:
+        new_pair.append(lookup.get(exchange, {}).get(token, token))
+    return "/".join(new_pair)

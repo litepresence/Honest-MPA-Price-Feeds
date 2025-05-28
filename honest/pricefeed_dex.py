@@ -511,7 +511,7 @@ def dex_table(local_vars):
         gateway_tokens = sorted(list({i.split(".", 1)[1] for i in CURRENCIES}))
 
         # gateway_table is len(gateway_tokens)+1 rows and len(gateways)+1 columns
-        table = [[" " * 10] + [i.ljust(10) for i in gateway_tokens]]
+        table = [[" " * 16] + [i.ljust(10) for i in gateway_tokens]]
         for gateway in gateways:
             row = [gateway.ljust(10)] + [
                 str(sigfig(local_vars["last"].get(f"{gateway}.{token}", -1), 4)).ljust(
@@ -970,6 +970,8 @@ def bifurcation(storage, cache):
     Given 7 dictionaries of data (mavens) find the most common
     Send good (statistical mode) data to pricefeed_dex
     """
+    print()
+    validation_atmpt = 1
     while True:
         try:
             # initialize the dex_data dictionary
@@ -997,8 +999,10 @@ def bifurcation(storage, cache):
             # find the youngest bitshares blocktime in our dataset
             try:
                 blocktime = max(blocktime)
+                validation_atmpt = 1
             except Exception:
-                print("validating the nascent trend...")
+                print(f"\033[Avalidating the nascent trend... {validation_atmpt}")
+                validation_atmpt += 1
                 sleep(1)
                 continue
             # get the mode of the mavens for the last, slicing progressively more recent
