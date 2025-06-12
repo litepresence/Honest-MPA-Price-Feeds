@@ -158,8 +158,9 @@ def aggregate(exchanges):
                 for pair, price in datapoints.items():
                     if pair == "time":
                         continue
-                    pairs[pair].append(price)
-                    exchange_pairs[pair][exchange] = price
+                    if price is not None:
+                        pairs[pair].append(price)
+                        exchange_pairs[pair][exchange] = price
         except Exception as error:
             print(it("yellow", "CEX: "), error)
     median_price = {pair: median(prices) for pair, prices in pairs.items()}
