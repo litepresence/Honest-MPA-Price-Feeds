@@ -1,4 +1,4 @@
-<img src="https://github.com/litepresence/Honest-MPA-Price-Feeds/blob/master/docs/Screenshot.png">	
+<img src="https://github.com/litepresence/Honest-MPA-Price-Feeds/blob/master/docs/Screenshot.png">
 
 
 # Honest-MPA-Price-Feeds
@@ -63,49 +63,68 @@ The following two tokens are backed by HONEST.BTC as collateral, meaning you "bo
 The HONEST.BTC backed MPA's are unique in the Bitshares ecosystem as they are the only MPA backed MPA's on the DEX.   
 
 # Installation
-You should be on a linux box with latest python version installed (3.7 or better).
+You should be on a linux box.  The directions given below are for Ubuntu based distributions like Lubuntu or Linux Mint; if your OS is based on Fedora or Arch, you will need to modify package names slightly and use a different package manager like `dnf` or `pacman`.
 
-First, perform these commands:
+First off, check your system's python version via `python3 -V`.  If it returns something in the range of `3.9.x` to `3.11.x`, you can use that, but if it's outside of that range, you'll need to install a different version.
+
+If you do need to install a compatible version of python, follow these directions:
 
 ```bash
-sudo apt-get update
-sudo apt-get install pkg-config
-sudo apt-get install libffi-dev
-sudo apt-get install libsecp256k1-dev
+# Update the package list
+sudo apt update
+# Add the deadsnakes PPA
+sudo apt install software-properties-common
+sudo add-apt-repository ppa:deadsnakes/ppa
+# Update the list again so that the python versions in the deadsnakes PPA show up
+sudo apt update
+# Install python3.11 along with other HONEST dependencies
+sudo apt install python3.11 python3.11-venv python3.11-dev pkg-config libffi-dev libsecp256k1-dev git build-essential
 ```
-You will then need to install the `requirements.txt`:
+
+Otherwise, simply install the base dependencies:
 
 ```bash
-pip install -r requirements.txt
+sudo apt update
+sudo apt install python3-venv python3-dev pkg-config libffi-dev libsecp256k1-dev git build-essential
 ```
 
-If that fails you may need to set up a virtual enviroment for python3.9+, which is outside the scope of this document.  See [here](https://realpython.com/python-virtual-environments-a-primer/) for instructions.
-
-HONEST feeds use a package called `bitshares-signing` that is having trouble getting pypi installation to work, thus you must install it via git & pip:
+Now, `cd` into whatever directory you want to run HONEST feeds in, and run
 
 ```bash
+# Create a virtual environment
+# Note that if you did not have to install python, just use python3 here
+python3.11 -m venv honest_env
+# Activate it
+source honest_env/bin/activate
+# Install bitshares-signing
 git clone https://github.com/squidKid-deluxe/bitshares-signing.git
-cd bitshares-signing
-pip install -e .
+pip install -e ./bitshares-signing
+# Download this repository
+git clone https://github.com/litepresence/Honest-MPA-Price-Feeds.git
+cd Honest-MPA-Price-Feeds
+# Install requirements
+pip install -r requirements.txt
+# Enter the main directory of scripts
+cd honest
 ```
 
-> This is a temporary workaround and will be fixed in the near future.
-
----
-
-
-There is a streaming file `honest_cross_rates.txt` in the `pipe` folder so that custom or 3rd party integrations may use HONEST's curated price data.
-
-
-You are now ready to deploy live.   Run `HONEST.py` in the terminal.  Choose `y + Enter` to enable publishing.  
+You are now ready to deploy live.
 
     NOTE: You should certainly familiarize yourself with the scripts provided at this point
     you are about to enter your private keys which provide COMPLETE ACCESS TO YOUR FUNDS
     you SHOULD PERSONALLY ENSURE that you have read, understand, and trust the source code
 
-Then enter your BitShares `username` and `wif`.   Press `Enter` one last time and you are now an offical price feed producer for HONEST market pegged assets.   Welcome to the team!
+Run
 
-From time to time this Github repository will be updated.  Please check in regularly at the HONEST mpa development room on telegram.  Whenever you update, we suggest using `git pull` rather than the `Download ZIP` button, so that should there be any errors in the latest development branch, it would then be easier to revert using `git checkout <commit-hash>`.
+```bash
+python HONEST.py
+```
+
+Choose `y + Enter` to enable publishing, then enter your BitShares `username` and `wif`.  Press `Enter` one last time and you are now an offical price feed producer for HONEST market pegged assets.  Welcome to the team!
+
+From time to time this Github repository will be updated.  Please check in regularly at the HONEST mpa development room on telegram.  Whenever you update, we suggest using `git pull` in the `Honest-MPA-Price-Feeds` directory rather than the `Download ZIP` button, so that should there be any errors in the latest development branch, it would then be easier to revert using `git checkout <commit-hash>`.
+
+There is a streaming file `honest_cross_rates.txt` in the `pipe` folder so that custom or 3rd party integrations may use HONEST's curated price data.
 
 
 I'm a chat mod in https://t.me/bitsharesDEV
