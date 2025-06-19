@@ -18,6 +18,7 @@ from getpass import getpass
 
 # HONEST PRICE FEED MODULES
 from bitshares_signing import broker
+
 from config_tokens import MPAS, PRODUCER_IDS
 from utilities import print_logo, race_read_json
 

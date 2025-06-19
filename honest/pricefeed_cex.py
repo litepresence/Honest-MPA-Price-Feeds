@@ -25,10 +25,11 @@ from statistics import median
 # THIRD PARTY MODULES
 import ccxt
 import requests
+
 # HONEST MODULES
 from exchanges import EXCHANGES
 from proxy_list import ProxyManager
-from utilities import PATH, it, race_read_json, race_write, trace, correct_pair
+from utilities import PATH, correct_pair, it, race_read_json, race_write, trace
 
 # GLOBAL CONSTANTS
 TIMEOUT = 30

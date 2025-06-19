@@ -17,6 +17,7 @@ import math
 import os
 import re
 import shutil
+import subprocess
 import sys
 import time
 from traceback import format_exc
@@ -313,3 +314,44 @@ def correct_pair(exchange, pair, reverse=False):
     for token in [asset, currency]:
         new_pair.append(lookup.get(exchange, {}).get(token, token))
     return "/".join(new_pair)
+
+
+def new_git_commits(upstream_branch="origin/master"):
+    # Fetch the latest changes from the upstream repository
+    subprocess.run(["git", "fetch"], check=True)
+
+    # Get the current branch name
+    current_branch = (
+        subprocess.check_output(["git", "rev-parse", "--abbrev-ref", "HEAD"])
+        .strip()
+        .decode("utf-8")
+    )
+
+    # Compare the local branch with the upstream branch
+    result = subprocess.run(
+        ["git", "rev-list", "--count", f"{current_branch}..{upstream_branch}"],
+        capture_output=True,
+        text=True,
+    )
+
+    if result.returncode != 0:
+        print("Error checking for new commits.")
+        return
+
+    new_commits_count = int(result.stdout.strip())
+
+    return new_commits_count
+
+
+def is_git_repo():
+    try:
+        # Run the git command to check if inside a git repository
+        result = subprocess.run(
+            ["git", "rev-parse", "--is-inside-work-tree"],
+            capture_output=True,
+            text=True,
+            check=True,
+        )
+        return result.stdout.strip() == "true"
+    except subprocess.CalledProcessError:
+        return False
