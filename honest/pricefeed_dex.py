@@ -43,7 +43,7 @@ from websocket import enableTrace
 from config_nodes import public_nodes
 from exchanges import EXCHANGES
 # HONEST PRICE FEED MODULES
-from utilities import (PATH, at, is_get_repo, it, new_git_commits, print_logo,
+from utilities import (PATH, at, is_git_repo, it, new_git_commits, print_logo,
                        race_append, race_read, race_write, sigfig,
                        string_width, trace)
 
