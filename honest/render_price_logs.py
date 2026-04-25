@@ -1,11 +1,9 @@
-import matplotlib.style as mplstyle
-import matplotlib.pyplot as plt
-import os
-import glob
-from collections import defaultdict
 import ast
-import sys
+import glob
 import json
+import os
+import sys
+from collections import defaultdict
 from multiprocessing import Process, Value
 from os import popen
 from random import random, shuffle
@@ -13,12 +11,15 @@ from statistics import median, mode
 from sys import stdout
 
 # STANDARD PYTHON MODULES
-from time import ctime, sleep, strptime, time, mktime
+from time import ctime, mktime, sleep, strptime, time
 from traceback import format_exc
 
+import matplotlib.pyplot as plt
+import matplotlib.style as mplstyle
 import numpy as np
 from config_nodes import public_nodes
 from exchanges import EXCHANGES
+from HONEST import calculate_btsbtc_price, gather_dex_btsbtc
 
 # THIRD PARTY MODULES
 from psutil import Process as psutil_Process
@@ -37,7 +38,6 @@ from utilities import (
     string_width,
     trace,
 )
-from HONEST import calculate_btsbtc_price, gather_dex_btsbtc
 from websocket import create_connection as wss
 from websocket import enableTrace
 
@@ -64,15 +64,14 @@ def dex_table(last):
     table = [[" " * 16] + [i.ljust(10) for i in gateway_tokens]]
     for gateway in gateways:
         row = [gateway.ljust(10)] + [
-            str(sigfig(last.get(f"{gateway}.{token}", -1), 4)).ljust(10) for token in gateway_tokens
+            str(sigfig(last.get(f"{gateway}.{token}", -1), 4)).ljust(10)
+            for token in gateway_tokens
         ]
         row = [
             (
                 i
                 if not any(j.isdigit() for j in i)
-                else it("green", i)
-                if "-1" not in i
-                else it("yellow", i)
+                else it("green", i) if "-1" not in i else it("yellow", i)
             )
             for i in row
         ]
@@ -113,11 +112,7 @@ def cex_table(cex):
             (
                 "white"
                 if count >= 7
-                else "yellow"
-                if count >= 5
-                else "red"
-                if count >= 2
-                else "cyan"
+                else "yellow" if count >= 5 else "red" if count >= 2 else "cyan"
             ),
             coin.ljust(just_size),
         )
@@ -138,7 +133,9 @@ def cex_table(cex):
                                 "green"
                                 if i != -1 or rdx >= len(exchanges)
                                 else (
-                                    "red" if exchanges[rdx] in EXCHANGES[pairs[idx]] else "yellow"
+                                    "red"
+                                    if exchanges[rdx] in EXCHANGES[pairs[idx]]
+                                    else "yellow"
                                 )
                             )
                             if row[0] != "median"
@@ -150,7 +147,11 @@ def cex_table(cex):
                 ]
             )
         )
-    cex_string = it("yellow", " CEX ".center(string_width(cex_string), "═")) + "\n\n" + cex_string
+    cex_string = (
+        it("yellow", " CEX ".center(string_width(cex_string), "═"))
+        + "\n\n"
+        + cex_string
+    )
     return cex_string
 
 
@@ -185,11 +186,7 @@ def forex_table(forex):
             (
                 "white"
                 if count >= 7
-                else "yellow"
-                if count >= 5
-                else "red"
-                if count >= 2
-                else "cyan"
+                else "yellow" if count >= 5 else "red" if count >= 2 else "cyan"
             ),
             coin.ljust(just_size),
         )
@@ -209,7 +206,11 @@ def forex_table(forex):
             + "".join(
                 [
                     it(
-                        (("green" if i != -1 else "yellow") if row[0] != "median" else "cyan"),
+                        (
+                            ("green" if i != -1 else "yellow")
+                            if row[0] != "median"
+                            else "cyan"
+                        ),
                         str(sigfig(i, 4)).ljust(just_size),
                     )
                     for idx, i in enumerate(row[1:])
@@ -252,7 +253,8 @@ def acquire_btsbtc(data):
     }
 
     agg_btsbtc_dict = {
-        source: price / btcusd for price, source in data["forex"]["aggregate"]["BTS:USD"]
+        source: price / btcusd
+        for price, source in data["forex"]["aggregate"]["BTS:USD"]
     }
 
     # Gather DEX BTS:BTC prices
@@ -389,15 +391,15 @@ def plot_all():
         key=lambda x: mktime(
             strptime(os.path.basename(x).split("price_log_")[1].rsplit(".", 1)[0])
         ),
-    )#[-1000:]
+    )  # [-1000:]
 
     lf = len(files)
 
     print()
     for fdx, file in enumerate(files):
-        date = (mktime(
+        date = mktime(
             strptime(os.path.basename(file).split("price_log_")[1].rsplit(".", 1)[0])
-        ))
+        )
         print(f"\033[A{fdx*100/lf:.2f}% done")
         with open(file, "r") as handle:
             data = handle.read()
