@@ -21,6 +21,7 @@ import shutil
 import subprocess
 import sys
 import time
+from collections import deque
 from traceback import format_exc
 
 # GLOBAL VARIABLES
@@ -226,6 +227,29 @@ def race_read(doc=""):
         except Exception as error:
             print(trace(error))
             continue
+
+
+def truncate_metanodelog(max_lines: int = 10000, encoding: str = "utf-8") -> None:
+    """
+    Truncates a file to keep only the most recent `max_lines` lines.
+    
+    Args:
+        max_lines: Number of lines to retain from the end of the file.
+        encoding: File encoding (default: 'utf-8').
+    """
+    filepath = PATH + "pipe/metanodelog.txt"
+    if max_lines <= 0:
+        raise ValueError("max_lines must be a positive integer.")
+    if not os.path.exists(filepath):
+        raise FileNotFoundError(f"File not found: {filepath}")
+
+    # Read line-by-line, keeping only the last `max_lines` in memory
+    with open(filepath, "r", encoding=encoding) as f:
+        recent_lines = deque(f, maxlen=max_lines)
+
+    # Overwrite the original file with the retained lines
+    with open(filepath, "w", encoding=encoding) as f:
+        f.writelines(recent_lines)
 
 
 def from_iso_date(date):

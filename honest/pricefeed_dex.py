@@ -56,6 +56,7 @@ from utilities import (
     sigfig,
     string_width,
     trace,
+    truncate_metanodelog,
 )
 from websocket import create_connection as wss
 from websocket import enableTrace
@@ -987,6 +988,7 @@ def thresh(storage, process, epoch, pid, cache):
                     print(msg)
                 if "listed" not in msg:
                     race_append(doc="metanodelog.txt", text=msg)
+                    truncate_metanodelog()
                 winnow(storage, "blacklist", node)
                 del msg
             except:
