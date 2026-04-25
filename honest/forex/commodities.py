@@ -59,18 +59,18 @@ def arincen(site):
     try:
         response = requests.get(url, timeout=10)
         html = response.text
-        
+
         def get_price(symbol):
             # Locate the row by alt attribute, then extract the text-foreground value
             if f'alt="{symbol}"' not in html:
                 return None
-            row = html.split(f'alt="{symbol}"')[1].split('</tr>')[0]
-            price_str = row.split('<div class="text-foreground">')[1].split('</div>')[0]
-            return float(price_str.replace(',', ''))
-        
+            row = html.split(f'alt="{symbol}"')[1].split("</tr>")[0]
+            price_str = row.split('<div class="text-foreground">')[1].split("</div>")[0]
+            return float(price_str.replace(",", ""))
+
         xag = get_price("XAGUSD")
         xau = get_price("XAUUSD")
-        
+
         if xag and xau:
             result["USD:XAG"] = 1 / xag
             result["USD:XAU"] = 1 / xau
@@ -78,13 +78,13 @@ def arincen(site):
             race_write(f"{site}_forex.txt", json.dumps(result))
         else:
             raise ValueError("Missing XAGUSD or XAUUSD price")
-            
+
     except Exception as e:
         print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
         print(e)
 
     return result
-    
+
 
 def bitpanda(site):
     prices = {}

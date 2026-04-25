@@ -182,7 +182,7 @@ def openexchangerate(site):
     """
     uri = "https://open.er-api.com/v6/latest/USD"
     symbols = ["CNY", "EUR", "GBP", "KRW", "JPY", "RUB", "XAU", "XAG"]
-    
+
     try:
         raw = requests.get(uri).json()
         data = {}

@@ -19,8 +19,10 @@ from json import dumps as json_dumps
 from json import loads as json_loads
 
 import cfscrape
+
 # THIRD PARTY MODULES
 import requests
+
 # PRICE FEED MODULES
 from utilities import it, race_write, refine_data
 
@@ -43,14 +45,21 @@ def fxempire1(site):
 
 def fxempire_curr():
 
-    base_url = "https://www.fxempire.com/api/v1/en/currencies/rates",
-    instruments = ["usd-eur", "usd-gbp", "usd-jpy", "usd-aud", 
-                      "usd-nzd", "usd-cad", "usd-chf"]
+    base_url = ("https://www.fxempire.com/api/v1/en/currencies/rates",)
+    instruments = [
+        "usd-eur",
+        "usd-gbp",
+        "usd-jpy",
+        "usd-aud",
+        "usd-nzd",
+        "usd-cad",
+        "usd-chf",
+    ]
     params = {
         "category": "",
         "includeSparkLines": "false",
         "includeFullData": "false",
-        "instruments": ",".join(i.strip() for i in instruments if i.strip())
+        "instruments": ",".join(i.strip() for i in instruments if i.strip()),
     }
     headers = {
         "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0",
@@ -60,7 +69,7 @@ def fxempire_curr():
         "Sec-Fetch-Dest": "empty",
         "Sec-Fetch-Mode": "cors",
         "Sec-Fetch-Site": "same-origin",
-        "Priority": "u=4"
+        "Priority": "u=4",
     }
     query_string = "&".join(f"{k}={v}" for k, v in params.items())
     url = f"{base_url}?{query_string}"
@@ -69,14 +78,15 @@ def fxempire_curr():
     session.headers = headers
     cfscrape_requests = cfscrape.create_scraper(sess=session)
     response = cfscrape_requests.get(
-    url,
-    headers=headers,
-    timeout=10,
+        url,
+        headers=headers,
+        timeout=10,
     )
     response.raise_for_status()
-    
+
     return response
-    
+
+
 def fxempire_comm():
 
     url = "https://www.fxempire.com/commodities"
@@ -87,34 +97,39 @@ def fxempire_comm():
 
     result = {}
     h = html.lower()
-    
+
     # Split into rows
-    rows = h.split('<tr')
-    
+    rows = h.split("<tr")
+
     for row in rows:
         # Check for XAU symbol
         if 'data-playwright="commodity-symbol">xau</span>' in row:
             if 'data-playwright="commodity-last-price"' in row:
-                price_part = row.split('data-playwright="commodity-last-price"')[1].split('</td>')[0]
-                price_text = price_part.split('>')[-1].strip()
-                if price_text.endswith('k'):
+                price_part = row.split('data-playwright="commodity-last-price"')[
+                    1
+                ].split("</td>")[0]
+                price_text = price_part.split(">")[-1].strip()
+                if price_text.endswith("k"):
                     price = float(price_text[:-1]) * 1000
                 else:
-                    price = float(price_text.replace(',', ''))
+                    price = float(price_text.replace(",", ""))
                 result["USD:XAU"] = 1 / price
-                
+
         # Check for XAG symbol
         elif 'data-playwright="commodity-symbol">xag</span>' in row:
             if 'data-playwright="commodity-last-price"' in row:
-                price_part = row.split('data-playwright="commodity-last-price"')[1].split('</td>')[0]
-                price_text = price_part.split('>')[-1].strip()
-                if price_text.endswith('k'):
+                price_part = row.split('data-playwright="commodity-last-price"')[
+                    1
+                ].split("</td>")[0]
+                price_text = price_part.split(">")[-1].strip()
+                if price_text.endswith("k"):
                     price = float(price_text[:-1]) * 1000
                 else:
-                    price = float(price_text.replace(',', ''))
+                    price = float(price_text.replace(",", ""))
                 result["USD:XAG"] = 1 / price
-    
+
     return result
+
 
 def fxcm(site):
     """

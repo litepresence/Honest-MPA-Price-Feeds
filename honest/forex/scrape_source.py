@@ -16,6 +16,7 @@ litepresence2020
 """
 
 import sys
+
 # STANDARD PYTHON MODULES
 import time
 from json import dumps as json_dumps
@@ -23,6 +24,7 @@ from json import loads as json_loads
 
 # THIRD PARTY MODULES
 import requests
+
 # PRICE FEED MODULES
 from utilities import it, race_write, refine_data
 
@@ -60,18 +62,18 @@ def duckduckgo(site):
     try:
         data = {}
         currencies = ["CNY", "XAU", "XAG", "RUB", "EUR", "GBP", "JPY", "KRW"]
-        
+
         for currency in currencies:
             # XAU/XAG need inverted query: XAU->USD not USD->XAU
             if currency in ["XAU", "XAG"]:
                 url = uri.replace("usd/", "") + currency + "/usd"
             else:
                 url = uri + currency
-                
-            raw = requests.get(url, timeout=(15, 15), headers={
-                "User-Agent": "Mozilla/5.0"
-            }).text
-            
+
+            raw = requests.get(
+                url, timeout=(15, 15), headers={"User-Agent": "Mozilla/5.0"}
+            ).text
+
             # Strip JSONP wrapper: ddg_spice_currency({...});
             raw = (
                 raw.strip()
@@ -80,25 +82,29 @@ def duckduckgo(site):
                 .replace("ddg_spice_currency(", "")
                 .rstrip(");")
             )
-            
+
             ret = json_loads(raw)
-            
+
             if currency in ["XAU", "XAG"]:
                 # Response is XAU->USD, we want USD->XAU (invert)
-                mid_val = [i["mid"] for i in ret["to"] if i["quotecurrency"] == "USD"][0]
+                mid_val = [i["mid"] for i in ret["to"] if i["quotecurrency"] == "USD"][
+                    0
+                ]
                 data["USD:" + currency] = round(1 / float(mid_val), 8)
             else:
                 # Direct: USD->XXX
-                mid_val = [i["mid"] for i in ret["to"] if i["quotecurrency"] == currency][0]
+                mid_val = [
+                    i["mid"] for i in ret["to"] if i["quotecurrency"] == currency
+                ][0]
                 data["USD:" + currency] = round(float(mid_val), 6)
-                
+
             time.sleep(0.5)  # polite delay
-            
+
         data = refine_data(data)
         print(it("purple", "FOREX SCRAPE:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
         return data
-        
+
     except Exception as e:
         print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load: {e}"))
         return {}
@@ -142,28 +148,40 @@ def oanda(site):
     try:
         data = {}
         # Fetch all instruments in one call (more efficient than per-symbol requests)
-        params = {"widgetName": "oandaliverates", "apikey": "4b12e6bb-7ecd-49f7-9bbc-2e03644ce41f"}
+        params = {
+            "widgetName": "oandaliverates",
+            "apikey": "4b12e6bb-7ecd-49f7-9bbc-2e03644ce41f",
+        }
         payload = {"lang": "en-GB", "region": "OC", "instrumentType": "currency"}
         headers = {
             "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0",
             "Accept": "application/json, text/plain, */*",
-            "Content-Type": "application/x-www-form-urlencoded"
+            "Content-Type": "application/x-www-form-urlencoded",
         }
-        response = requests.post(base_url, params=params, headers=headers, data=payload, timeout=10)
+        response = requests.post(
+            base_url, params=params, headers=headers, data=payload, timeout=10
+        )
         instruments = response.json() if response.ok else []
-        
+
         for symbol in symbols:
             try:
                 # Look for USD_SYMBOL or SYMBOL_USD pair formats
                 pair1, pair2 = f"USD_{symbol}", f"{symbol}_USD"
-                match = next((inst for inst in instruments if inst.get("Instrument") in (pair1, pair2)), None)
+                match = next(
+                    (
+                        inst
+                        for inst in instruments
+                        if inst.get("Instrument") in (pair1, pair2)
+                    ),
+                    None,
+                )
                 if match:
                     # Use ask price ("s") as reference rate; change to "b" for bid or calc mid if needed
                     rate = float(match.get("s", 0))
                     data[f"USD:{symbol}"] = rate
             except:
                 pass
-        
+
         data = refine_data(data)
         print(it("purple", "FOREX SCRAPE:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
