@@ -219,11 +219,7 @@ def process_data(cex, dex, forex):
 
     # Finalize BTS:BTC by taking the median of all prices
     btsbtc = median(
-        [
-            *dex_btsbtc_list,
-            *cex["BTS:BTC"]["data"].values(),
-            *agg_btsbtc_dict.values()
-        ]
+        [*dex_btsbtc_list, *cex["BTS:BTC"]["data"].values(), *agg_btsbtc_dict.values()]
     )
     race_write(
         doc="bts_btc_pipe.txt",
@@ -259,7 +255,7 @@ def process_data(cex, dex, forex):
     cryptofeedbts = {
         f"BTS:{pair.split(':')[1]}": btsbtc / value
         for pair, value in cryptofeedbtc.items()
-        if pair.split(':')[0] == "BTC"
+        if pair.split(":")[0] == "BTC"
     }
     cryptofeedbtc = {
         coin: 1 / value

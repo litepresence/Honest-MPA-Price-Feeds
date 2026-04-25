@@ -185,7 +185,9 @@ def aggregate(exchanges):
     # 2. generate implied BTC crosses using median(BTC:USDT) as pivot
     btc_usdt_median = median_price.get("BTC:USDT")
     if btc_usdt_median:
-        usdt_sources = [p for p in exchange_pairs if p.endswith(":USDT") and p != "BTC:USDT"]
+        usdt_sources = [
+            p for p in exchange_pairs if p.endswith(":USDT") and p != "BTC:USDT"
+        ]
         for pair in usdt_sources:
             base = pair.split(":")[0]
             implied_pair = f"{base}:BTC"

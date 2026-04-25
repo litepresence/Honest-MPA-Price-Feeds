@@ -615,7 +615,8 @@ def cex_table(local_vars):
                                         if i != -1 or rdx >= len(exchanges)
                                         else (
                                             "red"
-                                            if exchanges[rdx] in EXCHANGES.get(pairs[idx], [])
+                                            if exchanges[rdx]
+                                            in EXCHANGES.get(pairs[idx], [])
                                             else "yellow"
                                         )
                                     )
