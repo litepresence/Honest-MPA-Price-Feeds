@@ -189,15 +189,6 @@ def wait_for_dex():
     return dex
 
 
-def calculate_btsbtc_price(cex, exchange):
-    """
-    Calculate BTS:BTC price for a given exchange using CEX data.
-    """
-    btsusd_price = cex["BTS:USDT"]["data"][exchange]
-    btcusd_price = cex["BTC:USDT"]["data"][exchange]
-    return btsusd_price * (1 / btcusd_price)
-
-
 def gather_dex_btsbtc(dex, cex):
     """
     Gather BTS:BTC prices from DEX and adjust for systemic risks.
@@ -219,13 +210,6 @@ def gather_dex_btsbtc(dex, cex):
 def process_data(cex, dex, forex):
     btcusd = cex["BTC:USD"]["median"]
 
-    # Get BTS:BTC prices from CEX
-    cex_btsbtc_dict = {
-        exchange: calculate_btsbtc_price(cex, exchange)
-        for exchange in cex["BTS:USDT"]["data"]
-        if exchange in cex["BTC:USDT"]["data"]
-    }
-
     agg_btsbtc_dict = {
         source: price / btcusd for price, source in forex["aggregate"]["BTS:USD"]
     }
@@ -233,11 +217,14 @@ def process_data(cex, dex, forex):
     # Gather DEX BTS:BTC prices
     dex_btsbtc_list, dex_btsbtc_dict = gather_dex_btsbtc(dex, cex)
 
-    agg_btsbtc_list = list(agg_btsbtc_dict.values())
-    cex_btsbtc_list = list(cex_btsbtc_dict.values())
-
     # Finalize BTS:BTC by taking the median of all prices
-    btsbtc = median(dex_btsbtc_list + cex_btsbtc_list + agg_btsbtc_list)
+    btsbtc = median(
+        [
+            *dex_btsbtc_list,
+            *cex["BTS:BTC"]["data"].values(),
+            *agg_btsbtc_dict.values()
+        ]
+    )
     race_write(
         doc="bts_btc_pipe.txt",
         text=json.dumps(
@@ -245,7 +232,7 @@ def process_data(cex, dex, forex):
                 k: sigfig(v, 4)
                 for k, v in {
                     **dex_btsbtc_dict,
-                    **cex_btsbtc_dict,
+                    **cex["BTS:BTC"]["data"],
                     **agg_btsbtc_dict,
                 }.items()
             }
@@ -272,6 +259,7 @@ def process_data(cex, dex, forex):
     cryptofeedbts = {
         f"BTS:{pair.split(':')[1]}": btsbtc / value
         for pair, value in cryptofeedbtc.items()
+        if pair.split(':')[0] == "BTC"
     }
     cryptofeedbtc = {
         coin: 1 / value

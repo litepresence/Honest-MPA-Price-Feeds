@@ -598,6 +598,8 @@ def cex_table(local_vars):
                 for coin, count in zip(pairs, n_prices)
             )
             for rdx, row in enumerate(table):
+                if row[0].endswith("_implied"):
+                    continue
                 cex_string += "\n" + (
                     (
                         row[0].ljust(exchange_just)
@@ -613,7 +615,7 @@ def cex_table(local_vars):
                                         if i != -1 or rdx >= len(exchanges)
                                         else (
                                             "red"
-                                            if exchanges[rdx] in EXCHANGES[pairs[idx]]
+                                            if exchanges[rdx] in EXCHANGES.get(pairs[idx], [])
                                             else "yellow"
                                         )
                                     )
@@ -820,7 +822,7 @@ def print_status(local_vars):
                 )
             )
         # reset cursor to the bottom of the forex table
-        print(at((1, forex_height + 3, 1, 1), ""))
+        print(at((1, max(forex_height, len(final_string.split("\n"))) + 3, 1, 1), ""))
 
         # center the CEX table on the combined width of the FOREX and DEX tables
         cex_width = string_width(cex_string)

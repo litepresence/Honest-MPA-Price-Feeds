@@ -85,7 +85,7 @@ def refresh_forex_rates():
         businessinsider,
         mql5,
         openexchangerate,
-        openexchangerates,
+        # openexchangerates,
     ]
     # initialize each external call method as a process
     processes = {}

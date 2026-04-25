@@ -151,6 +151,7 @@ def get_price(proxy_manager, exchange, pairs):
 def aggregate(exchanges):
     """
     post process data from all exchanges to extract medians and means
+    includes implied *:BTC prices via *:USDT / median(BTC:USDT)
     """
     data = {}
     for exchange in exchanges:
@@ -176,8 +177,29 @@ def aggregate(exchanges):
                         exchange_pairs[pair][exchange] = price
         except Exception as error:
             print(it("yellow", "CEX: "), error)
+
+    # 1. calculate initial medians and means
     median_price = {pair: median(prices) for pair, prices in pairs.items()}
     mean_price = {pair: sum(prices) / len(prices) for pair, prices in pairs.items()}
+
+    # 2. generate implied BTC crosses using median(BTC:USDT) as pivot
+    btc_usdt_median = median_price.get("BTC:USDT")
+    if btc_usdt_median:
+        usdt_sources = [p for p in exchange_pairs if p.endswith(":USDT") and p != "BTC:USDT"]
+        for pair in usdt_sources:
+            base = pair.split(":")[0]
+            implied_pair = f"{base}:BTC"
+            for exchange, usdt_price in exchange_pairs[pair].items():
+                if usdt_price is not None:
+                    implied_price = usdt_price / btc_usdt_median
+                    pairs[implied_pair].append(implied_price)
+                    exchange_pairs[implied_pair][f"{exchange}_implied"] = implied_price
+
+    # 3. recalculate stats for all pairs (direct + implied)
+    for pair in pairs:
+        median_price[pair] = median(pairs[pair])
+        mean_price[pair] = sum(pairs[pair]) / len(pairs[pair])
+
     return {
         pair: {
             "mean": mean_price[pair],
@@ -246,10 +268,10 @@ def main():
     demo a single cex pricefeed
     """
     print("initializing cex feeds...")
-    proxy_manager = ProxyManager()
-    proxy_manager.get_proxy_list()
+    # proxy_manager = ProxyManager()
+    # proxy_manager.get_proxy_list()
 
-    cex = pricefeed_cex(proxy_manager)
+    cex = pricefeed_cex(None)
     print_results(cex)
 
 

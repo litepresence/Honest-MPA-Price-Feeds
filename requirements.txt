@@ -8,4 +8,3 @@ secp256k1==0.13.2
 pysocks
 numpy
 ccxt>=4.5.50
-yfinance
