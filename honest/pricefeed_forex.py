@@ -26,9 +26,10 @@ from forex.api_source import (
     fixerio,
     fscapi,
     fxmarket,
+    openexchangerate,
     openexchangerates,
 )
-from forex.bts_source import cmc, cryptocomp, google
+from forex.bts_source import cmc, cryptocomp
 from forex.cfscrape_source import fxcm, fxempire1
 from forex.commodities import (
     arincen,
@@ -43,12 +44,10 @@ from forex.scrape_source import (
     currencyme,
     duckduckgo,
     forexrates,
-    ino,
     liveusd,
     oanda,
     ratewidget,
     wocu,
-    yahoo,
 )
 from utilities import it, race_read_json, race_write, ret_markets, sigfig
 
@@ -72,23 +71,21 @@ def refresh_forex_rates():
         forexrates,  # XML SCRAPING
         # fscapi,  # KEYED
         fxcm,  # CLOUDFARE SPOOFING; HEADER REQUIRED; ALMOST JSON RESPONSE
-        fxempire1,  # XIGNITE BACKDOOR; HEADER REQUIRED; CLOUDFARE SPOOFING
+        # fxempire1,  # XIGNITE BACKDOOR; HEADER REQUIRED; CLOUDFARE SPOOFING
         # fxmarket,  # KEYED
-        ino,  # DARKWEB API
         liveusd,  # DARKWEB API
-        oanda,  # DARKWEB API; RC4 ECRYPTION OF LATIN ENCODING
-        # openexchangerates,  # KEYED
+        oanda,
         wocu,  # XML SCRAPING
-        yahoo,  # YAHOO FINANCE V7 DARKWEB API
         cmc,
         cryptocomp,
-        google,
         cnbc,
         arincen,
         bitpanda,
         commoditycom,
         businessinsider,
         mql5,
+        openexchangerate,
+        openexchangerates,
     ]
     # initialize each external call method as a process
     processes = {}
@@ -111,6 +108,8 @@ def refresh_forex_rates():
     sources = {}
     for site in processes.keys():
         sources[site] = race_read_json(f"{site}_forex.txt")
+        if not sources[site] and sources[site] is not None:
+            print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} timed out"))
     return sources
 
 
@@ -153,6 +152,8 @@ def aggregate_rates():
     sources = refresh_forex_rates()
     aggregate = defaultdict(list)
     for source, prices in sources.items():
+        if prices is None:
+            continue
         for pair, price in prices.items():
             aggregate[pair].append((price, source))
 

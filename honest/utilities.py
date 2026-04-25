@@ -328,13 +328,11 @@ def correct_pair(exchange, pair, reverse=False):
     asset, currency = pair.split("/")
     new_pair = []
     lookup = {
-        "poloniex": {"EOS": "A"},
         "coinex": {"EOS": "A"},
         "hitbtc": {"EOS": "A"},
         "kucoin": {"EOS": "A"},
         "upbit": {"EOS": "A"},
         "mexc": {"EOS": "A"},
-        "xt": {"EOS": "A"},
     }
     if reverse:
         lookup = {k: {nt: t for t, nt in v.items()} for k, v in lookup.items()}

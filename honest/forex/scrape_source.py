@@ -16,7 +16,6 @@ litepresence2020
 """
 
 import sys
-
 # STANDARD PYTHON MODULES
 import time
 from json import dumps as json_dumps
@@ -24,7 +23,6 @@ from json import loads as json_loads
 
 # THIRD PARTY MODULES
 import requests
-
 # PRICE FEED MODULES
 from utilities import it, race_write, refine_data
 
@@ -53,66 +51,57 @@ def liveusd(site):
         print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load"))
 
 
-def yahoo(site):
-    """
-    live forex rates scraped from yahoo finance
-    XAU and XAG are stale
-    CG=F is a gold 30 day future
-    SI=F is silver 60 day future
-    """
-    uri = "https://query1.finance.yahoo.com/v7/finance/spark?symbols=USD"
-    try:
-        currencies = ["EUR", "CNY", "RUB", "KRW", "JPY"]
-        data = {}
-        for currency in currencies:
-            endpoint = f"{currency}%3DX&range=1m&interval=1m"
-            url = uri + endpoint
-            raw = requests.get(url, timeout=(15, 15)).json()
-            ret = raw["spark"]["result"][0]["response"][0]["meta"]["regularMarketPrice"]
-            data["USD:" + currency] = float(ret)
-            time.sleep(1)
-        data = refine_data(data)
-        print(it("purple", "FOREX SCRAPE:"), site, data)
-        race_write(f"{site}_forex.txt", json_dumps(data))
-    except:
-        print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load"))
-
-
 def duckduckgo(site):
     """
     live forex rates scraped from XE via duckduckgo.com
+    returns dict in format: {"USD:CNY": 7.24, "USD:XAU": 0.00048, ...}
     """
     uri = "https://duckduckgo.com/js/spice/currency/1/usd/"
     try:
         data = {}
         currencies = ["CNY", "XAU", "XAG", "RUB", "EUR", "GBP", "JPY", "KRW"]
+        
         for currency in currencies:
+            # XAU/XAG need inverted query: XAU->USD not USD->XAU
             if currency in ["XAU", "XAG"]:
                 url = uri.replace("usd/", "") + currency + "/usd"
             else:
                 url = uri + currency
-            raw = requests.get(url, timeout=(15, 15)).text
+                
+            raw = requests.get(url, timeout=(15, 15), headers={
+                "User-Agent": "Mozilla/5.0"
+            }).text
+            
+            # Strip JSONP wrapper: ddg_spice_currency({...});
             raw = (
-                raw.replace("\n", "")
+                raw.strip()
+                .replace("\n", "")
                 .replace(" ", "")
                 .replace("ddg_spice_currency(", "")
-                .replace(");", "")
+                .rstrip(");")
             )
+            
             ret = json_loads(raw)
+            
             if currency in ["XAU", "XAG"]:
-                data["USD:" + currency] = (
-                    1 / [i["mid"] for i in ret["to"] if i["quotecurrency"] == "USD"][0]
-                )
+                # Response is XAU->USD, we want USD->XAU (invert)
+                mid_val = [i["mid"] for i in ret["to"] if i["quotecurrency"] == "USD"][0]
+                data["USD:" + currency] = round(1 / float(mid_val), 8)
             else:
-                data["USD:" + currency] = [
-                    i["mid"] for i in ret["to"] if i["quotecurrency"] == currency
-                ][0]
-            time.sleep(1)
+                # Direct: USD->XXX
+                mid_val = [i["mid"] for i in ret["to"] if i["quotecurrency"] == currency][0]
+                data["USD:" + currency] = round(float(mid_val), 6)
+                
+            time.sleep(0.5)  # polite delay
+            
         data = refine_data(data)
         print(it("purple", "FOREX SCRAPE:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
-    except:
-        print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load"))
+        return data
+        
+    except Exception as e:
+        print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load: {e}"))
+        return {}
 
 
 def wocu(site):
@@ -128,7 +117,7 @@ def wocu(site):
         return float(raw.split(symbol)[1].split("</td>")[2].split(">")[1])
 
     url = "http://54.154.247.217/wocutab.php"
-    symbols = ["EUR", "RUB", "GBP", "KRW", "CNY", "JPY"]
+    symbols = ["CNY", "EUR", "GBP", "KRW", "JPY", "RUB", "XAU", "XAG"]
     try:
         raw = requests.get(url, timeout=(15, 15)).text
         data = {}
@@ -146,53 +135,35 @@ def wocu(site):
 
 def oanda(site):
     """
-    make external request, decode, decrypt, reformat to dict
+    live forex rates scraped from oanda via acuity trading widget
     """
-    key = "aaf6cb4f0ced8a211c2728328597268509ade33040233a11af"
-    url = "https://www1.oanda.com/lfr/rates_lrrr?tstamp="
-
-    def hex_decode(raw):
-        """
-        latin-1 from hexidecimal
-        """
-        return bytes.fromhex("0" + raw if len(raw) % 2 else raw).decode("latin-1")
-
-    def rc4(cypher, key):
-        """
-        decryption of rc4 stream cypher from latin-1
-        """
-        idx1 = 0
-        output = []
-        r256 = [*range(256)]
-        for idx2 in range(256):
-            idx1 = (idx1 + r256[idx2] + ord(cypher[idx2 % len(cypher)])) % 256
-            r256[idx2], r256[idx1] = r256[idx1], r256[idx2]
-        idx1, idx2 = 0, 0
-        for _, item in enumerate(key):
-            idx2 = (idx2 + 1) % 256
-            idx1 = (idx1 + r256[idx2]) % 256
-            r256[idx2], r256[idx1] = r256[idx1], r256[idx2]
-            output.append(chr(ord(item) ^ r256[(r256[idx2] + r256[idx1]) % 256]))
-        return ("").join(output)
-
+    symbols = ["EUR", "RUB", "GBP", "KRW", "CNY", "JPY", "XAG", "XAU"]
+    base_url = "https://dashboard.acuitytrading.com/OandaPriceApi/GetPrices"
     try:
-        while True:
-            try:
-                millies = str(int(round(time.time() * 1000)))
-                raw = requests.get(url + millies, timeout=(15, 15)).text
-                hex_decoded = hex_decode(raw)
-                decrypted = rc4(key, hex_decoded)
-                break
-            except:
-                time.sleep(5)
-        content = decrypted.split("\n")
-        parsed = {
-            raw.split("=")[0]: (float(raw.split("=")[1]) + float(raw.split("=")[2])) / 2
-            for raw in content
-        }
         data = {}
-        for pair, price in parsed.items():
-            data[pair.replace("/", ":")] = float(price)
+        # Fetch all instruments in one call (more efficient than per-symbol requests)
+        params = {"widgetName": "oandaliverates", "apikey": "4b12e6bb-7ecd-49f7-9bbc-2e03644ce41f"}
+        payload = {"lang": "en-GB", "region": "OC", "instrumentType": "currency"}
+        headers = {
+            "User-Agent": "Mozilla/5.0 (X11; Linux x86_64; rv:147.0) Gecko/20100101 Firefox/147.0",
+            "Accept": "application/json, text/plain, */*",
+            "Content-Type": "application/x-www-form-urlencoded"
+        }
+        response = requests.post(base_url, params=params, headers=headers, data=payload, timeout=10)
+        instruments = response.json() if response.ok else []
+        
+        for symbol in symbols:
+            try:
+                # Look for USD_SYMBOL or SYMBOL_USD pair formats
+                pair1, pair2 = f"USD_{symbol}", f"{symbol}_USD"
+                match = next((inst for inst in instruments if inst.get("Instrument") in (pair1, pair2)), None)
+                if match:
+                    # Use ask price ("s") as reference rate; change to "b" for bid or calc mid if needed
+                    rate = float(match.get("s", 0))
+                    data[f"USD:{symbol}"] = rate
+            except:
+                pass
+        
         data = refine_data(data)
         print(it("purple", "FOREX SCRAPE:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))
@@ -204,7 +175,7 @@ def currencyme(site):
     """
     live forex rates scraped from currency.me.uk
     """
-    symbols = ["EUR", "RUB", "GBP", "KRW", "CNY", "JPY"]
+    symbols = ["CNY", "EUR", "GBP", "KRW", "JPY", "RUB"]
     url = "https://www.currency.me.uk/remote/ER-CCCS2-AJAX.php"
     try:
         data = {}
@@ -296,33 +267,6 @@ def aastock(site):
                     data[item["to"] + ":" + item["from"]] = 1 / float(item["price"])
             else:
                 data[item["symbol"].replace("USD", "USD:")] = float(item["price"])
-        data = refine_data(data)
-        print(it("purple", "FOREX SCRAPE:"), site, data)
-        race_write(f"{site}_forex.txt", json_dumps(data))
-    except:
-        print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load"))
-
-
-def ino(site):
-    """
-    live forex rates scraped from ino.com
-    """
-    uri = "https://assets.ino.com/data/history/"
-
-    try:
-        data = {}
-        symbols = ["CNY", "RUB", "EUR", "JPY", "KRW", "GBP"]
-        for symbol in symbols:
-            query = f"?s=FOREX_USD{symbol}&b=&f=json"
-            url = uri + query
-            ret = requests.get(url, timeout=(15, 15)).json()[-1][-2]
-            data["USD:" + symbol] = float(ret)
-        symbols = ["XAG", "XAU"]
-        for symbol in symbols:
-            query = f"?s=FOREX_{symbol}USDO&b=&f=json"
-            url = uri + query
-            ret = requests.get(url, timeout=(15, 15)).json()[-1][-2]
-            data["USD:" + symbol] = 1 / float(ret)
         data = refine_data(data)
         print(it("purple", "FOREX SCRAPE:"), site, data)
         race_write(f"{site}_forex.txt", json_dumps(data))

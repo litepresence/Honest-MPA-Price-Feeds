@@ -174,3 +174,24 @@ def openexchangerates(site):
         race_write(f"{site}_forex.txt", json_dumps(data))
     except:
         print(it("purple", "FOREX API:"), it("red", f"{site} failed to load"))
+
+
+def openexchangerate(site):
+    """
+    live forex rates from exchangerate-api.com open endpoint (no key)
+    """
+    uri = "https://open.er-api.com/v6/latest/USD"
+    symbols = ["CNY", "EUR", "GBP", "KRW", "JPY", "RUB", "XAU", "XAG"]
+    
+    try:
+        raw = requests.get(uri).json()
+        data = {}
+        rates = raw.get("rates", {})
+        for sym in symbols:
+            if sym in rates:
+                data[f"USD:{sym}"] = float(rates[sym])
+        data = refine_data(data)
+        print(it("purple", "FOREX SCRAPE:"), site, data)
+        race_write(f"{site}_forex.txt", json_dumps(data))
+    except:
+        print(it("purple", "FOREX SCRAPE:"), it("red", f"{site} failed to load"))
