@@ -232,7 +232,7 @@ def race_read(doc=""):
 def truncate_metanodelog(max_lines: int = 10000, encoding: str = "utf-8") -> None:
     """
     Truncates a file to keep only the most recent `max_lines` lines.
-    
+
     Args:
         max_lines: Number of lines to retain from the end of the file.
         encoding: File encoding (default: 'utf-8').
