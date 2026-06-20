@@ -478,7 +478,7 @@ def main():
     if "--headless" in sys.argv:
         publish = "--publish" in sys.argv
         if publish:
-            name, wif = os.environ("USERNAME"), os.environ("WIF")
+            name, wif = os.environ["USERNAME"], os.environ["WIF"]
         else:
             name, wif = "", ""
     else:
