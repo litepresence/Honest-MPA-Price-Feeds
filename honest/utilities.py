@@ -232,7 +232,7 @@ def race_read(doc=""):
 def truncate_metanodelog(max_lines: int = 10000, encoding: str = "utf-8") -> None:
     """
     Truncates a file to keep only the most recent `max_lines` lines.
-    
+
     Args:
         max_lines: Number of lines to retain from the end of the file.
         encoding: File encoding (default: 'utf-8').
@@ -328,13 +328,11 @@ def correct_pair(exchange, pair, reverse=False):
     asset, currency = pair.split("/")
     new_pair = []
     lookup = {
-        "poloniex": {"EOS": "A"},
         "coinex": {"EOS": "A"},
         "hitbtc": {"EOS": "A"},
         "kucoin": {"EOS": "A"},
         "upbit": {"EOS": "A"},
         "mexc": {"EOS": "A"},
-        "xt": {"EOS": "A"},
     }
     if reverse:
         lookup = {k: {nt: t for t, nt in v.items()} for k, v in lookup.items()}
