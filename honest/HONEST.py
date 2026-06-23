@@ -211,7 +211,7 @@ def process_data(cex, dex, forex):
     btcusd = cex["BTC:USD"]["median"]
 
     agg_btsbtc_dict = {
-        source: price / btcusd for price, source in forex["aggregate"]["BTS:USD"]
+        source: price / btcusd for price, source in forex["aggregate"].get("BTS:USD", [])
     }
 
     # Gather DEX BTS:BTC prices
