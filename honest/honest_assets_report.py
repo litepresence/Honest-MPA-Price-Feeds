@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
 """
-HONEST MPA fee + claimable revenue report.
+HONEST MPA asset attributes report.
 
 Queries the BitShares chain live over websocket RPC and writes a markdown
-report to OUT_PATH (defaults to ../docs/honest_fees_report.md).
+report to OUT_PATH (defaults to ../docs/honest_assets_report.md).
 
 Per asset it collects:
   - maker fee (market_fee_percent) and taker fee (taker_fee_percent ext)
@@ -11,7 +11,14 @@ Per asset it collects:
   - claimable revenue: accumulated_fees (in the asset itself) and
     accumulated_collateral_fees (in BTS for these BTS-collateralized MPAs),
     both converted to an approximate BTS value via each MPA's median feed
+  - supply & money: current_supply, confidential_supply, fee_pool
+  - collateral & settlement state (MPAs only): backing asset, current
+    maintenance/initial collateralization, settlement and margin-call fees,
+    force-settle params, and whether an asset is settling
   - market fee sharing vestings on the issuer account (honest-quorum)
+
+Only dynamic, current state is reported; static fields (symbol, precision,
+issuer, whitelists, descriptions) and the raw oracle feed are not included.
 
 Reference for the revenue pattern: tools/calculate_fees.py
 """
@@ -29,7 +36,7 @@ from config_nodes import public_nodes  # noqa: E402
 from config_tokens import MPAS  # noqa: E402
 
 OUT_PATH = os.path.abspath(
-    os.path.join(os.path.dirname(__file__), "..", "docs", "honest_fees_report.md")
+    os.path.join(os.path.dirname(__file__), "..", "docs", "honest_assets_report.md")
 )
 
 NETWORK_ASSET_ID = "1.3.0"
@@ -164,6 +171,61 @@ def to_units(amount, precision):
     return amount / 10 ** precision
 
 
+def fmt_price(amount, precision, symbol):
+    """'912.65 BTS' style human price."""
+    return f"{to_units(amount, precision):,.4f} {symbol}"
+
+
+def parse_iso(ts):
+    if not ts:
+        return None
+    try:
+        return datetime.strptime(ts, "%Y-%m-%dT%H:%M:%S").replace(tzinfo=timezone.utc)
+    except ValueError:
+        return None
+
+
+def feed_age_min(ts):
+    """Minutes since the feed was published; None if unknown."""
+    pub = parse_iso(ts)
+    if not pub:
+        return None
+    age = (datetime.now(timezone.utc) - pub).total_seconds() / 60
+    return max(0.0, age)
+
+
+def price_ratio_human(price, assets):
+    """
+    Return 'backing units per 1 MPA' as (value, label) for a collateralization
+    price object (base = collateral/backing asset, quote = the MPA).
+    """
+    if not price:
+        return None, ""
+    base, quote = price.get("base") or {}, price.get("quote") or {}
+    ba, qa = base.get("asset_id"), quote.get("asset_id")
+    if not ba or not qa:
+        return None, ""
+    base_obj = assets.get(ba)
+    quote_obj = assets.get(qa)
+    if not base_obj or not quote_obj:
+        return None, ""
+    base_h = to_units(int(base.get("amount") or 0), base_obj["precision"])
+    quote_h = to_units(int(quote.get("amount") or 0), quote_obj["precision"])
+    if not quote_h:
+        return None, ""
+    label = base_obj["symbol"]
+    return base_h / quote_h, label
+
+
+def fmt_black_swan(method):
+    labels = {
+        0: "none",
+        1: "force settle",
+        2: "payback all",
+    }
+    return labels.get(method, str(method))
+
+
 def main():
     rpc, node_url = connect()
 
@@ -183,6 +245,21 @@ def main():
     ]
     dyn = get_objects(rpc, dyn_ids)
     bit = get_objects(rpc, list(dict.fromkeys(bit_ids)))
+
+    # Resolve backing/quote asset symbols + precisions (BTS plus any asset that
+    # appears as a collateral side) for the collateralization price rendering.
+    id_to_props = {
+        NETWORK_ASSET_ID: {"symbol": "BTS", "precision": NETWORK_PRECISION}
+    }
+    id_to_props.update({a["id"]: {"symbol": a["symbol"], "precision": a["precision"]} for a in assets.values()})
+    backing_ids = {
+        (bit.get("id") and (bit.get("options") or {}).get("short_backing_asset"))
+        for bit in bit.values()
+        if bit.get("options")
+    }
+    backing_ids.discard(None)
+    for extra in get_objects(rpc, list(backing_ids - set(id_to_props))).values():
+        id_to_props[extra["id"]] = {"symbol": extra["symbol"], "precision": extra["precision"]}
 
     # Precompute BTS-per-asset feed factor for every MPA that has a BTS feed.
     feed_factor = {}
@@ -209,6 +286,38 @@ def main():
         data = dyn.get(a["dynamic_asset_data_id"]) or {}
         accum_asset = int(data.get("accumulated_fees") or 0)
         accum_collat = int(data.get("accumulated_collateral_fees") or 0)
+
+        # Section A: supply & money (dynamic state)
+        current_supply = int(data.get("current_supply") or 0)
+        confidential_supply = int(data.get("confidential_supply") or 0)
+        fee_pool = int(data.get("fee_pool") or 0)
+
+        # Section B: collateral & settlement (MPA bitasset state)
+        bit_id = a.get("bitasset_data_id")
+        bit_data = (bit.get(bit_id) if bit_id else None) or {}
+        bit_opts = bit_data.get("options") or {}
+        backing_id_t = bit_opts.get("short_backing_asset") if bit_opts else None
+        backing_props = (id_to_props.get(backing_id_t) if backing_id_t else None) or {}
+        backing_symbol = backing_props.get("symbol") or backing_id_t or "—"
+        current_maint, _maint_label = price_ratio_human(
+            bit_data.get("current_maintenance_collateralization"), id_to_props
+        )
+        current_initial, _init_label = price_ratio_human(
+            bit_data.get("current_initial_collateralization"), id_to_props
+        )
+        feed_age = feed_age_min(bit_data.get("current_feed_publication_time"))
+        force_settle_fee = (bit_data.get("extensions") or {}).get(
+            "force_settle_fee_percent"
+        ) or (bit_opts.get("extensions") or {}).get("force_settle_fee_percent")
+        margin_call_fee = (bit_opts.get("extensions") or {}).get("margin_call_fee_ratio")
+        black_swan = (bit_opts.get("extensions") or {}).get("black_swan_response_method")
+        settle_price = bit_data.get("settlement_price") or {}
+        is_settling = bool(
+            settle_price.get("base", {}).get("amount")
+            or settle_price.get("quote", {}).get("amount")
+            or int(bit_data.get("individual_settlement_debt") or 0) > 0
+            or (bit_data.get("settlement_fund") or 0)
+        )
 
         bts_per_asset = feed_factor.get(s)
         feed_note = None
@@ -241,6 +350,17 @@ def main():
                 "feed_found": feed_note is None,
                 "feed_note": feed_note,
                 "bts_value": bts_value,
+                "supply_h": to_units(current_supply, a["precision"]),
+                "conf_supply_h": to_units(confidential_supply, a["precision"]),
+                "fee_pool_h": to_units(fee_pool, a["precision"]),
+                "backing_symbol": backing_symbol,
+                "current_maint": current_maint,
+                "current_initial": current_initial,
+                "feed_age_min": feed_age,
+                "force_settle_fee_bp": force_settle_fee,
+                "margin_call_fee_bp": margin_call_fee,
+                "black_swan_method": black_swan,
+                "is_settling": is_settling,
             }
         )
 
@@ -281,7 +401,7 @@ def main():
     head = head_obj.get("head_block_number") if head_obj else None
 
     L = []
-    L.append("# HONEST Market Pegged Assets — Fees & Claimable Revenue")
+    L.append("# HONEST Market Pegged Assets — Live Attributes")
     L.append("")
     L.append(
         f"Generated {datetime.now(timezone.utc).strftime('%Y-%m-%dT%H:%M:%SZ')} UTC "
@@ -355,7 +475,97 @@ def main():
     L.append(f"- **combined claimable (approx):** {total_asset + total_collat:,.2f} BTS")
     L.append("")
 
-    L.append("## 3. Issuer Market-Fee-Sharing Vestings")
+    L.append("## 3. Supply & Money (dynamic state)")
+    L.append("")
+    L.append(
+        "`current_supply` is what is minted/circulating, `confidential_supply` the "
+        "blinded portion, and `fee_pool` the asset's own BTS-valued fee reserve "
+        "(claimable by the issuer). All shown in asset units."
+    )
+    L.append("")
+    headers = ["Asset", "current_supply", "confidential_supply", "fee_pool"]
+    body = []
+    for r in rows:
+        body.append(
+            [
+                r["symbol"],
+                f"{r['supply_h']:,.4f}",
+                f"{r['conf_supply_h']:,.4f}",
+                f"{r['fee_pool_h']:,.4f}",
+            ]
+        )
+    L.extend(md_table(headers, body))
+    L.append("")
+
+    L.append("## 4. Collateral & Settlement (MPA bitasset state)")
+    L.append("")
+    L.append(
+        "Current maintenance/initial collateralization is the live collateral-"
+        "per-debt price (backing units per 1 MPA) the chain maintains; a low/"
+        "dropping maintenance value indicates the market is closer to margin "
+        "calls. Feed age is minutes since the last published oracle feed. "
+        "`settling` is true when a forced-settlement is in progress."
+    )
+    L.append("")
+    headers = [
+        "Asset",
+        "backing",
+        "maint coll (back/MPA)",
+        "init coll (back/MPA)",
+        "feed age (min)",
+        "margin-call fee",
+        "force-settle fee",
+        "black-swan",
+        "settling",
+    ]
+    body = []
+    for r in rows:
+        if r["backing_symbol"] in ("—", None):
+            continue  # only MPAs get a bitasset row
+        body.append(
+            [
+                r["symbol"],
+                r["backing_symbol"],
+                (
+                    f"{r['current_maint']:,.4f}"
+                    if r["current_maint"] is not None
+                    else "—"
+                ),
+                (
+                    f"{r['current_initial']:,.4f}"
+                    if r["current_initial"] is not None
+                    else "—"
+                ),
+                (
+                    f"{r['feed_age_min']:.0f}"
+                    if r["feed_age_min"] is not None
+                    else "—"
+                ),
+                (
+                    f"{r['margin_call_fee_bp'] / 100:.2f}%"
+                    if r["margin_call_fee_bp"] is not None
+                    else "—"
+                ),
+                (
+                    f"{r['force_settle_fee_bp'] / 100:.2f}%"
+                    if r["force_settle_fee_bp"] is not None
+                    else "—"
+                ),
+                (
+                    fmt_black_swan(r["black_swan_method"])
+                    if r["black_swan_method"] is not None
+                    else "—"
+                ),
+                "yes" if r["is_settling"] else "no",
+            ]
+        )
+    if body:
+        L.extend(md_table(headers, body))
+    else:
+        L.append("(no MPA bitasset data returned)")
+    L.append("")
+
+    L.append("## 5. Issuer Market-Fee-Sharing Vestings")
     L.append("")
     if vesting:
         id_to_sym = {a["id"]: s for s, a in assets.items()}
@@ -376,7 +586,7 @@ def main():
     L.append("")
 
     L.append("---")
-    L.append("Generated by `honest/fee_report.py`. Read-only; does not modify the chain.")
+    L.append("Generated by `honest/honest_assets_report.py`. Read-only; does not modify the chain.")
 
     with open(OUT_PATH, "w") as f:
         f.write("\n".join(L) + "\n")
