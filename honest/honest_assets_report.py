@@ -278,6 +278,8 @@ def main():
         mfp = opt.get("market_fee_percent", 0)
         ext = opt.get("extensions") or {}
         tfp = ext.get("taker_fee_percent")
+        reward_percent = ext.get("reward_percent")
+        fee_sharing = ext.get("whitelist_market_fee_sharing") or []
         maker = mfp / 100
         taker = (tfp if tfp is not None else mfp) / 100
         charge_fee = bool(opt.get("flags", 0) & 0x01)
@@ -342,6 +344,8 @@ def main():
                 "maker": maker,
                 "taker": taker,
                 "explicit_taker": tfp is not None,
+                "reward_percent": reward_percent,
+                "fee_sharing": fee_sharing,
                 "charge_fee": charge_fee,
                 "max_fee": max_fee,
                 "accum_asset_sat": accum_asset,
@@ -565,7 +569,40 @@ def main():
         L.append("(no MPA bitasset data returned)")
     L.append("")
 
-    L.append("## 5. Issuer Market-Fee-Sharing Vestings")
+    L.append("## 5. Options Extensions (`asset_update` extensions)")
+    L.append("")
+    L.append(
+        "`reward_percent` and `whitelist_market_fee_sharing` live in the asset "
+        "options extensions (same place as `taker_fee_percent`) and implement "
+        "BSIP-0043 market-fee sharing: `reward_percent` is the share of the "
+        "asset's market fee paid out to the buyer's registrar/referrer, and "
+        "`whitelist_market_fee_sharing` (if non-empty) restricts which accounts "
+        "are eligible to receive those rewards."
+    )
+    L.append("")
+    headers = ["Asset", "reward_percent", "whitelist_market_fee_sharing"]
+    body = []
+    for r in rows:
+        if r["reward_percent"] is None and not r["fee_sharing"]:
+            continue
+        sharing = ", ".join(
+            f"`{fs['account_id']}` ({fs['percent'] / 100:.1f}%)" if fs.get("percent")
+            else f"`{fs['account_id']}`"
+            for fs in r["fee_sharing"]
+        ) or "—"
+        reward = (
+            f"{r['reward_percent'] / 100:.6f}%"
+            if r["reward_percent"] is not None
+            else "—"
+        )
+        body.append([r["symbol"], reward, sharing])
+    if body:
+        L.extend(md_table(headers, body))
+    else:
+        L.append("(no asset has non-default options extensions)")
+    L.append("")
+
+    L.append("## 6. Issuer Market-Fee-Sharing Vestings")
     L.append("")
     if vesting:
         id_to_sym = {a["id"]: s for s, a in assets.items()}
