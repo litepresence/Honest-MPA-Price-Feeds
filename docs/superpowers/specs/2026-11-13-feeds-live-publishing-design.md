@@ -63,7 +63,8 @@ through the GitHub Contents API from the feed's publish branch.
 - Single upload attempt per cycle with a 10 s timeout; the next cycle retries.
 - Upload runs after `publish_feed` succeeds, inside its own try/except.
 - `producers.json` in the feeds repo lists the four accounts; the org
-  maintains it and producers never write it.
+  maintains it and producers never write it. (Superseded: the site discovers
+  producers from the on-chain `feeds` list, so no manifest file is needed.)
 - The website treats a snapshot older than two hours as stale (its own rule).
 
 ## Left to the builder

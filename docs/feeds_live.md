@@ -9,16 +9,7 @@ credentials.
 
 1. Create the `HONEST-feeds-live` repository on GitHub and enable Pages
    (branch `main`, root directory).
-2. Add `producers.json` at the repo root listing the four BitShares account
-   names, for example:
-
-   ```json
-   ["producer1", "producer2", "producer3", "producer4"]
-   ```
-
-   The org maintains this file. Producers never write it, so there are no write
-   races.
-3. For each producer, create a fine-grained personal access token scoped to
+2. For each producer, create a fine-grained personal access token scoped to
    `HONEST-feeds-live` only, with `Contents: Read and write`.
 
 ## Producer setup (each machine)
@@ -45,6 +36,19 @@ the chain as usual.
 
 Both serve `Access-Control-Allow-Origin: *`, so a browser-side renderer can
 fetch them directly.
+
+## Which accounts to fetch
+
+No manifest. Read the current producers from the blockchain, which is
+authoritative and needs no maintenance. Each HONEST asset's bitasset object
+carries a `feeds` list whose entries start with a producer account id, and
+`get_objects` turns those `1.2.x` ids into account names. `pricefeed_stats.py`
+in this repo already does both steps: it reads `feeds` from each bitasset
+object and resolves the producer ids to names.
+
+Fetch `<account>.json` for each producer found that way, and skip accounts
+whose file is missing (404), since an account can publish settlement prices
+without publishing snapshots.
 
 ## Payload
 
