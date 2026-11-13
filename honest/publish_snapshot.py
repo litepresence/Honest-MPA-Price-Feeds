@@ -14,6 +14,7 @@ from datetime import datetime, timezone
 import requests
 
 API_URL = "https://api.github.com/repos/{repo}/contents/{account}.json"
+FEED_REPO = "squidKid-deluxe/HONEST-feeds-live"
 
 
 def snapshot_payload(prices, account):
@@ -55,13 +56,12 @@ def upload_snapshot(payload, repo, token, timeout=10):
 
 
 def publish_snapshot(prices, account):
-    repo = os.environ.get("FEED_REPO")
     token = os.environ.get("FEED_TOKEN")
-    if not repo or not token:
-        print("feed snapshot skipped: FEED_REPO and FEED_TOKEN must be set")
+    if not token:
+        print("feed snapshot skipped: FEED_TOKEN must be set")
         return False
     try:
-        return upload_snapshot(snapshot_payload(prices, account), repo, token)
+        return upload_snapshot(snapshot_payload(prices, account), FEED_REPO, token)
     except Exception as error:
         print(f"feed snapshot upload failed: {type(error).__name__}: {error}")
         return False

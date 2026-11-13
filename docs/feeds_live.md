@@ -23,21 +23,22 @@ credentials.
 
 ## Producer setup (each machine)
 
-In the same shell you start the feed from:
+The repo is hardcoded in `honest/publish_snapshot.py` as `FEED_REPO`, since
+every producer writes to the same one. Only the token is per machine. In the
+same shell you start the feed from:
 
 ```bash
 cd Honest-MPA-Price-Feeds/honest
-export FEED_REPO=squidKid-deluxe/HONEST-feeds-live
 export FEED_TOKEN=<this machine's token>
 python HONEST.py
 ```
 
 The feed uploads `<account>.json` to the repo after it finishes publishing to
 the chain. A snapshot reports the prices the producer computed; it does not
-confirm that the chain accepted every edict. Without both variables it prints
-`feed snapshot skipped: FEED_REPO and FEED_TOKEN must be set` and publishes to
-the chain as usual. Upload messages go to the console: `REDIRECT_TO_LOG` is
-`False`, so stdout is not sent to `pipe/log*.txt`.
+confirm that the chain accepted every edict. Without `FEED_TOKEN` it prints
+`feed snapshot skipped: FEED_TOKEN must be set` and publishes to the chain as
+usual. Upload messages go to the console: `REDIRECT_TO_LOG` is `False`, so
+stdout is not sent to `pipe/log*.txt`.
 
 ## First check
 

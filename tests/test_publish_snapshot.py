@@ -103,20 +103,36 @@ def test_upload_snapshot_returns_false_on_network_error(monkeypatch):
     assert publish_snapshot.upload_snapshot(make_payload(), "org/repo", "tok") is False
 
 
-def test_publish_snapshot_skips_without_env(monkeypatch):
-    monkeypatch.delenv("FEED_REPO", raising=False)
+def test_publish_snapshot_skips_without_token(monkeypatch):
     monkeypatch.delenv("FEED_TOKEN", raising=False)
     monkeypatch.setattr(
         publish_snapshot,
         "upload_snapshot",
-        lambda *a, **k: pytest.fail("upload must not run without env"),
+        lambda *a, **k: pytest.fail("upload must not run without a token"),
     )
 
     assert publish_snapshot.publish_snapshot({}, "alice") is False
 
 
+def test_publish_snapshot_uses_hardcoded_repo(monkeypatch):
+    monkeypatch.setenv("FEED_TOKEN", "tok")
+    monkeypatch.delenv("FEED_REPO", raising=False)
+    seen = {}
+
+    def fake_upload(payload, repo, token, timeout=10):
+        seen.update(payload=payload, repo=repo, token=token)
+        return True
+
+    monkeypatch.setattr(publish_snapshot, "upload_snapshot", fake_upload)
+
+    assert publish_snapshot.publish_snapshot({"feed": {}}, "alice") is True
+    assert seen["repo"] == publish_snapshot.FEED_REPO
+    assert seen["repo"] == "squidKid-deluxe/HONEST-feeds-live"
+    assert seen["token"] == "tok"
+    assert seen["payload"]["account"] == "alice"
+
+
 def test_publish_snapshot_never_raises(monkeypatch):
-    monkeypatch.setenv("FEED_REPO", "org/repo")
     monkeypatch.setenv("FEED_TOKEN", "tok")
 
     def boom(*args, **kwargs):

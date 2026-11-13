@@ -59,7 +59,9 @@ through the GitHub Contents API from the feed's publish branch.
 
 - Payload: `{"schema": 1, "account": <account>, "prices": <prices dict>}`.
 - Env vars `FEED_REPO` (`owner/repo`) and `FEED_TOKEN` (fine-grained PAT with
-  contents read/write on that repo only).
+  contents read/write on that repo only). (Superseded: `FEED_REPO` is a module
+  constant in `publish_snapshot.py` because it is identical on every producer
+  machine; only `FEED_TOKEN` comes from the environment.)
 - Single upload attempt per cycle with a 10 s timeout; the next cycle retries.
 - Upload runs after `publish_feed` succeeds, inside its own try/except.
 - `producers.json` in the feeds repo lists the four accounts; the org
