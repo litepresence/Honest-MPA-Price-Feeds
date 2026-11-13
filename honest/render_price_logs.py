@@ -1,45 +1,25 @@
+# STANDARD PYTHON MODULES
+import argparse
 import ast
 import glob
 import json
 import os
 import sys
 from collections import defaultdict
-from multiprocessing import Process, Value
-from os import popen
-from random import random, shuffle
-from statistics import median, mode
-from sys import stdout
+from datetime import datetime
+from statistics import median
+from time import mktime, strptime
 
-# STANDARD PYTHON MODULES
-from time import ctime, mktime, sleep, strptime, time
-from traceback import format_exc
-
+# THIRD PARTY MODULES
+import matplotlib.dates as mdates
 import matplotlib.pyplot as plt
 import matplotlib.style as mplstyle
 import numpy as np
-from config_nodes import public_nodes
-from exchanges import EXCHANGES
-from HONEST import calculate_btsbtc_price, gather_dex_btsbtc
-
-# THIRD PARTY MODULES
-from psutil import Process as psutil_Process
 
 # HONEST PRICE FEED MODULES
-from utilities import (
-    PATH,
-    at,
-    is_git_repo,
-    it,
-    new_git_commits,
-    print_logo,
-    race_append,
-    race_write,
-    sigfig,
-    string_width,
-    trace,
-)
-from websocket import create_connection as wss
-from websocket import enableTrace
+from exchanges import EXCHANGES
+from HONEST import gather_dex_btsbtc
+from utilities import at, it, print_logo, sigfig, string_width, trace
 
 mplstyle.use("dark_background")
 
@@ -134,7 +114,7 @@ def cex_table(cex):
                                 if i != -1 or rdx >= len(exchanges)
                                 else (
                                     "red"
-                                    if exchanges[rdx] in EXCHANGES[pairs[idx]]
+                                    if exchanges[rdx] in EXCHANGES.get(pairs[idx], [])
                                     else "yellow"
                                 )
                             )
@@ -242,6 +222,15 @@ def final_table(final):
     return final_string
 
 
+def calculate_btsbtc_price(cex, exchange):
+    """
+    Calculate BTS:BTC price for a given exchange using CEX data.
+    """
+    btsusd_price = cex["BTS:USDT"]["data"][exchange]
+    btcusd_price = cex["BTC:USDT"]["data"][exchange]
+    return btsusd_price * (1 / btcusd_price)
+
+
 def acquire_btsbtc(data):
     btcusd = data["cex"]["BTC:USD"]["median"]
 
@@ -254,7 +243,7 @@ def acquire_btsbtc(data):
 
     agg_btsbtc_dict = {
         source: price / btcusd
-        for price, source in data["forex"]["aggregate"]["BTS:USD"]
+        for price, source in data["forex"]["aggregate"].get("BTS:USD", [])
     }
 
     # Gather DEX BTS:BTC prices
@@ -275,10 +264,12 @@ def acquire_btsbtc(data):
     }
 
 
-def print_status(data):
+def print_status(data, log_file=""):
     """Handle all printing operations using the local variables of thresh"""
     logo_string = print_logo(False)
     print("\033c")
+    if log_file:
+        print(it("yellow", f" rendering {log_file} "))
 
     dex_string = dex_table(data["dex"]["last"])
     cex_string = cex_table(data["cex"])
@@ -369,54 +360,122 @@ def print_status(data):
         )
 
 
+def parse_log(text):
+    """
+    price logs are written by HONEST.py as json.dumps;
+    fall back to ast.literal_eval for older python-literal logs
+    """
+    try:
+        return json.loads(text)
+    except ValueError:
+        return ast.literal_eval(text)
+
+
+def log_date(path):
+    """unix timestamp from a price_log_<ctime>.txt filename"""
+    return mktime(
+        strptime(os.path.basename(path).split("price_log_")[1].rsplit(".", 1)[0])
+    )
+
+
 def main():
-    file = sys.argv[1]
-    with open(file, "r") as handle:
-        data = handle.read()
-        handle.close()
-
-    data = ast.literal_eval(data)
-
-    print_status(data)
-
-
-def plot_all():
-    datapoints = defaultdict(list)
-
-    pattern = os.path.join("pipe", "price_log_*")
-    files = glob.glob(pattern)
-
-    files = sorted(
-        files,
-        key=lambda x: mktime(
-            strptime(os.path.basename(x).split("price_log_")[1].rsplit(".", 1)[0])
+    parser = argparse.ArgumentParser(
+        description="Render and plot HONEST price feed logs.",
+        epilog=(
+            "With no arguments, every price_log_*.txt in the pipe directory "
+            "is plotted as a BTS:BTC price history.  Give one or more price log "
+            "files to render their source tables instead."
         ),
-    )  # [-1000:]
+    )
+    parser.add_argument(
+        "files",
+        nargs="*",
+        help="price_log files to render as tables; default: plot all logs",
+    )
+    parser.add_argument(
+        "-p",
+        "--pipe",
+        default=os.path.join(os.path.dirname(os.path.abspath(__file__)), "pipe"),
+        help="directory containing price_log_*.txt (default: pipe/ beside this script)",
+    )
+    parser.add_argument(
+        "-s",
+        "--save",
+        metavar="FILE",
+        help="save the plot to FILE (e.g. history.png) instead of opening a window",
+    )
+    args = parser.parse_args()
 
-    lf = len(files)
+    if args.files:
+        for file in args.files:
+            if not os.path.isfile(file):
+                parser.error(f"no such price log: {file}")
+            with open(file, "r") as handle:
+                try:
+                    data = parse_log(handle.read())
+                except Exception as error:
+                    parser.error(f"{file} is not a valid price log: {trace(error)}")
+            print_status(data, log_file=file)
+        return
 
-    print()
-    for fdx, file in enumerate(files):
-        date = mktime(
-            strptime(os.path.basename(file).split("price_log_")[1].rsplit(".", 1)[0])
+    plot_all(args.pipe, save=args.save)
+
+
+def plot_all(pipe_dir, save=None):
+    pattern = os.path.join(pipe_dir, "price_log_*")
+    files = sorted(glob.glob(pattern), key=log_date)
+
+    if not files:
+        print(it("red", f"No price logs found in {pipe_dir}"))
+        print(
+            "\nPrice logs are only written when the feed is run with "
+            "--publish, e.g.\n\n    python HONEST.py --publish --headless\n\n"
+            "with USERNAME and WIF set in the environment.\n"
+            "Use --pipe DIR to plot logs kept somewhere else."
         )
-        print(f"\033[A{fdx*100/lf:.2f}% done")
+        sys.exit(1)
+
+    datapoints = defaultdict(list)
+    interactive = sys.stdout.isatty()
+    print(f"Loading {len(files)} price logs from {pipe_dir}")
+
+    for fdx, file in enumerate(files):
+        if interactive:
+            print(f"\r{fdx * 100 / len(files):.0f}% done", end="", flush=True)
         with open(file, "r") as handle:
-            data = handle.read()
-            handle.close()
-        for key, value in acquire_btsbtc(ast.literal_eval(data)).items():
-            datapoints[key].append((date, value))
+            try:
+                data = parse_log(handle.read())
+                for key, value in acquire_btsbtc(data).items():
+                    datapoints[key].append((log_date(file), value))
+            except Exception as error:
+                print(it("yellow", f"skipping {file}: {trace(error)}"))
+    if interactive:
+        print("\r100% done")
 
-    labels = list(datapoints.keys())
-    datapoints = [datapoints[label] for label in labels]
+    if not datapoints:
+        print(it("red", "No BTS:BTC datapoints could be read from the logs"))
+        sys.exit(1)
 
-    for label, data in zip(labels, datapoints):
-        plt.plot(*list(zip(*data)), label=label)
+    for label, data in sorted(datapoints.items()):
+        dates = [datetime.fromtimestamp(date) for date, _ in data]
+        prices = [price for _, price in data]
+        plt.plot(dates, prices, label=label)
 
-    plt.legend()
-    plt.show()
+    plt.gca().xaxis.set_major_formatter(
+        mdates.ConciseDateFormatter(mdates.AutoDateLocator())
+    )
+    plt.title("BTS:BTC price feed history")
+    plt.ylabel("BTS per BTC")
+    plt.grid(True, alpha=0.3)
+    plt.legend(loc="best", fontsize="small")
+    plt.gcf().autofmt_xdate()
+
+    if save:
+        plt.savefig(save, dpi=150, bbox_inches="tight")
+        print(f"Saved plot to {os.path.abspath(save)}")
+    else:
+        plt.show()
 
 
 if __name__ == "__main__":
-    # main()
-    plot_all()
+    main()
