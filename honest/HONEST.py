@@ -14,6 +14,13 @@ command line args:
  --snapshot-only: upload the json snapshot without publishing to the blockchain
  --headless: whether to ask questions via input or use environment variables
  --oneshot: whether to run once or indefinitely
+ --help: print this message and exit
+
+environment variables:
+
+ USERNAME: bitshares account name, read with --headless
+ WIF: bitshares signing key, read with --headless --publish; not needed for --snapshot-only
+ FEED_TOKEN: github token for snapshot uploads; when unset the upload is skipped
 
 litepresence2020
 """
@@ -440,6 +447,9 @@ def main():
     """
     Initialize final aggregation and publication event loop.
     """
+    if "--help" in sys.argv:
+        print(__doc__)
+        return
     print("\033c")
     print_logo()
 
