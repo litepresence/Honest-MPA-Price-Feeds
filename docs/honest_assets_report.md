@@ -1,6 +1,6 @@
 # HONEST Market Pegged Assets — Live Attributes
 
-Generated 2026-08-08T21:33:07Z UTC from live blockchain data (head block 113303223 via wss://dex.iobanker.com/ws).
+Generated 2026-08-09T00:23:57Z UTC from live blockchain data (head block 113306630 via wss://dex.iobanker.com/ws).
 
 Fee semantics (BSIP-81): `market_fee_percent` = **maker** fee, `taker_fee_percent` (asset extension) = **taker** fee. When `taker_fee_percent` is unset the taker fee falls back to the maker rate. Percent values are stored in hundredths of a percent (100 == 1%).
 
@@ -8,54 +8,54 @@ Fee semantics (BSIP-81): `market_fee_percent` = **maker** fee, `taker_fee_percen
 
 Columns uniformly padded by `md_table` helper so the table lines up even in fixed-width output.
 
-| Asset            | Maker | Taker | taker explicit     | max_market_fee   | fee enabled |
-| ---------------- | ----- | ----- | ------------------ | ---------------- | ----------- |
-| HONEST.ADA       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ADASHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ALGO      | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ALGOSHORT | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ATOM      | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ATOMSHORT | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.BTC       | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.BTCSHORT  | 0.00% | 0.20% | yes                | 1000000000       | yes         |
-| HONEST.CNY       | 0.10% | 0.10% | no (same as maker) | 1000000000000000 | yes         |
-| HONEST.CNYSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.DOT       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.DOTSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.EOS       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.EOSSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.ETH       | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.ETH1      | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.ETHSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.EUR       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.EURSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.FIL       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.FILSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.GBP       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.GBPSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.JPY       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.JPYSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.KRW       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.KRWSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.LTC       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.LTCSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.RUB       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.RUBSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.SOL       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.SOLSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.USD       | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.USDSHORT  | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.XAG       | 0.10% | 0.10% | no (same as maker) | 1000000000000000 | yes         |
-| HONEST.XAGSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XAU       | 0.10% | 0.10% | no (same as maker) | 0                | yes         |
-| HONEST.XAUSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XLM       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XLMSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XMR       | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XMRSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
-| HONEST.XRP       | 0.00% | 0.20% | yes                | 1000000000000000 | yes         |
-| HONEST.XRP1      | 0.10% | 0.10% | no (same as maker) | 1000000000000000 | yes         |
-| HONEST.XRPSHORT  | 0.00% | 0.00% | no (same as maker) | 100000000000000  | yes         |
+| Asset            | Maker | Taker | taker explicit | max_market_fee   | fee enabled |
+| ---------------- | ----- | ----- | -------------- | ---------------- | ----------- |
+| HONEST.ADA       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ADASHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ALGO      | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ALGOSHORT | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ATOM      | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ATOMSHORT | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.BTC       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.BTCSHORT  | 0.00% | 0.20% | yes            | 1000000000       | yes         |
+| HONEST.CNY       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.CNYSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.DOT       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.DOTSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.EOS       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.EOSSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.ETH       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.ETH1      | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.ETHSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.EUR       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.EURSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.FIL       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.FILSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.GBP       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.GBPSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.JPY       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.JPYSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.KRW       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.KRWSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.LTC       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.LTCSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.RUB       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.RUBSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.SOL       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.SOLSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.USD       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.USDSHORT  | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.XAG       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.XAGSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XAU       | 0.00% | 0.20% | yes            | 0                | yes         |
+| HONEST.XAUSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XLM       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XLMSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XMR       | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XMRSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
+| HONEST.XRP       | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.XRP1      | 0.00% | 0.20% | yes            | 1000000000000000 | yes         |
+| HONEST.XRPSHORT  | 0.00% | 0.20% | yes            | 100000000000000  | yes         |
 
 ## 2. Claimable / Accumulated Fees (unclaimed revenue)
 
@@ -71,16 +71,16 @@ Columns uniformly padded by `md_table` helper so the table lines up even in fixe
 | HONEST.ALGOSHORT | 0.0000                         | 0.00         | 0.04                     | yes            |
 | HONEST.ATOM      | 0.0000                         | 0.00         | 0.03                     | yes            |
 | HONEST.ATOMSHORT | 0.0000                         | 0.00         | 0.03                     | yes            |
-| HONEST.BTC       | 0.0003                         | 16133.85     | 2867.13                  | yes            |
-| HONEST.BTCSHORT  | 4475612.0200                   | 0.07         | 0.00                     | yes            |
+| HONEST.BTC       | 0.0003                         | 16090.29     | 2867.13                  | yes            |
+| HONEST.BTCSHORT  | 4475612.0200                   | 0.08         | 0.00                     | yes            |
 | HONEST.CNY       | 0.0000                         | 0.00         | 543.40                   | yes            |
 | HONEST.CNYSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
 | HONEST.DOT       | 0.0000                         | 0.00         | 0.03                     | yes            |
 | HONEST.DOTSHORT  | 0.0000                         | 0.00         | 0.02                     | yes            |
 | HONEST.EOS       | 0.0000                         | 0.00         | 1672.23                  | yes            |
 | HONEST.EOSSHORT  | 0.0000                         | 0.00         | 4.18                     | yes            |
-| HONEST.ETH       | 0.0000                         | 70.20        | 1387.75                  | yes            |
-| HONEST.ETH1      | 0.0586                         | 102873.66    | 0.27                     | via HONEST.ETH |
+| HONEST.ETH       | 0.0000                         | 70.06        | 1387.75                  | yes            |
+| HONEST.ETH1      | 0.0586                         | 102660.23    | 0.27                     | via HONEST.ETH |
 | HONEST.ETHSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
 | HONEST.EUR       | 0.0000                         | 0.00         | 0.03                     | yes            |
 | HONEST.EURSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
@@ -98,25 +98,25 @@ Columns uniformly padded by `md_table` helper so the table lines up even in fixe
 | HONEST.RUBSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
 | HONEST.SOL       | 0.0000                         | 0.00         | 9.82                     | yes            |
 | HONEST.SOLSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
-| HONEST.USD       | 16.1262                        | 14746.57     | 8759.79                  | yes            |
+| HONEST.USD       | 16.1262                        | 14732.11     | 8759.79                  | yes            |
 | HONEST.USDSHORT  | 401.2705                       | 0.44         | 0.00                     | yes            |
 | HONEST.XAG       | 0.0001                         | 4.07         | 1.55                     | yes            |
 | HONEST.XAGSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
-| HONEST.XAU       | 0.0001                         | 407.33       | 6115.57                  | yes            |
+| HONEST.XAU       | 0.0001                         | 406.93       | 6115.57                  | yes            |
 | HONEST.XAUSHORT  | 0.0000                         | 0.00         | 0.00                     | yes            |
 | HONEST.XLM       | 0.0000                         | 0.00         | 3.33                     | yes            |
 | HONEST.XLMSHORT  | 0.0000                         | 0.00         | 0.01                     | yes            |
 | HONEST.XMR       | 0.0000                         | 0.00         | 0.67                     | yes            |
 | HONEST.XMRSHORT  | 0.0000                         | 0.00         | 0.04                     | yes            |
-| HONEST.XRP       | 1.7602                         | 1677.46      | 3.80                     | yes            |
-| HONEST.XRP1      | 0.0454                         | 43.29        | 0.00                     | via HONEST.XRP |
+| HONEST.XRP       | 1.7602                         | 1670.19      | 3.80                     | yes            |
+| HONEST.XRP1      | 0.0454                         | 43.10        | 0.00                     | via HONEST.XRP |
 | HONEST.XRPSHORT  | 0.0000                         | 0.00         | 0.01                     | yes            |
 
 ### Totals
 
-- **accumulated fees (BTS value, approx):** 135,956.94 BTS
+- **accumulated fees (BTS value, approx):** 135,677.48 BTS
 - **accumulated collateral fees:** 21,423.64 BTS
-- **combined claimable (approx):** 157,380.58 BTS
+- **combined claimable (approx):** 157,101.12 BTS
 
 ## 3. Supply & Money (dynamic state)
 
@@ -177,52 +177,52 @@ Current maintenance/initial collateralization is the live collateral-per-debt pr
 
 | Asset            | backing    | maint coll (back/MPA) | init coll (back/MPA) | feed age (min) | margin-call fee | force-settle fee | black-swan  | settling |
 | ---------------- | ---------- | --------------------- | -------------------- | -------------- | --------------- | ---------------- | ----------- | -------- |
-| HONEST.ADA       | BTS        | 256.3551              | 256.3551             | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ADASHORT  | BTS        | 0.0076                | 0.0076               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ALGO      | BTS        | 112.1501              | 112.1501             | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ALGOSHORT | BTS        | 0.0174                | 0.0174               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ATOM      | BTS        | 1,773.4209            | 1,773.4209           | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ATOMSHORT | BTS        | 0.0011                | 0.0011               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.BTC       | BTS        | 83,259,193.0538       | 83,259,193.0538      | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.BTCSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.CNY       | BTS        | 189.7259              | 189.7259             | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.CNYSHORT  | BTS        | 0.0103                | 0.0103               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.DOT       | BTS        | 1,049.0659            | 1,049.0659           | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.DOTSHORT  | BTS        | 0.0019                | 0.0019               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.EOS       | BTS        | 83.2176               | 83.2176              | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.EOSSHORT  | BTS        | 0.0235                | 0.0235               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ETH       | BTS        | 2,457,145.3664        | 2,457,145.3664       | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.ETH1      | HONEST.BTC | 0.0413                | 0.0413               | 43             | —               | —                | —           | no       |
-| HONEST.ETHSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.EUR       | BTS        | 1,479.6121            | 1,479.6121           | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.EURSHORT  | BTS        | 0.0013                | 0.0013               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.FIL       | BTS        | 918.2849              | 918.2849             | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.FILSHORT  | BTS        | 0.0021                | 0.0021               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.GBP       | BTS        | 1,727.0786            | 1,727.0786           | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.GBPSHORT  | BTS        | 0.0011                | 0.0011               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.JPY       | BTS        | 8.1131                | 8.1131               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.JPYSHORT  | BTS        | 0.2408                | 0.2408               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.KRW       | BTS        | 0.9094                | 0.9094               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.KRWSHORT  | BTS        | 2.1478                | 2.1478               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.LTC       | BTS        | 58,947.5099           | 58,947.5099          | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.LTCSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.RUB       | BTS        | 15.6335               | 15.6335              | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.RUBSHORT  | BTS        | 0.1250                | 0.1250               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.SOL       | BTS        | 97,600.4647           | 97,600.4647          | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.SOLSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.USD       | BTS        | 1,280.2273            | 1,280.2273           | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.USDSHORT  | BTS        | 0.0015                | 0.0015               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XAG       | BTS        | 81,358.4443           | 81,358.4443          | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XAGSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XAU       | BTS        | 5,559,195.9465        | 5,559,195.9465       | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XAUSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XLM       | BTS        | 211.4372              | 211.4372             | 43             | 0.05%           | 2.50%            | payback all | no       |
-| HONEST.XLMSHORT  | BTS        | 0.0092                | 0.0092               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.XMR       | BTS        | 488,515.2848          | 488,515.2848         | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.XMRSHORT  | BTS        | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.XRP       | BTS        | 1,334.1669            | 1,334.1669           | 43             | 0.05%           | 1.50%            | payback all | no       |
-| HONEST.XRP1      | HONEST.BTC | 0.0000                | 0.0000               | 43             | 0.05%           | 2.50%            | payback all | yes      |
-| HONEST.XRPSHORT  | BTS        | 0.0015                | 0.0015               | 43             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ADA       | BTS        | 254.9156              | 254.9156             | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ADASHORT  | BTS        | 0.0077                | 0.0077               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ALGO      | BTS        | 112.0134              | 112.0134             | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ALGOSHORT | BTS        | 0.0174                | 0.0174               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ATOM      | BTS        | 1,772.7846            | 1,772.7846           | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ATOMSHORT | BTS        | 0.0011                | 0.0011               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.BTC       | BTS        | 83,034,409.5085       | 83,034,409.5085      | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.BTCSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.CNY       | BTS        | 189.5444              | 189.5444             | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.CNYSHORT  | BTS        | 0.0103                | 0.0103               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.DOT       | BTS        | 1,045.4032            | 1,045.4032           | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.DOTSHORT  | BTS        | 0.0019                | 0.0019               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.EOS       | BTS        | 83.1424               | 83.1424              | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.EOSSHORT  | BTS        | 0.0235                | 0.0235               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ETH       | BTS        | 2,452,047.6296        | 2,452,047.6296       | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.ETH1      | HONEST.BTC | 0.0413                | 0.0413               | 50             | —               | —                | —           | no       |
+| HONEST.ETHSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.EUR       | BTS        | 1,478.2380            | 1,478.2380           | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.EURSHORT  | BTS        | 0.0013                | 0.0013               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.FIL       | BTS        | 908.4046              | 908.4046             | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.FILSHORT  | BTS        | 0.0021                | 0.0021               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.GBP       | BTS        | 1,725.4602            | 1,725.4602           | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.GBPSHORT  | BTS        | 0.0011                | 0.0011               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.JPY       | BTS        | 8.1050                | 8.1050               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.JPYSHORT  | BTS        | 0.2404                | 0.2404               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.KRW       | BTS        | 0.9085                | 0.9085               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.KRWSHORT  | BTS        | 2.1447                | 2.1447               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.LTC       | BTS        | 58,788.3626           | 58,788.3626          | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.LTCSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.RUB       | BTS        | 15.6252               | 15.6252              | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.RUBSHORT  | BTS        | 0.1248                | 0.1248               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.SOL       | BTS        | 97,125.3464           | 97,125.3464          | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.SOLSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.USD       | BTS        | 1,278.9714            | 1,278.9714           | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.USDSHORT  | BTS        | 0.0015                | 0.0015               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XAG       | BTS        | 81,278.6384           | 81,278.6384          | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XAGSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XAU       | BTS        | 5,553,714.2350        | 5,553,714.2350       | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XAUSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XLM       | BTS        | 210.0771              | 210.0771             | 50             | 0.05%           | 2.50%            | payback all | no       |
+| HONEST.XLMSHORT  | BTS        | 0.0093                | 0.0093               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.XMR       | BTS        | 482,793.9312          | 482,793.9312         | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.XMRSHORT  | BTS        | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.XRP       | BTS        | 1,328.3845            | 1,328.3845           | 50             | 0.05%           | 1.50%            | payback all | no       |
+| HONEST.XRP1      | HONEST.BTC | 0.0000                | 0.0000               | 50             | 0.05%           | 2.50%            | payback all | yes      |
+| HONEST.XRPSHORT  | BTS        | 0.0015                | 0.0015               | 50             | 0.05%           | 2.50%            | payback all | yes      |
 
 ## 5. Options Extensions (`asset_update` extensions)
 
