@@ -5,27 +5,60 @@ once per hourly cycle. A browser-side renderer can fetch every producer's
 snapshot and draw the live source grids without any server or read-side
 credentials.
 
-## Repo setup (done once by the org)
+## Repo setup (you, once)
 
-1. Create the `HONEST-feeds-live` repository on GitHub and enable Pages
-   (branch `main`, root directory).
-2. For each producer, create a fine-grained personal access token scoped to
-   `HONEST-feeds-live` only, with `Contents: Read and write`.
+1. Create `squidKid-deluxe/HONEST-feeds-live` as a **public** repository with a
+   README. It has to be public: `raw.githubusercontent.com` and Pages on a free
+   account do not serve private repos. The README gives GitHub a `main` branch
+   before you enable Pages.
+2. Settings > Pages > Source: "Deploy from a branch", branch `main`, folder
+   `/ (root)`. Save. GitHub shows the site URL there.
+3. For each producer, generate a fine-grained token: Settings > Developer
+   settings > Personal access tokens > Fine-grained tokens.
+   - Repository access: Only select repositories > `HONEST-feeds-live`
+   - Permissions > Repository permissions > Contents: Read and write
+   - Expiration: up to one year. Note the date: an expired token stops
+     snapshots without any chain-side symptom. One token per producer, so each
+     can be revoked alone.
 
 ## Producer setup (each machine)
 
-Set two environment variables in the feed's environment:
+In the same shell you start the feed from:
 
 ```bash
+cd Honest-MPA-Price-Feeds/honest
 export FEED_REPO=squidKid-deluxe/HONEST-feeds-live
-export FEED_TOKEN=<that producer's fine-grained token>
+export FEED_TOKEN=<this machine's token>
+python HONEST.py
 ```
 
 The feed uploads `<account>.json` to the repo after it finishes publishing to
 the chain. A snapshot reports the prices the producer computed; it does not
 confirm that the chain accepted every edict. Without both variables it prints
 `feed snapshot skipped: FEED_REPO and FEED_TOKEN must be set` and publishes to
-the chain as usual.
+the chain as usual. Upload messages go to the console: `REDIRECT_TO_LOG` is
+`False`, so stdout is not sent to `pipe/log*.txt`.
+
+## First check
+
+One cycle is enough to prove the wiring. `--oneshot` runs a single pass, and
+answer `y` when it asks about publishing, because the upload hook sits inside
+that branch:
+
+```bash
+python HONEST.py --oneshot
+```
+
+Then fetch the file from a different machine or a browser:
+
+```bash
+curl -s https://raw.githubusercontent.com/squidKid-deluxe/HONEST-feeds-live/main/<account>.json | head -c 200
+```
+
+A body starting with `{"schema": 1` means it works. A 404 means the PUT never
+succeeded; the console line above it says why (`GitHub returned 401/403/404`),
+and the usual cause is a token scoped to a different repo or missing
+`Contents: Read and write`.
 
 ## Snapshot URLs for the site
 
