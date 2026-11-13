@@ -6,11 +6,12 @@
     MARKET - PEGGED - ASSETS
 +===============================+
 
-final aggregation and call to publish feed on chain and at jsonbin.io
+final aggregation and call to publish feed on chain and in the feeds repo
 
 command line args:
 
  --publish: whether or not to publish to blockchain
+ --snapshot-only: upload the json snapshot without publishing to the blockchain
  --headless: whether to ask questions via input or use environment variables
  --oneshot: whether to run once or indefinitely
 
@@ -283,7 +284,7 @@ def process_data(cex, dex, forex):
     return feed, inverse_feed
 
 
-def gather_data(name, wif, publish, oneshot=False):
+def gather_data(name, wif, publish, oneshot=False, snapshot_only=False):
     """
     primary event loop
     """
@@ -342,16 +343,21 @@ def gather_data(name, wif, publish, oneshot=False):
             race_write(doc="pricefeed_final.txt", text=json.dumps(prices))
 
             # publish feed prices to the blockchain
-            if publish:
+            if publish or snapshot_only:
                 try:
                     race_write(
                         doc=f"price_log_{time.ctime()}.txt", text=json.dumps(prices)
                     )
-                    print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
-                    time.sleep(5)
-                    publish_feed(prices, name, wif)
+                    if snapshot_only:
+                        print("\n", it("cyan", "UPLOADING SNAPSHOT, NO CHAIN PUBLISH"))
+                    else:
+                        print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
+                        time.sleep(5)
+                        publish_feed(prices, name, wif)
                     try:
-                        publish_snapshot(prices, name)
+                        uploaded = publish_snapshot(prices, name)
+                        if snapshot_only:
+                            print("snapshot upload", "OK" if uploaded else "FAILED")
                     except Exception as error:
                         logger(trace(error), "publish snapshot")
                 except Exception as error:
@@ -386,7 +392,7 @@ def gather_data(name, wif, publish, oneshot=False):
         time.sleep(REFRESH)
 
 
-def authenticate_account():
+def authenticate_account(require_wif=True):
     """Authenticate user account based on Bitshares agent name and WIF."""
     while True:
         account_name = input(
@@ -405,6 +411,9 @@ def authenticate_account():
             continue
 
         print(f"\nWelcome back account {account_name} with id {account_id}")
+
+        if not require_wif:
+            return account_name, ""
 
         wif = getpass("\n  Bitshares" + it("yellow", " AGENT WIF:\n           "))
         order = {
@@ -465,27 +474,40 @@ def main():
     # create the pipe folder if it does not exist
     os.makedirs(os.path.join(PATH, "pipe"), exist_ok=True)
 
+    snapshot_only = "--snapshot-only" in sys.argv
     if "--headless" in sys.argv:
         publish = "--publish" in sys.argv
         if publish:
             name, wif = os.environ["USERNAME"], os.environ["WIF"]
+        elif snapshot_only:
+            name, wif = os.environ["USERNAME"], ""
         else:
             name, wif = "", ""
     else:
         # Trigger inputs for various actions
-        publish = (
-            "y"
-            in input(
-                f'\n   y + Enter to {it("cyan", "PUBLISH")} or Enter to skip\n\n          '
-            ).lower()
-        )
-        if publish:
-            name, wif = authenticate_account()
+        if snapshot_only:
+            publish = False
+            name, wif = authenticate_account(require_wif=False)
         else:
-            name, wif = "", ""
+            publish = (
+                "y"
+                in input(
+                    f'\n   y + Enter to {it("cyan", "PUBLISH")} or Enter to skip\n\n          '
+                ).lower()
+            )
+            if publish:
+                name, wif = authenticate_account()
+            else:
+                name, wif = "", ""
 
     # Proceed to gather data
-    gather_data(name, wif, publish, oneshot="--oneshot" in sys.argv)
+    gather_data(
+        name,
+        wif,
+        publish,
+        oneshot="--oneshot" in sys.argv,
+        snapshot_only=snapshot_only,
+    )
 
 
 if __name__ == "__main__":

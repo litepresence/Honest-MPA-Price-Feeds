@@ -42,24 +42,26 @@ stdout is not sent to `pipe/log*.txt`.
 
 ## First check
 
-One cycle is enough to prove the wiring. `--oneshot` runs a single pass, and
-answer `y` when it asks about publishing, because the upload hook sits inside
-that branch:
+One cycle is enough to prove the wiring, and `--snapshot-only` uploads the
+snapshot without touching the blockchain, so no WIF is needed. `--oneshot`
+runs a single pass:
 
 ```bash
-python HONEST.py --oneshot
+export FEED_TOKEN=<this machine's token>
+python HONEST.py --oneshot --snapshot-only
 ```
 
-Then fetch the file from a different machine or a browser:
+It asks for your BitShares account name, then prints
+`snapshot upload OK` or `snapshot upload FAILED`. Then fetch the file from
+another machine or a browser:
 
 ```bash
 curl -s https://raw.githubusercontent.com/squidKid-deluxe/HONEST-feeds-live/main/<account>.json | head -c 200
 ```
 
-A body starting with `{"schema": 1` means it works. A 404 means the PUT never
-succeeded; the console line above it says why (`GitHub returned 401/403/404`),
-and the usual cause is a token scoped to a different repo or missing
-`Contents: Read and write`.
+A body starting with `{"schema": 1` means it works. On failure the console line
+above says why (`GitHub returned 401/403/404`); the usual cause is a token
+scoped to a different repo or missing `Contents: Read and write`.
 
 ## Snapshot URLs for the site
 
