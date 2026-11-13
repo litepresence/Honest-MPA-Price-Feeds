@@ -30,8 +30,9 @@ export FEED_REPO=litepresence/HONEST-feeds-live
 export FEED_TOKEN=<that producer's fine-grained token>
 ```
 
-The feed then uploads `<account>.json` to the repo after every successful
-chain publish. Without both variables it logs
+The feed uploads `<account>.json` to the repo after it finishes publishing to
+the chain. A snapshot reports the prices the producer computed; it does not
+confirm that the chain accepted every edict. Without both variables it prints
 `feed snapshot skipped: FEED_REPO and FEED_TOKEN must be set` and publishes to
 the chain as usual.
 
@@ -68,6 +69,6 @@ tables for each producer.
 
 ## Failure behavior
 
-An upload failure is logged and otherwise ignored: chain publishing is
-unaffected. The next hourly cycle retries. The site should treat a snapshot
+An upload failure prints a message and is otherwise ignored: chain publishing
+is unaffected. The next hourly cycle retries. The site should treat a snapshot
 whose `prices.time.unix` is more than 7200 seconds old as stale.
