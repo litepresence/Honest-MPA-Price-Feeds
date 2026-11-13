@@ -26,7 +26,7 @@ credentials.
 Set two environment variables in the feed's environment:
 
 ```bash
-export FEED_REPO=litepresence/HONEST-feeds-live
+export FEED_REPO=squidKid-deluxe/HONEST-feeds-live
 export FEED_TOKEN=<that producer's fine-grained token>
 ```
 
@@ -39,9 +39,9 @@ the chain as usual.
 ## Snapshot URLs for the site
 
 - Immediate, no build step:
-  `https://raw.githubusercontent.com/<owner>/HONEST-feeds-live/main/<account>.json`
+  `https://raw.githubusercontent.com/squidKid-deluxe/HONEST-feeds-live/main/<account>.json`
 - GitHub Pages (about a minute behind, stable domain):
-  `https://<owner>.github.io/HONEST-feeds-live/<account>.json`
+  `https://squidKid-deluxe.github.io/HONEST-feeds-live/<account>.json`
 
 Both serve `Access-Control-Allow-Origin: *`, so a browser-side renderer can
 fetch them directly.
