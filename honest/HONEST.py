@@ -39,6 +39,7 @@ from pricefeed_cex import pricefeed_cex
 from pricefeed_dex import pricefeed_dex
 from pricefeed_forex import pricefeed_forex
 from proxy_list import ProxyManager
+from publish_snapshot import publish_snapshot
 from utilities import (
     PATH,
     is_git_repo,
@@ -349,6 +350,10 @@ def gather_data(name, wif, publish, oneshot=False):
                     print("\n", it("red", "PUBLISHING TO BLOCKCHAIN"))
                     time.sleep(5)
                     publish_feed(prices, name, wif)
+                    try:
+                        publish_snapshot(prices, name)
+                    except Exception as error:
+                        logger(trace(error), "publish snapshot")
                 except Exception as error:
                     msg = trace(error)
                     logger(msg, "publishing")
