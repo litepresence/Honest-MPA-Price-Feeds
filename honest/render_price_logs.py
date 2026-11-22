@@ -404,7 +404,50 @@ def main():
         metavar="FILE",
         help="save the plot to FILE (e.g. history.png) instead of opening a window",
     )
+    parser.add_argument(
+        "-l",
+        "--latest",
+        action="store_true",
+        help="render only the most recent price log as tables",
+    )
+    parser.add_argument(
+        "-n",
+        "--count",
+        type=int,
+        metavar="N",
+        help="render the N most recent price logs as tables",
+    )
     args = parser.parse_args()
+
+    # --latest / --count: render the most recent price log(s) as tables
+    if args.latest or args.count:
+        if args.count and args.count <= 0:
+            print(it("red", "--count must be a positive integer"))
+            sys.exit(1)
+
+        pattern = os.path.join(args.pipe, "price_log_*")
+        files = sorted(glob.glob(pattern), key=log_date)
+        if not files:
+            print(it("red", f"No price logs found in {args.pipe}"))
+            print(
+                "\nPrice logs are only written when the feed is run with "
+                "--publish, e.g.\n\n    python HONEST.py --publish --headless\n\n"
+                "with USERNAME and WIF set in the environment.\n"
+                "Use --pipe DIR to look for logs kept somewhere else."
+            )
+            sys.exit(1)
+        render_files = files[-1:] if args.latest else files[-args.count:]
+        if args.files:
+            print(it("yellow", "Ignoring explicit files; --latest/--count takes precedence"))
+        for file in render_files:
+            with open(file, "r") as handle:
+                try:
+                    data = parse_log(handle.read())
+                except Exception as error:
+                    print(it("red", f"{file} is not a valid price log: {trace(error)}"))
+                    continue
+            print_status(data, log_file=file)
+        return
 
     if args.files:
         for file in args.files:
