@@ -490,7 +490,7 @@ def main():
         if publish:
             name, wif = os.environ["USERNAME"], os.environ["WIF"]
         elif snapshot_only:
-            name, wif = os.environ["USERNAME"], ""
+            name, wif = os.environ.get("USERNAME", ""), ""
         else:
             name, wif = "", ""
     else:
