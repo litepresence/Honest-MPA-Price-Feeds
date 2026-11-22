@@ -568,67 +568,93 @@ def cex_table(local_vars):
             # sort by pair
             cex = dict(sorted(cex.items()))
 
-            exchanges = []
-            for key, val in cex.items():
-                exchanges.extend(list(val["data"].keys()))
-            exchanges = sorted(list(set(exchanges)))
+            quotes = ["BTC", "USD", "USDT"]
 
-            pairs = list(cex.keys())
-            just_size = max(map(len, pairs)) + 2
-
-            table = [exchanges + ["median"]]
-            for coin, data in cex.items():
-                table.append([data["data"].get(exchange, -1) for exchange in exchanges])
-                table[-1].append(data["median"])
-            n_prices = list([len([i for i in j if i != -1]) - 1 for j in table[1:]])
-            table = list(zip(*table))
-
-            exchange_just = max(map(len, exchanges)) + 2
-
-            # print header
-            cex_string += " " * exchange_just + "".join(
-                it(
-                    (
-                        "white"
-                        if count >= 7
-                        else "yellow" if count >= 5 else "red" if count >= 2 else "cyan"
-                    ),
-                    coin.ljust(just_size),
-                )
-                for coin, count in zip(pairs, n_prices)
-            )
-            for rdx, row in enumerate(table):
-                if row[0].endswith("_implied"):
+            for quote in quotes:
+                # Get pairs for this quote base
+                pairs = [p for p in cex if p.endswith(f":{quote}")]
+                if not pairs:
                     continue
-                cex_string += "\n" + (
-                    (
-                        row[0].ljust(exchange_just)
-                        if row[0] != "median"
-                        else it("purple", row[0].center(exchange_just))
-                    )
-                    + "".join(
-                        [
-                            it(
-                                (
-                                    (
-                                        "green"
-                                        if i != -1 or rdx >= len(exchanges)
-                                        else (
-                                            "red"
-                                            if exchanges[rdx]
-                                            in EXCHANGES.get(pairs[idx], [])
-                                            else "yellow"
-                                        )
-                                    )
-                                    if row[0] != "median"
-                                    else "cyan"
-                                ),
-                                str(sigfig(i, 4)).ljust(just_size),
-                            )
-                            for idx, i in enumerate(row[1:])
-                        ]
-                    )
+
+                # Collect exchanges that have data for any pair in this base
+                exchanges = []
+                for pair in pairs:
+                    exchanges.extend(list(cex[pair]["data"].keys()))
+                exchanges = sorted(
+                    list(set(e for e in exchanges if not e.endswith("_implied")))
                 )
+
+                if not exchanges:
+                    continue
+
+                just_size = max(map(len, pairs)) + 2
+
+                table = [exchanges + ["median"]]
+                for pair in pairs:
+                    data = cex[pair]
+                    table.append(
+                        [data["data"].get(exchange, -1) for exchange in exchanges]
+                    )
+                    table[-1].append(data["median"])
+                n_prices = [
+                    len([i for i in j if i != -1]) - 1 for j in table[1:]
+                ]
+                table_rows = list(zip(*table))
+
+                exchange_just = max(map(len, exchanges)) + 2
+
+                # header for this base
+                cex_string += f"\n### {quote} base\n\n"
+                cex_string += " " * exchange_just + "".join(
+                    it(
+                        (
+                            "white"
+                            if count >= 7
+                            else "yellow" if count >= 5 else "red" if count >= 2 else "cyan"
+                        ),
+                        pair.ljust(just_size),
+                    )
+                    for pair, count in zip(pairs, n_prices)
+                )
+                for rdx, row in enumerate(table_rows):
+                    if row[0] == "median":
+                        cex_string += "\n" + (
+                            it("purple", row[0].center(exchange_just))
+                            + "".join(
+                                [
+                                    it(
+                                        "cyan",
+                                        str(sigfig(i, 4)).ljust(just_size),
+                                    )
+                                    for i in row[1:]
+                                ]
+                            )
+                        )
+                    else:
+                        exchange_name = row[0]
+                        cex_string += "\n" + (
+                            exchange_name.ljust(exchange_just)
+                            + "".join(
+                                [
+                                    it(
+                                        (
+                                            "green"
+                                            if i != -1
+                                            else (
+                                                "red"
+                                                if exchange_name
+                                                in EXCHANGES.get(pairs[idx], [])
+                                                else "yellow"
+                                            )
+                                        ),
+                                        str(sigfig(i, 4)).ljust(just_size),
+                                    )
+                                    for idx, i in enumerate(row[1:])
+                                ]
+                            )
+                        )
+                cex_string += "\n"
+
             cex_string = (
                 it("yellow", " CEX ".center(string_width(cex_string), "═"))
                 + "\n\n"
