@@ -68,14 +68,10 @@ def md_table(headers, rows):
         + " | ".join(str(c).ljust(widths[i]) for i, c in enumerate(table[0]))
         + " |"
     )
-    lines.append(
-        "| " + " | ".join("-" * widths[i] for i in range(len(headers))) + " |"
-    )
+    lines.append("| " + " | ".join("-" * widths[i] for i in range(len(headers))) + " |")
     for row in table[1:]:
         lines.append(
-            "| "
-            + " | ".join(str(c).ljust(widths[i]) for i, c in enumerate(row))
-            + " |"
+            "| " + " | ".join(str(c).ljust(widths[i]) for i, c in enumerate(row)) + " |"
         )
     return lines
 
@@ -109,7 +105,9 @@ def connect():
     """Return an (RPC, node_url) pair with the database api id discovered."""
     for url in public_nodes():
         try:
-            ws = websocket.create_connection(url, timeout=20, header={"User-Agent": "wscat"})
+            ws = websocket.create_connection(
+                url, timeout=20, header={"User-Agent": "wscat"}
+            )
         except Exception:
             continue
         rpc = RPC(ws)
@@ -168,7 +166,7 @@ def get_feed_bts_per_asset(rpc, asset_id, bitasset_data_id):
 
 
 def to_units(amount, precision):
-    return amount / 10 ** precision
+    return amount / 10**precision
 
 
 def fmt_price(amount, precision, symbol):
@@ -248,10 +246,13 @@ def main():
 
     # Resolve backing/quote asset symbols + precisions (BTS plus any asset that
     # appears as a collateral side) for the collateralization price rendering.
-    id_to_props = {
-        NETWORK_ASSET_ID: {"symbol": "BTS", "precision": NETWORK_PRECISION}
-    }
-    id_to_props.update({a["id"]: {"symbol": a["symbol"], "precision": a["precision"]} for a in assets.values()})
+    id_to_props = {NETWORK_ASSET_ID: {"symbol": "BTS", "precision": NETWORK_PRECISION}}
+    id_to_props.update(
+        {
+            a["id"]: {"symbol": a["symbol"], "precision": a["precision"]}
+            for a in assets.values()
+        }
+    )
     backing_ids = {
         (bit.get("id") and (bit.get("options") or {}).get("short_backing_asset"))
         for bit in bit.values()
@@ -259,7 +260,10 @@ def main():
     }
     backing_ids.discard(None)
     for extra in get_objects(rpc, list(backing_ids - set(id_to_props))).values():
-        id_to_props[extra["id"]] = {"symbol": extra["symbol"], "precision": extra["precision"]}
+        id_to_props[extra["id"]] = {
+            "symbol": extra["symbol"],
+            "precision": extra["precision"],
+        }
 
     # Precompute BTS-per-asset feed factor for every MPA that has a BTS feed.
     feed_factor = {}
@@ -311,8 +315,12 @@ def main():
         force_settle_fee = (bit_data.get("extensions") or {}).get(
             "force_settle_fee_percent"
         ) or (bit_opts.get("extensions") or {}).get("force_settle_fee_percent")
-        margin_call_fee = (bit_opts.get("extensions") or {}).get("margin_call_fee_ratio")
-        black_swan = (bit_opts.get("extensions") or {}).get("black_swan_response_method")
+        margin_call_fee = (bit_opts.get("extensions") or {}).get(
+            "margin_call_fee_ratio"
+        )
+        black_swan = (bit_opts.get("extensions") or {}).get(
+            "black_swan_response_method"
+        )
         settle_price = bit_data.get("settlement_price") or {}
         is_settling = bool(
             settle_price.get("base", {}).get("amount")
@@ -427,7 +435,14 @@ def main():
         "even in fixed-width output."
     )
     L.append("")
-    headers = ["Asset", "Maker", "Taker", "taker explicit", "max_market_fee", "fee enabled"]
+    headers = [
+        "Asset",
+        "Maker",
+        "Taker",
+        "taker explicit",
+        "max_market_fee",
+        "fee enabled",
+    ]
     body = [
         [
             r["symbol"],
@@ -460,12 +475,20 @@ def main():
         "used instead; this is shown in the `feed` column as `via <counterpart>`."
     )
     L.append("")
-    headers = ["Asset", "accumulated_fees (asset units)", "~value (BTS)", "accumulated_collat (BTS)", "feed"]
+    headers = [
+        "Asset",
+        "accumulated_fees (asset units)",
+        "~value (BTS)",
+        "accumulated_collat (BTS)",
+        "feed",
+    ]
     body = []
     for r in rows:
         asset_str = f"{r['accum_asset_h']:.4f}"
         bts_v = f"{r['bts_value']:.2f}" if r["bts_value"] is not None else "n/a"
-        feed = "yes" if r["feed_found"] else (r["feed_note"] if r["feed_note"] else "no")
+        feed = (
+            "yes" if r["feed_found"] else (r["feed_note"] if r["feed_note"] else "no")
+        )
         body.append([r["symbol"], asset_str, bts_v, f"{r['accum_collat_h']:.2f}", feed])
     L.extend(md_table(headers, body))
     L.append("")
@@ -476,7 +499,9 @@ def main():
     L.append("")
     L.append(f"- **accumulated fees (BTS value, approx):** {total_asset:,.2f} BTS")
     L.append(f"- **accumulated collateral fees:** {total_collat:,.2f} BTS")
-    L.append(f"- **combined claimable (approx):** {total_asset + total_collat:,.2f} BTS")
+    L.append(
+        f"- **combined claimable (approx):** {total_asset + total_collat:,.2f} BTS"
+    )
     L.append("")
 
     L.append("## 3. Supply & Money (dynamic state)")
@@ -540,11 +565,7 @@ def main():
                     if r["current_initial"] is not None
                     else "—"
                 ),
-                (
-                    f"{r['feed_age_min']:.0f}"
-                    if r["feed_age_min"] is not None
-                    else "—"
-                ),
+                (f"{r['feed_age_min']:.0f}" if r["feed_age_min"] is not None else "—"),
                 (
                     f"{r['margin_call_fee_bp'] / 100:.2f}%"
                     if r["margin_call_fee_bp"] is not None
@@ -585,11 +606,17 @@ def main():
     for r in rows:
         if r["reward_percent"] is None and not r["fee_sharing"]:
             continue
-        sharing = ", ".join(
-            f"`{fs['account_id']}` ({fs['percent'] / 100:.1f}%)" if fs.get("percent")
-            else f"`{fs['account_id']}`"
-            for fs in r["fee_sharing"]
-        ) or "—"
+        sharing = (
+            ", ".join(
+                (
+                    f"`{fs['account_id']}` ({fs['percent'] / 100:.1f}%)"
+                    if fs.get("percent")
+                    else f"`{fs['account_id']}`"
+                )
+                for fs in r["fee_sharing"]
+            )
+            or "—"
+        )
         reward = (
             f"{r['reward_percent'] / 100:.6f}%"
             if r["reward_percent"] is not None
@@ -623,7 +650,9 @@ def main():
     L.append("")
 
     L.append("---")
-    L.append("Generated by `honest/honest_assets_report.py`. Read-only; does not modify the chain.")
+    L.append(
+        "Generated by `honest/honest_assets_report.py`. Read-only; does not modify the chain."
+    )
 
     with open(OUT_PATH, "w") as f:
         f.write("\n".join(L) + "\n")

@@ -24,9 +24,8 @@ import matplotlib
 matplotlib.use("Agg")
 
 import matplotlib.pyplot as plt
-from matplotlib.patches import Patch
-
 from exchanges import BLACKLIST, EXCHANGES
+from matplotlib.patches import Patch
 from utilities import correct_pair
 
 HERE = Path(__file__).resolve().parent

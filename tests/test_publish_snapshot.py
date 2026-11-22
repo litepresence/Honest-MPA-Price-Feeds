@@ -1,10 +1,9 @@
 import base64
 import json
 
+import publish_snapshot
 import pytest
 import requests
-
-import publish_snapshot
 
 
 class FakeResponse:

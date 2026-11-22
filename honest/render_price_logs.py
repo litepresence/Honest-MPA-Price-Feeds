@@ -436,9 +436,14 @@ def main():
                 "Use --pipe DIR to look for logs kept somewhere else."
             )
             sys.exit(1)
-        render_files = files[-1:] if args.latest else files[-args.count:]
+        render_files = files[-1:] if args.latest else files[-args.count :]
         if args.files:
-            print(it("yellow", "Ignoring explicit files; --latest/--count takes precedence"))
+            print(
+                it(
+                    "yellow",
+                    "Ignoring explicit files; --latest/--count takes precedence",
+                )
+            )
         for file in render_files:
             with open(file, "r") as handle:
                 try:

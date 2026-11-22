@@ -596,9 +596,7 @@ def cex_table(local_vars):
                         [data["data"].get(exchange, -1) for exchange in exchanges]
                     )
                     table[-1].append(data["median"])
-                n_prices = [
-                    len([i for i in j if i != -1]) - 1 for j in table[1:]
-                ]
+                n_prices = [len([i for i in j if i != -1]) - 1 for j in table[1:]]
                 table_rows = list(zip(*table))
 
                 exchange_just = max(map(len, exchanges)) + 2
@@ -610,7 +608,11 @@ def cex_table(local_vars):
                         (
                             "white"
                             if count >= 7
-                            else "yellow" if count >= 5 else "red" if count >= 2 else "cyan"
+                            else (
+                                "yellow"
+                                if count >= 5
+                                else "red" if count >= 2 else "cyan"
+                            )
                         ),
                         pair.ljust(just_size),
                     )
