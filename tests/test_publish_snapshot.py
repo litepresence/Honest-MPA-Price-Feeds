@@ -17,11 +17,11 @@ class FakeResponse:
 
 def test_snapshot_payload_has_schema_account_and_prices():
     prices = {"time": {"unix": 1}, "feed": {"BTS:USD": 0.1}}
-    assert publish_snapshot.snapshot_payload(prices, "alice") == {
-        "schema": 1,
-        "account": "alice",
-        "prices": prices,
-    }
+    payload = publish_snapshot.snapshot_payload(prices, "alice")
+    assert payload["schema"] == 1
+    assert payload["account"] == "alice"
+    assert payload["prices"] == prices
+    assert isinstance(payload["version"], str) and len(payload["version"]) > 0
 
 
 def make_payload(account="alice"):
