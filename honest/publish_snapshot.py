@@ -9,6 +9,7 @@ Every function returns False on failure; nothing here raises.
 import base64
 import json
 import os
+import subprocess
 from datetime import datetime, timezone
 
 import requests
@@ -16,9 +17,24 @@ import requests
 API_URL = "https://api.github.com/repos/{repo}/contents/{account}.json"
 FEED_REPO = "squidKid-deluxe/HONEST-feeds-live"
 
+# Root of the price-feed git repo (one level above this file's honest/ dir)
+REPO_ROOT = os.path.dirname(os.path.dirname(os.path.abspath(__file__)))
+
+
+def software_version():
+    """Short commit hash of the price feed software, or 'unknown'."""
+    try:
+        return subprocess.check_output(
+            ["git", "-C", REPO_ROOT, "rev-parse", "--short", "HEAD"],
+            stderr=subprocess.DEVNULL,
+            timeout=5,
+        ).decode().strip() or "unknown"
+    except Exception:
+        return "unknown"
+
 
 def snapshot_payload(prices, account):
-    return {"schema": 1, "account": account, "prices": prices}
+    return {"schema": 1, "account": account, "version": software_version(), "prices": prices}
 
 
 def upload_snapshot(payload, repo, token, timeout=10):
